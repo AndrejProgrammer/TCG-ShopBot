@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace ShopBot
 {
-    [BepInPlugin("ratta.shopbot", "ShopBot", "0.5.1")]
+    [BepInPlugin("ratta.shopbot", "ShopBot", "0.5.2")]
     public partial class Plugin : BaseUnityPlugin
     {
         // ---- Konfiguration ----
@@ -32,6 +32,7 @@ namespace ShopBot
         private ConfigEntry<float> _swapMinGainPercent;
         private ConfigEntry<float> _stepDelay;
         private ConfigEntry<float> _buyMaxPercent2, _buyMaxNewPercent, _buyNewHardPercent, _buyNewMaxMoneyPct, _buyAlwaysBelow, _swapTolerance;
+        private ConfigEntry<bool> _buyNewAlwaysAsk;
 
         // Wie viel ist uns eine Karte beim Ankauf/Tausch höchstens wert (in $)?
         //  doppelt: Marktpreis x Limit (Weiterverkauf +20 % = Gewinn)
@@ -98,6 +99,7 @@ namespace ShopBot
             _buyMaxNewPercent = Config.Bind("3. Kunden-Angebote", "Neue Karte: bis X Prozent Marktpreis (Set mit Packs)", 200f, "Fehlt die Karte in der Sammlung und gibt es für ihr Set noch kaufbare Packs: Wunschpreis zahlen bis zu so viel Prozent vom Marktpreis.");
             _buyNewHardPercent = Config.Bind("3. Kunden-Angebote", "Neue Karte: bis X Prozent Marktpreis (Set pausiert oder ohne Packs)", 500f, "Fehlt die Karte und ihr Set ist fast fertig (pausiert) oder hat keine kaufbaren Packs: der Kunde ist die einzige realistische Quelle – bis zu so viel Prozent vom Marktpreis.");
             _buyNewMaxMoneyPct = Config.Bind("3. Kunden-Angebote", "Neue Karte: höchstens X Prozent vom Geld", 10f, "Sicherheitsgrenze pro Karte.");
+            _buyNewAlwaysAsk = Config.Bind("3. Kunden-Angebote", "Neue Karte: immer den Wunschpreis zahlen", true, "Fehlt die Karte in der Sammlung, zahlt der Bot genau den Wunschpreis des Kunden (nie mehr) – unabhängig vom Marktpreis. Es gilt nur die Grenze in Prozent vom Geld. Aus: Grenzen in Prozent vom Marktpreis.");
             _buyAlwaysBelow = Config.Bind("3. Kunden-Angebote", "Karten unter diesem Wert immer kaufen ($)", 2f, "Kleinkram: einfach den Wunschpreis zahlen, kein Verhandeln.");
             _swapTolerance = Config.Bind("3. Kunden-Angebote", "Tausch: kleiner Verlust erlaubt ($)", 1f, "Tausch auch annehmen, wenn wir höchstens so viel weniger bekommen (spart Ablehnungen bei Kleinkram).");
 
@@ -818,12 +820,15 @@ namespace ShopBot
                 float market = t.Field("m_SellCardMarketPrice").GetValue<float>();
                 if (market <= 0f) market = CPlayerData.GetCardMarketPrice(card);
                 float cap = CardWorth(card, market, out isNew, out hard);
-                if (market < _buyAlwaysBelow.Value) cap = Mathf.Max(cap, ask + 0.01f); // Kleinkram unter $X: einfach Wunschpreis zahlen
+                float askPay = Mathf.Ceil(ask * 100f - 0.001f) / 100f;          // genau der Wunschpreis (auf den Cent aufgerundet)
+                if (market < _buyAlwaysBelow.Value) cap = Mathf.Max(cap, askPay); // Kleinkram unter $X: einfach Wunschpreis zahlen
+                if (isNew && _buyNewAlwaysAsk.Value)                              // neue Karte: immer den Wunschpreis – nur die Geld-Grenze gilt
+                    cap = Mathf.Max(cap, Mathf.Min(askPay, (float)Math.Max(0.0, CPlayerData.m_CoinAmountDouble - Reserve) * _buyNewMaxMoneyPct.Value / 100f));
                 int declinesLeft = t.Field("m_MaxDeclineCount").GetValue<int>();
 
                 float offer;
-                if (ask <= cap)
-                    offer = ask + 0.01f;                                     // Wunschpreis lohnt sich -> genau den zahlen (sicher angenommen)
+                if (askPay <= cap)
+                    offer = askPay;                                          // Wunschpreis lohnt sich -> genau den zahlen, nie mehr
                 else if (round == 0 && declinesLeft > 0 && cap >= ask * 0.85f)
                     offer = cap;                                             // knapp drüber: ein Angebot an unserer Grenze
                 else
@@ -869,7 +874,7 @@ namespace ShopBot
 
         private static void SetPrice(CustomerTradeCardScreen s, float price)
         {
-            float shown = price * GameInstance.GetCurrencyConversionRate();
+            float shown = Mathf.Ceil(price * GameInstance.GetCurrencyConversionRate() * 100f - 0.001f) / 100f;   // nie unter dem Wunschpreis runden
             s.OnInputTextUpdated(shown.ToString("0.00", CultureInfo.InvariantCulture));
         }
 

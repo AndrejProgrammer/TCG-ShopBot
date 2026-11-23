@@ -75,7 +75,7 @@ Am einfachsten über den **Real TCG Overhaul Mod Manager** installieren – der 
 
 **Hat es geklappt?** Öffne `BepInEx\LogOutput.log` (im Spielordner) mit dem Editor. Dort muss stehen:
 ```
-[Info   :   BepInEx] Loading [ShopBot 0.5.1]
+[Info   :   BepInEx] Loading [ShopBot 0.5.2]
 [Info   :   ShopBot] ShopBot geladen. F8 = An/Aus.
 ```
 

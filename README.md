@@ -3,7 +3,7 @@
 **ShopBot** ist ein BepInEx-Plugin für **TCG Card Shop Simulator**, das deinen Laden weitgehend automatisch führt – optimiert für das **Real TCG Overhaul**-Modpack (Pokémon).
 Ziel: **alle Pokémon-Karten im Collection Tracker besitzen** (später alle als PSA 10) – während der Laden Geld verdient.
 
-> Version **0.5.1** · Spiel: Steam-Standard-Branch (Unity 6) · BepInEx 5.4.x
+> Version **0.5.2** · Spiel: Steam-Standard-Branch (Unity 6) · BepInEx 5.4.x
 > 📖 **Neu hier? → [Schritt-für-Schritt-Anleitung](docs/ANLEITUNG.md)** · 🇬🇧 [English version](README.en.md)
 
 ---
@@ -21,7 +21,7 @@ Ziel: **alle Pokémon-Karten im Collection Tracker besitzen** (später alle als 
 | 🗑️ **Ordnung** | Volle Kartons ins Lagerregal, leere Kartons in den Mülleimer |
 | 🏅 **Graden** | Schickt Karten zu PSA (Standard, volle 52er-Einsendungen, teuerste zuerst), **öffnet zurückgekommene Pakete** und verkauft gegradete Karten (eine PSA 10 jeder Karte bleibt) |
 | 🔓 **Freischalten** | Lizenzen (Packs fehlender Sets zuerst), Laden-/Lager-Erweiterungen, Upgrades |
-| 🤝 **Kunden-Angebote** | Ankauf & Tausch: nie mehr als der Wunschpreis, für fehlende Karten mehr (bei schwer erreichbaren Sets deutlich mehr), nie die letzte Karte abgeben |
+| 🤝 **Kunden-Angebote** | Ankauf & Tausch: **neue Karten immer zum Wunschpreis**, Doppelte nur unter Marktpreis, nie mehr als verlangt, nie die letzte Karte abgeben |
 | 📅 **Tagesablauf** | Rechnungen sofort bezahlen, Tag um 21 Uhr beenden, wenn der Laden leer ist |
 | 🛡️ **Geld** | Darf alles ausgeben, hält aber immer die nächsten Rechnungen zurück – **nie ins Minus** |
 

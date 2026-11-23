@@ -20,7 +20,7 @@ Goal: **own every Pokémon card in the Collection Tracker** (later every card as
 | 🛒 **Shelves & displays** | Stocks shelves, puts cards into empty card display slots (graded first) |
 | 🗑️ **Tidying** | Full boxes onto warehouse shelves, empty boxes into the trash bin |
 | 🏅 **Grading** | Sends cards to PSA (standard, full 52-card submissions, most valuable first), **opens returned packages**, sells graded cards (one PSA 10 of each card is kept) |
-| 🤝 **Customer offers** | Buys & trades smartly: never pays more than the customer asks, pays more for cards still missing from the collection (even more for sets that are hard to get), never gives away the last copy |
+| 🤝 **Customer offers** | **Cards missing from the collection: always pays exactly the asking price**; duplicates only below market; never pays more than asked, never gives away the last copy |
 | 🔓 **Unlocks** | Licenses (packs of missing sets first), shop/warehouse expansions, upgrades |
 | 📅 **Daily routine** | Pays bills immediately, ends the day at 9 pm when the shop is empty |
 | 🛡️ **Money** | May spend everything but always keeps the next bills – **never goes negative** |

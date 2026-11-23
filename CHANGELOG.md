@@ -2,6 +2,10 @@
 
 Ausführliche Entwickler-Notizen: [docs/ENTWICKLUNG.md](docs/ENTWICKLUNG.md)
 
+## 0.5.2 – 23.11.2026
+- **Neue Karten: immer genau den Wunschpreis zahlen** (nie mehr, unabhängig vom Marktpreis) – nur die Grenze von 10 % des Geldes pro Karte gilt. Abschaltbar.
+- Gebote werden auf den Cent **auf**gerundet statt 1 Cent über dem Wunschpreis.
+
 ## 0.5.1 – 23.11.2026
 - **Kunden-Ankauf neu gedacht:** Der Bot bietet nie mehr als der Wunschpreis – er prüft nur, ob sich der Preis lohnt. Doppelte bis 95 % Marktpreis (Weiterverkauf +20 %). **Neue Karten** bis 200 % Marktpreis, bei Sets, die **pausiert** sind oder **keine kaufbaren Packs** haben, bis 500 % (der Kunde ist dort die einzige Quelle). Höchstens 10 % vom Geld pro Karte. Liegt der Wunschpreis weit darüber, lehnt er sofort ab, statt den Kunden mit Geboten ungeduldig zu machen.
 - **Tausch:** Für eine neue Karte gibt der Bot Doppelte bis zu diesem Wert her (nie die letzte Karte).
