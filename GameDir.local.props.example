@@ -1,0 +1,6 @@
+<Project>
+  <!-- Kopieren als "GameDir.local.props" und den Pfad zu deinem Spielordner eintragen. -->
+  <PropertyGroup>
+    <GameDir>C:\Program Files (x86)\Steam\steamapps\common\TCG Card Shop Simulator</GameDir>
+  </PropertyGroup>
+</Project>

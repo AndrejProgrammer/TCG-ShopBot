@@ -1,0 +1,152 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using BepInEx.Configuration;
+using HarmonyLib;
+using UnityEngine;
+
+namespace ShopBot
+{
+    // Karten graden über CardGrade Overhaul: teuerste zuerst, nur volle Einsendungen, PSA Standard (günstigste Stufe).
+    public partial class Plugin
+    {
+        private ConfigEntry<bool> _gradeEnabled;
+        private ConfigEntry<float> _gradeMinValue;
+        private ConfigEntry<bool> _gradeKeepOne;
+        private ConfigEntry<bool> _gradeOnlyFull, _gradePsa10Hunt;
+        private float _gradeTimer = 50f;
+        private bool _gradeWarned;
+        private float _gradeWaitLogAt;
+
+        private void BindGradingConfig()
+        {
+            _gradeEnabled = Config.Bind("12. Graden", "Karten automatisch graden", true,
+                "Schickt Karten zu PSA (Standard, günstigste Stufe). Teuerste Karten zuerst, alle 8 Einsende-Plätze werden genutzt.");
+            _gradeMinValue = Config.Bind("12. Graden", "Nur Karten ab Wert ($)", 50f,
+                "Graden kostet ca. $20 pro Karte – billigere Karten lohnen sich nicht.");
+            _gradeKeepOne = Config.Bind("12. Graden", "1 Stück jeder Karte im Album lassen", true,
+                "Damit die Sammlung im Tracker nicht kleiner wird. Aus = auch Einzelstücke graden.");
+            _gradeOnlyFull = Config.Bind("12. Graden", "Nur volle Einsendungen schicken", true,
+                "Erst abschicken, wenn die Einsendung voll ist (PSA Standard: 52 Karten).");
+            _gradePsa10Hunt = Config.Bind("12. Graden", "PSA-10-Sammlung (alle Karten als PSA 10)", false,
+                "Später-Ziel: auch billige Doppelte graden, solange es von der Karte noch keine PSA 10 gibt. Wertvolle Karten haben weiter Vorrang. Eine PSA 10 jeder Karte bleibt immer.");
+        }
+
+        private void HandleGrading()
+        {
+            if (!_gradeEnabled.Value || (_gradeTimer += 1f) < 60f) return;
+            _gradeTimer = 0f;
+            SafeRun("Graden", GradingTick);
+        }
+
+        private void GradingTick()
+        {
+            var tGrading = AccessTools.TypeByName("CardGradeOverhaul.Grading");
+            var tCompanies = AccessTools.TypeByName("CardGradeOverhaul.Companies");
+            var tCompany = AccessTools.TypeByName("CardGradeOverhaul.Company");
+            var tWant = AccessTools.TypeByName("CardGradeOverhaul.Want");
+            if (tGrading == null || tCompanies == null || tCompany == null || tWant == null)
+            {
+                if (!_gradeWarned) { _gradeWarned = true; Logger.LogWarning("CardGrade Overhaul nicht gefunden – Auto-Graden aus."); }
+                return;
+            }
+
+            // Freie Einsende-Plätze?
+            int maxSets = (int)(AccessTools.Field(tGrading, "MaxSets")?.GetValue(null) ?? 8);
+            int running = CPlayerData.m_GradeCardInProgressList?.Count ?? 0;
+            if (running >= maxSets) return;
+
+            // PSA, günstigste Stufe
+            var psa = AccessTools.Method(tCompanies, "Get").Invoke(null, new[] { Enum.Parse(tCompany, "Psa") });
+            var tiers = Traverse.Create(psa).Field("Tiers").GetValue() as Array;
+            var perCardM = AccessTools.Method(tGrading, "PerCard");
+            int tier = 0; float perCard = float.MaxValue;
+            for (int i = 0; i < (tiers?.Length ?? 1); i++)
+            {
+                float c = (float)perCardM.Invoke(null, new object[] { psa, i });
+                if (c > 0f && c < perCard) { perCard = c; tier = i; }
+            }
+            int limit = (int)AccessTools.Method(tGrading, "Limit").Invoke(null, new object[] { tier });
+
+            // Album einlesen (wie die Grading-Seite)
+            AccessTools.Method(tGrading, "BuildCollection").Invoke(null, null);
+            var collection = AccessTools.Field(tGrading, "Collection").GetValue(null) as IList;
+            if (collection == null) return;
+
+            // PSA-10-Sammlung: Karten, von denen es noch keine 10 gibt
+            var haveTen = new HashSet<string>();
+            if (_gradePsa10Hunt.Value && CPlayerData.m_GradedCardInventoryList != null)
+                foreach (var g in CPlayerData.m_GradedCardInventoryList)
+                    if (g != null && g.amount >= 10) haveTen.Add($"{(int)g.expansionType}|{g.cardSaveIndex}|{g.isDestiny}");
+
+            var entries = new List<(object o, float value, long key, int amount, int total, int exp, int index, bool dim, int copy)>();
+            foreach (var o in collection)
+            {
+                var t = Traverse.Create(o);
+                float value = t.Field("Value").GetValue<float>();
+                if (value < _gradeMinValue.Value)
+                {
+                    // billige Karte: nur für die PSA-10-Sammlung und nur, solange es davon noch keine 10 gibt (wertvolle zuerst, da nach Wert sortiert)
+                    if (!_gradePsa10Hunt.Value) continue;
+                    string k10 = $"{(int)t.Field("Exp").GetValue<ECardExpansionType>()}|{t.Field("Index").GetValue<int>()}|{t.Field("Dim").GetValue<bool>()}";
+                    if (haveTen.Contains(k10)) continue;
+                }
+                var data = t.Field("Data").GetValue<CardData>();
+                if (data != null && data.cardGrade > 0) continue;
+                entries.Add((o, value, t.Field("Key").GetValue<long>(), t.Field("Amount").GetValue<int>(), t.Field("Total").GetValue<int>(),
+                             (int)t.Field("Exp").GetValue<ECardExpansionType>(), t.Field("Index").GetValue<int>(), t.Field("Dim").GetValue<bool>(), t.Field("Copy").GetValue<int>()));
+            }
+
+            // Teuerste zuerst
+            entries.Sort((a, b) => b.value.CompareTo(a.value));
+            var takenPerKey = new Dictionary<long, int>();
+            var wants = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(tWant));
+            float sumValue = 0f;
+            foreach (var e in entries)
+            {
+                if (wants.Count >= limit) break;
+                takenPerKey.TryGetValue(e.key, out int taken);
+                int allowed = (_gradeKeepOne.Value ? e.total - 1 : e.total) - taken;
+                int n = Mathf.Min(e.amount, allowed, limit - wants.Count);
+                for (int k = 0; k < n; k++)
+                {
+                    object w = Activator.CreateInstance(tWant);
+                    AccessTools.Field(tWant, "Exp").SetValue(w, e.exp);
+                    AccessTools.Field(tWant, "Index").SetValue(w, e.index);
+                    AccessTools.Field(tWant, "Dim").SetValue(w, e.dim);
+                    AccessTools.Field(tWant, "Copy").SetValue(w, e.copy);
+                    wants.Add(w);
+                    sumValue += e.value;
+                }
+                if (n > 0) takenPerKey[e.key] = taken + n;
+            }
+
+            if (wants.Count == 0) return;
+            if (_gradeOnlyFull.Value && wants.Count < limit)
+            {
+                if (Time.unscaledTime >= _gradeWaitLogAt)
+                {
+                    _gradeWaitLogAt = Time.unscaledTime + 600f;
+                    Logger.LogInfo($"[Graden] Warte auf volle Einsendung: {wants.Count}/{limit} Karten ab {GameInstance.GetPriceString(_gradeMinValue.Value)} vorhanden");
+                }
+                return;
+            }
+
+            float fee = 10f + perCard * wants.Count;
+            if (Budget < fee) { Note($"Graden: Budget reicht nicht ({GameInstance.GetPriceString(fee)})"); return; }
+
+            var send = AccessTools.Method(tGrading, "SendFor");
+            var args = new object[] { psa, tier, wants, null, null };
+            int sent = (int)send.Invoke(null, args);
+            if (sent > 0)
+            {
+                _statSpent += fee;
+                _statGraded += sent;
+                Note($"Graden: {sent} Karten an PSA geschickt (Wert ~{GameInstance.GetPriceString(sumValue)}, Gebühr {GameInstance.GetPriceString(fee)}) – Platz {running + 1}/{maxSets}");
+            }
+            else Logger.LogInfo($"[Graden] Nicht geschickt: {args[3]}");
+        }
+    }
+}

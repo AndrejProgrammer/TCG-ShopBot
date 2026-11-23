@@ -1,0 +1,11 @@
+# Build
+bin/
+obj/
+.vs/
+*.user
+
+# Lokale Dateien (nicht teilen)
+TESTBERICHT.md
+Session Claude.txt
+*.log
+GameDir.local.props
