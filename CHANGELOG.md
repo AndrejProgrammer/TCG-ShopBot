@@ -2,6 +2,9 @@
 
 Ausführliche Entwickler-Notizen: [docs/ENTWICKLUNG.md](docs/ENTWICKLUNG.md)
 
+## 0.5.3 – 23.11.2026
+- **Feilschen bei doppelten Karten:** Start bei 60 % Marktpreis (Karten unter $10: 50 %), dann in gleichmäßigen Schritten bis 95 % – so viele Schritte, wie der Kunde noch Ablehnungen übrig hat (liest das Spiel aus). Jedes Gebot ist höher als das letzte (sonst sinkt die Annahme-Chance stark). Hat der Kunde keine Ablehnung mehr übrig, bietet der Bot gleich sein Maximum. Senkt der Kunde seinen Wunschpreis unter das nächste Gebot, zahlt der Bot den Wunschpreis. Aussichtslose Angebote (Wunschpreis mehr als doppelt so hoch wie unser Maximum) lehnt er sofort ab.
+
 ## 0.5.2 – 23.11.2026
 - **Neue Karten: immer genau den Wunschpreis zahlen** (nie mehr, unabhängig vom Marktpreis) – nur die Grenze von 10 % des Geldes pro Karte gilt. Abschaltbar.
 - Gebote werden auf den Cent **auf**gerundet statt 1 Cent über dem Wunschpreis.

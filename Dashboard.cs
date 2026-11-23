@@ -792,6 +792,9 @@ namespace ShopBot
                 Section("Ankauf");
                 Slider(_buyMaxPercent2, "Limit normale Karten", 50f, 120f, 1f, Pct, "% vom Marktpreis – Weiterverkauf +20 %");
                 Switch(_buyNewAlwaysAsk, "Neue Karte: immer den Wunschpreis zahlen", "nie mehr als verlangt – nur die Geld-Grenze gilt");
+                Slider(_dupStartPct, "Doppelte: Startgebot", 30f, 95f, 5f, Pct, "dann in Schritten bis zum Ankauf-Limit");
+                Slider(_dupStartCheapPct, "Doppelte: Startgebot billige Karten", 30f, 95f, 5f, Pct);
+                Slider(_dupCheapBelow, "Doppelte: billig heißt unter", 1f, 100f, 1f, Usd);
                 Slider(_buyMaxNewPercent, "Neue Karte (Set mit Packs): bis", 100f, 500f, 10f, Pct, "Wunschpreis zahlen bis zu so viel vom Marktpreis");
                 Slider(_buyNewHardPercent, "Neue Karte (Set pausiert/ohne Packs): bis", 100f, 1500f, 25f, Pct, "Kunde ist die einzige Quelle");
                 Slider(_buyNewMaxMoneyPct, "Neue Karte: höchstens % vom Geld", 1f, 50f, 1f, v => $"{v:0} %");

@@ -198,3 +198,9 @@ Live-Test mit Log-Mitlesen: Bot-Kasse 125 Kunden / $82.757 an einem Tag ohne Kas
 - **Kartons aus dem Lager:** `ShelfCompartment.TryPopLastStoredBoxRecord` + `StoredBoxVisualBatcher.RebuildImmediate` + `RestockManager.SpawnPackageBoxItemAtTransform` (wie `InteractableStorageCompartment.OnMouseButtonUp`). Lagerkartons sind nur Einträge (`StoredBoxRecord`), keine Objekte.
 - **Graden:** PSA Standard bleibt – höchster Durchsatz pro Platz (52/12 Tage = 4,3/Tag vs. 24/7 = 3,4, 10/4 = 2,5, 4/2 = 2).
 - **IMGUI:** keine Steuerelemente bedingt ein-/ausblenden, die sich durch einen Klick im selben Bild ändern (Layout/Repaint-Fehler).
+
+## Kunden-Ankauf: Annahme-Formel des Spiels (CustomerTradeCardScreen.OnPressAccept)
+- `r = Gebot/Wunsch - 1`, Chance = `100·(1+r)`; Abzug r<-0.5: 45–75, <-0.4: 35–65, <-0.3: 25–55, <-0.2: 15–35, <-0.1: 5–15.
+- Gebot > Marktpreis +5–15, < Marktpreis −5–15. Je bisheriger Ablehnung −5–15; Gebot ≤ letztes Gebot zusätzlich −10–25 je Ablehnung. Gebot ≥ Wunsch − 0,01 → 100 %.
+- Bei Ablehnung: mit Chance `Chance·rand(1..2)` (Wunsch > Markt: 1..10) **feilscht** der Kunde → Wunschpreis sinkt Richtung Gebot; sonst zählt `m_MaxDeclineCount` runter (Start 0–4), bei 0 geht er.
+- Bot (v0.5.3): neue Karten = Wunschpreis; Doppelte = Leiter 60 % (billig 50 %) → 95 %, Schritte = verbleibende Ablehnungen + 1.

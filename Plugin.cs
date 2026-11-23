@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace ShopBot
 {
-    [BepInPlugin("ratta.shopbot", "ShopBot", "0.5.2")]
+    [BepInPlugin("ratta.shopbot", "ShopBot", "0.5.3")]
     public partial class Plugin : BaseUnityPlugin
     {
         // ---- Konfiguration ----
@@ -33,6 +33,7 @@ namespace ShopBot
         private ConfigEntry<float> _stepDelay;
         private ConfigEntry<float> _buyMaxPercent2, _buyMaxNewPercent, _buyNewHardPercent, _buyNewMaxMoneyPct, _buyAlwaysBelow, _swapTolerance;
         private ConfigEntry<bool> _buyNewAlwaysAsk;
+        private ConfigEntry<float> _dupStartPct, _dupStartCheapPct, _dupCheapBelow;
 
         // Wie viel ist uns eine Karte beim Ankauf/Tausch höchstens wert (in $)?
         //  doppelt: Marktpreis x Limit (Weiterverkauf +20 % = Gewinn)
@@ -100,6 +101,9 @@ namespace ShopBot
             _buyNewHardPercent = Config.Bind("3. Kunden-Angebote", "Neue Karte: bis X Prozent Marktpreis (Set pausiert oder ohne Packs)", 500f, "Fehlt die Karte und ihr Set ist fast fertig (pausiert) oder hat keine kaufbaren Packs: der Kunde ist die einzige realistische Quelle – bis zu so viel Prozent vom Marktpreis.");
             _buyNewMaxMoneyPct = Config.Bind("3. Kunden-Angebote", "Neue Karte: höchstens X Prozent vom Geld", 10f, "Sicherheitsgrenze pro Karte.");
             _buyNewAlwaysAsk = Config.Bind("3. Kunden-Angebote", "Neue Karte: immer den Wunschpreis zahlen", true, "Fehlt die Karte in der Sammlung, zahlt der Bot genau den Wunschpreis des Kunden (nie mehr) – unabhängig vom Marktpreis. Es gilt nur die Grenze in Prozent vom Geld. Aus: Grenzen in Prozent vom Marktpreis.");
+            _dupStartPct = Config.Bind("3. Kunden-Angebote", "Doppelte: Startgebot (Prozent Marktpreis)", 60f, "Erstes Gebot für Karten, die wir schon haben. Danach steigt der Bot in Schritten bis zum Ankauf-Limit (so viele Schritte, wie der Kunde Ablehnungen übrig hat).");
+            _dupStartCheapPct = Config.Bind("3. Kunden-Angebote", "Doppelte: Startgebot billige Karten (Prozent Marktpreis)", 50f, "Startgebot für billige Doppelte (unter dem Wert unten).");
+            _dupCheapBelow = Config.Bind("3. Kunden-Angebote", "Doppelte: billig heißt unter ($)", 10f, "Ab diesem Marktpreis gilt das normale Startgebot.");
             _buyAlwaysBelow = Config.Bind("3. Kunden-Angebote", "Karten unter diesem Wert immer kaufen ($)", 2f, "Kleinkram: einfach den Wunschpreis zahlen, kein Verhandeln.");
             _swapTolerance = Config.Bind("3. Kunden-Angebote", "Tausch: kleiner Verlust erlaubt ($)", 1f, "Tausch auch annehmen, wenn wir höchstens so viel weniger bekommen (spart Ablehnungen bei Kleinkram).");
 
@@ -804,52 +808,69 @@ namespace ShopBot
 
         private IEnumerator HandleBuy(CustomerTradeCardScreen s, Traverse t, CardData card)
         {
-            // Strategie (aus der Annahme-Formel des Spiels):
-            //  - Gebot >= Wunschpreis des Kunden  -> 100 % Annahme
-            //  - Gebot deutlich darunter          -> kaum Chance, und jede Ablehnung macht ihn ungeduldiger
-            // Darum: Wunschpreis zahlen, wenn er unter unserem Limit liegt; sonst nur 1-2 knappe Gebote nahe am Limit.
-            // Limit: normale Karten x % vom Marktpreis (Weiterverkauf +20 % = Gewinn), neue Karten für die Sammlung mehr.
-            // Nie mehr als den Wunschpreis bieten. Nur entscheiden, ob er uns die Karte wert ist (CardWorth).
+            // Annahme-Formel des Spiels (CustomerTradeCardScreen.OnPressAccept):
+            //  - Chance ~ Gebot/Wunschpreis, mit Abzügen je weiter darunter; unter Marktpreis -5..15; je Ablehnung -5..15,
+            //    und -10..25 je Ablehnung zusätzlich, wenn das Gebot nicht höher ist als das letzte. Gebot >= Wunschpreis = 100 %.
+            //  - Lehnt der Kunde ab, senkt er manchmal seinen Wunschpreis Richtung Gebot (Feilschen).
+            //  - m_MaxDeclineCount = wie oft er noch ablehnt, bevor er geht (0-4, auslesbar).
+            // Strategie:
+            //  - NEUE Karte: genau den Wunschpreis zahlen (nie mehr), nur Geld-Grenze.
+            //  - DOPPELTE: bei 60 % Marktpreis starten (billige Karten 50 %), in Schritten bis 95 % steigern –
+            //    so viele Schritte, wie der Kunde Ablehnungen übrig hat; jedes Gebot höher als das letzte;
+            //    senkt er seinen Wunschpreis unter unser nächstes Gebot -> Wunschpreis zahlen.
             bool isNew = false, hard = false;
             float lastOffer = -1f;
-            for (int round = 0; round < 4; round++)
+            for (int round = 0; round < 7; round++)
             {
-                if (!s.IsScreenOpened()) { _statDeclined++; Note($"Kunde hat abgelehnt und ist gegangen (letztes Gebot {Price(lastOffer)})"); yield break; }
+                if (!s.IsScreenOpened()) { _statDeclined++; Note($"Kunde ist gegangen (letztes Gebot {Price(lastOffer)})"); yield break; }
 
                 float ask = t.Field("m_SellCardAskPrice").GetValue<float>();
                 float market = t.Field("m_SellCardMarketPrice").GetValue<float>();
                 if (market <= 0f) market = CPlayerData.GetCardMarketPrice(card);
                 float cap = CardWorth(card, market, out isNew, out hard);
-                float askPay = Mathf.Ceil(ask * 100f - 0.001f) / 100f;          // genau der Wunschpreis (auf den Cent aufgerundet)
-                if (market < _buyAlwaysBelow.Value) cap = Mathf.Max(cap, askPay); // Kleinkram unter $X: einfach Wunschpreis zahlen
-                if (isNew && _buyNewAlwaysAsk.Value)                              // neue Karte: immer den Wunschpreis – nur die Geld-Grenze gilt
-                    cap = Mathf.Max(cap, Mathf.Min(askPay, (float)Math.Max(0.0, CPlayerData.m_CoinAmountDouble - Reserve) * _buyNewMaxMoneyPct.Value / 100f));
+                float askPay = Mathf.Ceil(ask * 100f - 0.001f) / 100f;           // genau der Wunschpreis (auf den Cent aufgerundet)
                 int declinesLeft = t.Field("m_MaxDeclineCount").GetValue<int>();
+                float moneyCap = (float)Math.Max(0.0, CPlayerData.m_CoinAmountDouble - Reserve) * _buyNewMaxMoneyPct.Value / 100f;
 
                 float offer;
-                if (askPay <= cap)
-                    offer = askPay;                                          // Wunschpreis lohnt sich -> genau den zahlen, nie mehr
-                else if (round == 0 && declinesLeft > 0 && cap >= ask * 0.85f)
-                    offer = cap;                                             // knapp drüber: ein Angebot an unserer Grenze
+                if (isNew && _buyNewAlwaysAsk.Value)
+                {
+                    if (askPay > moneyCap)
+                    {
+                        s.OnPressDecline(); _statDeclined++;
+                        Note($"Ankauf abgelehnt: neue Karte, aber {Price(ask)} ist mehr als {_buyNewMaxMoneyPct.Value:0} % vom Geld");
+                        yield break;
+                    }
+                    offer = askPay;                                               // neue Karte -> Wunschpreis
+                }
+                else if (market < _buyAlwaysBelow.Value)
+                    offer = askPay;                                               // Kleinkram: kein Feilschen
                 else
                 {
-                    s.OnPressDecline();                                      // zu weit weg: gar nicht erst handeln (Kunde wird sonst ungeduldig)
-                    _statDeclined++;
-                    Note($"Ankauf abgelehnt: will {Price(ask)}, Markt {Price(market)}, uns wert {Price(cap)}" + (isNew ? (hard ? " (neu, Set nur schwer zu bekommen)" : " (neu)") : ""));
-                    yield break;
+                    // geplantes Gebot dieser Runde: Start (oder gleich Maximum, wenn der Kunde keine Ablehnung mehr übrig hat), dann Schritte
+                    float planned = lastOffer < 0f
+                        ? (declinesLeft <= 0 ? cap : Mathf.Min(DupStart(market), cap))
+                        : NextDupOffer(lastOffer, cap, declinesLeft);
+                    if (askPay <= planned)
+                        offer = askPay;                                           // Wunschpreis liegt schon darunter -> den zahlen
+                    else if (cap < ask * 0.5f)
+                    {
+                        s.OnPressDecline(); _statDeclined++;                      // aussichtslos: Wunschpreis mehr als doppelt so hoch wie unser Maximum
+                        Note($"Ankauf abgelehnt: will {Price(ask)}, Markt {Price(market)}, uns höchstens {Price(cap)} wert");
+                        yield break;
+                    }
+                    else offer = planned;
                 }
 
                 if (lastOffer >= 0f && offer <= lastOffer + 0.005f)
                 {
-                    s.OnPressDecline();
-                    _statDeclined++;
-                    Note($"Ankauf abgelehnt: will {Price(ask)}, Markt {Price(market)}, uns wert {Price(cap)}");
+                    s.OnPressDecline(); _statDeclined++;
+                    Note($"Ankauf abgelehnt: will {Price(ask)}, Markt {Price(market)}, unser Maximum {Price(cap)} erreicht");
                     yield break;
                 }
                 if (CPlayerData.m_CoinAmountDouble < offer)
                 {
-                    s.OnPressDecline();
-                    _statDeclined++;
+                    s.OnPressDecline(); _statDeclined++;
                     Note("Ankauf abgebrochen: nicht genug Geld");
                     yield break;
                 }
@@ -864,13 +885,21 @@ namespace ShopBot
                 {
                     _statBought++;
                     _statSpent += offer;
-                    Note($"Gekauft für {Price(offer)} (Markt {Price(market)}, {offer / Mathf.Max(0.01f, market) * 100f:0}%)" + (isNew ? " – neue Karte für die Sammlung!" : ""));
+                    Note($"Gekauft für {Price(offer)} (Markt {Price(market)}, {offer / Mathf.Max(0.01f, market) * 100f:0}%, Runde {round + 1})" + (isNew ? " – neue Karte für die Sammlung!" : ""));
                     if (s.IsScreenOpened()) s.OnPressAccept(); // "Fertig"
                     yield break;
                 }
             }
             if (s.IsScreenOpened()) { s.OnPressDecline(); _statDeclined++; Note("Ankauf abgelehnt (Kunde zu teuer)"); }
         }
+
+        // Startgebot für Doppelte: 60 % Marktpreis, billige Karten 50 %
+        private float DupStart(float market) =>
+            market * (market < _dupCheapBelow.Value ? _dupStartCheapPct.Value : _dupStartPct.Value) / 100f;
+
+        // Nächstes Gebot: gleichmäßig zum Maximum, so dass beim letzten möglichen Versuch genau das Maximum geboten wird
+        private static float NextDupOffer(float last, float cap, int declinesLeft) =>
+            Mathf.Ceil((last + (cap - last) / Mathf.Max(1, declinesLeft + 1)) * 100f) / 100f;
 
         private static void SetPrice(CustomerTradeCardScreen s, float price)
         {
