@@ -15,7 +15,7 @@ namespace ShopBot
         }
 
         // ---------------- Tagesbericht ----------------
-        private class DayRecord { public int Day; public float Income, Spent; public int Customers, Packs; }
+        private class DayRecord { public int Day; public float Income, Spent; public int Customers, Packs, HaveStart = -1; }
         private readonly List<DayRecord> _dayHistory = new List<DayRecord>();
         private DayRecord _today;
         private float _todaySpentStart; private int _todayPacksStart;
@@ -27,6 +27,7 @@ namespace ShopBot
             {
                 _today.Spent = _statSpent - _todaySpentStart;
                 _today.Packs = (_statPackCases - _todayPacksStart) * 64;
+                if (_today.HaveStart < 0 && _goalHave >= 0) _today.HaveStart = _goalHave;
                 return;
             }
             if (_today != null)
@@ -35,9 +36,19 @@ namespace ShopBot
                 if (_dayHistory.Count > 7) _dayHistory.RemoveAt(0);
                 Logger.LogInfo($"[Tagesbericht] Tag {_today.Day + 1}: Bot-Kasse {GameInstance.GetPriceString(_today.Income)} ({_today.Customers} Kunden), Bot-Ausgaben {GameInstance.GetPriceString(_today.Spent)}");
             }
-            _today = new DayRecord { Day = day };
+            _today = new DayRecord { Day = day, HaveStart = _goalHave };
             _todaySpentStart = _statSpent;
             _todayPacksStart = _statPackCases;
+        }
+
+        // Neue Karten pro Tag (aus den Tagen dieser Sitzung) -> geschätzte Tage bis alle Karten da sind; -1 = noch unbekannt
+        private float CardsPerDay()
+        {
+            if (_goalHave < 0) return -1f;
+            DayRecord first = null;
+            foreach (var r in _dayHistory) if (r.HaveStart >= 0) { first = r; break; }
+            if (first == null || _today == null || _today.Day <= first.Day) return -1f;
+            return (_goalHave - first.HaveStart) / (float)(_today.Day - first.Day);
         }
 
         private void ReportCheckout(float value)

@@ -2,6 +2,12 @@
 
 Ausführliche Entwickler-Notizen: [docs/ENTWICKLUNG.md](docs/ENTWICKLUNG.md)
 
+## 0.5.1 – 23.11.2026
+- **Kunden-Ankauf neu gedacht:** Der Bot bietet nie mehr als der Wunschpreis – er prüft nur, ob sich der Preis lohnt. Doppelte bis 95 % Marktpreis (Weiterverkauf +20 %). **Neue Karten** bis 200 % Marktpreis, bei Sets, die **pausiert** sind oder **keine kaufbaren Packs** haben, bis 500 % (der Kunde ist dort die einzige Quelle). Höchstens 10 % vom Geld pro Karte. Liegt der Wunschpreis weit darüber, lehnt er sofort ab, statt den Kunden mit Geboten ungeduldig zu machen.
+- **Tausch:** Für eine neue Karte gibt der Bot Doppelte bis zu diesem Wert her (nie die letzte Karte).
+- **Ziel-Übersicht** (Dashboard → Sammlung): gesammelte / fehlende Pokémon-Karten, neue Karten pro Tag, geschätzte Spieltage bis alles da ist, Sets ohne kaufbare Packs, pausierte Sets.
+- **Englische Anleitung:** [README.en.md](README.en.md).
+
 ## 0.5.0 – 23.11.2026
 - **Kartons aus dem Lagerregal holen:** Fehlen Packs für freie Opener oder Ware für halb leere Regalfächer, holt der Bot Kartons selbst aus dem Lager (wie ein Klick aufs Lagerfach) – alle Opener laufen voll, auch mit wenigen Arbeitern.
 - **Klügere Set-Auswahl:** Sets mit den meisten neuen Karten pro Dollar zuerst (abschaltbar). Fehlen nur noch 1–3 Karten, kauft der Bot höchstens 1.500 Packs pro fehlender Karte und pausiert das Set dann (die Karten lieber von Kunden ankaufen).

@@ -23,6 +23,9 @@ namespace ShopBot
         private ConfigEntry<bool> _colEfficiency;
         private ConfigEntry<string> _colPacksBoughtCfg;
         private readonly Dictionary<string, int> _setPacksBought = new Dictionary<string, int>();
+        private readonly HashSet<ECardExpansionType> _hardSetTypes = new HashSet<ECardExpansionType>();
+        private int _goalTotal, _goalHave = -1;
+        private List<string> _goalNoPacks = new List<string>(), _goalPaused = new List<string>();
         private float _cappedLogAt;
         private void CountSetPacks(string set, int packs)
         {
@@ -744,6 +747,7 @@ namespace ShopBot
             var sets = GetSets();
             int incomplete = 0, errors = 0;
             var noBox = new List<string>();
+            _hardSetTypes.Clear();   // Sets, deren fehlende Karten man kaum über Packs bekommt (pausiert / keine Packs) -> Kunden-Ankauf lohnt mehr
             foreach (var s in sets)
             {
                 if (s.Complete || s.Total <= 0 || s.Have >= s.Total) continue;
@@ -751,7 +755,7 @@ namespace ShopBot
                 incomplete++;
                 int box;
                 try { box = GetBiggestBox(s.Type); } catch { errors++; continue; }
-                if (box < 0) { noBox.Add(s.Name); continue; }
+                if (box < 0) { noBox.Add(s.Name); _hardSetTypes.Add(s.Type); continue; }
                 candidates.Add(new KeyValuePair<SetInfo, int>(s, box));
             }
             Logger.LogInfo($"[Sammlung] {sets.Count} Sets gelesen, {incomplete} unfertig, {candidates.Count} kaufbar, {errors} Fehler" +
@@ -773,7 +777,7 @@ namespace ShopBot
                 if (miss > 3 || _colPacksPerMissing.Value <= 0) return true;
                 int boughtPacks = _setPacksBought.TryGetValue(c.Key.Name, out var bp) ? bp : 0;
                 if (boughtPacks < _colPacksPerMissing.Value * miss) return true;
-                capped.Add($"{c.Key.Name} ({miss} fehlen, {boughtPacks} Packs gekauft)");
+                capped.Add($"{c.Key.Name} ({miss} fehlen, {boughtPacks} Packs gekauft)"); _hardSetTypes.Add(c.Key.Type);
                 return false;
             }).ToList();
             if (capped.Count > 0 && Time.unscaledTime >= _cappedLogAt)
@@ -802,6 +806,12 @@ namespace ShopBot
             _dashFocus = focus.Select(f => (f.Key.Name, f.Key.Have, f.Key.Total)).ToList();
             _dashSetsTotal = sets.Count;
             _dashSetsDone = sets.Count(s => s.Complete || (s.Total > 0 && s.Have >= s.Total));
+            // Ziel-Übersicht: alle Pokémon-Karten
+            var pokeSets = sets.Where(s => s.Total > 0 && (!_colPokemonOnly.Value || s.Shop.IndexOf("pok", StringComparison.OrdinalIgnoreCase) >= 0)).ToList();
+            _goalTotal = pokeSets.Sum(s => s.Total);
+            _goalHave = pokeSets.Sum(s => Mathf.Min(s.Have, s.Total));
+            _goalNoPacks = pokeSets.Where(s => s.Have < s.Total && noBox.Contains(s.Name)).Select(s => $"{s.Name} ({s.Total - s.Have})").ToList();
+            _goalPaused = capped.ToList();
             _dashSetsBuyable = candidates.Count;
             _setsWithoutPacks = noBox.ToList();   // für Lizenzen: diese Sets brauchen zuerst freigeschaltete Packs
 

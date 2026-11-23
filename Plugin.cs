@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace ShopBot
 {
-    [BepInPlugin("ratta.shopbot", "ShopBot", "0.5.0")]
+    [BepInPlugin("ratta.shopbot", "ShopBot", "0.5.1")]
     public partial class Plugin : BaseUnityPlugin
     {
         // ---- Konfiguration ----
@@ -31,7 +31,21 @@ namespace ShopBot
         private ConfigEntry<bool> _swapEnabled;
         private ConfigEntry<float> _swapMinGainPercent;
         private ConfigEntry<float> _stepDelay;
-        private ConfigEntry<float> _buyMaxPercent2, _buyMaxNewPercent, _buyAlwaysBelow, _swapTolerance;
+        private ConfigEntry<float> _buyMaxPercent2, _buyMaxNewPercent, _buyNewHardPercent, _buyNewMaxMoneyPct, _buyAlwaysBelow, _swapTolerance;
+
+        // Wie viel ist uns eine Karte beim Ankauf/Tausch höchstens wert (in $)?
+        //  doppelt: Marktpreis x Limit (Weiterverkauf +20 % = Gewinn)
+        //  neu:     Marktpreis x 200 % – bzw. 500 %, wenn ihr Set pausiert ist / keine Packs hat (Kunde = einzige Quelle)
+        //  neu:     nie mehr als X % vom Geld
+        private float CardWorth(CardData card, float market, out bool isNew, out bool hard)
+        {
+            isNew = card != null && card.cardGrade == 0 && CPlayerData.GetCardAmount(card) == 0;
+            hard = isNew && _hardSetTypes.Contains(card.expansionType);
+            if (!isNew) return market * _buyMaxPercent2.Value / 100f;
+            float worth = market * (hard ? _buyNewHardPercent.Value : _buyMaxNewPercent.Value) / 100f;
+            float money = (float)Math.Max(0.0, CPlayerData.m_CoinAmountDouble - Reserve);
+            return Mathf.Min(worth, money * _buyNewMaxMoneyPct.Value / 100f);
+        }
 
         private ConfigEntry<bool> _dayEndEnabled;
         private ConfigEntry<float> _dayEndDelay;
@@ -81,7 +95,9 @@ namespace ShopBot
             _swapMinGainPercent = Config.Bind("3. Kunden-Angebote", "Tausch Mindestgewinn (%)", 0f, "Erhaltene Karte muss so viel % mehr wert sein als die abgegebene.");
             _stepDelay = Config.Bind("3. Kunden-Angebote", "Pause zwischen Schritten (Sekunden)", 0.8f, "Damit man sieht, was passiert.");
             _buyMaxPercent2 = Config.Bind("3. Kunden-Angebote", "Ankauf Limit normale Karten (% Marktpreis)", 95f, "Höchstens so viel zahlt der Bot. Weiterverkauf mit +20 % bleibt Gewinn.");
-            _buyMaxNewPercent = Config.Bind("3. Kunden-Angebote", "Ankauf Limit neue Karten (% Marktpreis)", 125f, "Für Karten, die in der Sammlung noch fehlen, zahlt der Bot mehr.");
+            _buyMaxNewPercent = Config.Bind("3. Kunden-Angebote", "Neue Karte: bis X Prozent Marktpreis (Set mit Packs)", 200f, "Fehlt die Karte in der Sammlung und gibt es für ihr Set noch kaufbare Packs: Wunschpreis zahlen bis zu so viel Prozent vom Marktpreis.");
+            _buyNewHardPercent = Config.Bind("3. Kunden-Angebote", "Neue Karte: bis X Prozent Marktpreis (Set pausiert oder ohne Packs)", 500f, "Fehlt die Karte und ihr Set ist fast fertig (pausiert) oder hat keine kaufbaren Packs: der Kunde ist die einzige realistische Quelle – bis zu so viel Prozent vom Marktpreis.");
+            _buyNewMaxMoneyPct = Config.Bind("3. Kunden-Angebote", "Neue Karte: höchstens X Prozent vom Geld", 10f, "Sicherheitsgrenze pro Karte.");
             _buyAlwaysBelow = Config.Bind("3. Kunden-Angebote", "Karten unter diesem Wert immer kaufen ($)", 2f, "Kleinkram: einfach den Wunschpreis zahlen, kein Verhandeln.");
             _swapTolerance = Config.Bind("3. Kunden-Angebote", "Tausch: kleiner Verlust erlaubt ($)", 1f, "Tausch auch annehmen, wenn wir höchstens so viel weniger bekommen (spart Ablehnungen bei Kleinkram).");
 
@@ -762,9 +778,11 @@ namespace ShopBot
             // Nur Duplikate abgeben: die letzte normale Karte einer Sorte bleibt immer in der Sammlung
             bool own = give != null && (give.cardGrade == 0 ? CPlayerData.GetCardAmount(give) > 1 : CPlayerData.HasGradedCardInAlbum(give));
             // Bekommen wir eine Karte, die uns noch fehlt, ist der Tausch auch bei etwas weniger Wert gut (neu für die Sammlung)
-            bool isNewForUs = get != null && get.cardGrade == 0 && CPlayerData.GetCardAmount(get) == 0;
-            float needRatio = isNewForUs ? 0.8f : 1f + _swapMinGainPercent.Value / 100f;
-            bool good = _swapEnabled.Value && own && (pGet > pGive * needRatio || pGive - pGet <= _swapTolerance.Value);
+            // Neue Karte: abgeben darf man (nur Doppelte!) bis zu dem Wert, den wir auch beim Ankauf zahlen würden (CardWorth)
+            float worthGet = CardWorth(get, pGet, out bool isNewForUs, out bool hardGet);
+            bool good = _swapEnabled.Value && own && (isNewForUs
+                ? pGive <= Mathf.Max(worthGet, pGet) + _swapTolerance.Value
+                : (pGet > pGive * (1f + _swapMinGainPercent.Value / 100f) || pGive - pGet <= _swapTolerance.Value));
 
             if (good)
             {
@@ -789,7 +807,8 @@ namespace ShopBot
             //  - Gebot deutlich darunter          -> kaum Chance, und jede Ablehnung macht ihn ungeduldiger
             // Darum: Wunschpreis zahlen, wenn er unter unserem Limit liegt; sonst nur 1-2 knappe Gebote nahe am Limit.
             // Limit: normale Karten x % vom Marktpreis (Weiterverkauf +20 % = Gewinn), neue Karten für die Sammlung mehr.
-            bool isNew = card != null && card.cardGrade == 0 && CPlayerData.GetCardAmount(card) == 0;
+            // Nie mehr als den Wunschpreis bieten. Nur entscheiden, ob er uns die Karte wert ist (CardWorth).
+            bool isNew = false, hard = false;
             float lastOffer = -1f;
             for (int round = 0; round < 4; round++)
             {
@@ -798,24 +817,28 @@ namespace ShopBot
                 float ask = t.Field("m_SellCardAskPrice").GetValue<float>();
                 float market = t.Field("m_SellCardMarketPrice").GetValue<float>();
                 if (market <= 0f) market = CPlayerData.GetCardMarketPrice(card);
-                float capPct = isNew ? _buyMaxNewPercent.Value : _buyMaxPercent2.Value;
-                float cap = market * capPct / 100f;
+                float cap = CardWorth(card, market, out isNew, out hard);
                 if (market < _buyAlwaysBelow.Value) cap = Mathf.Max(cap, ask + 0.01f); // Kleinkram unter $X: einfach Wunschpreis zahlen
                 int declinesLeft = t.Field("m_MaxDeclineCount").GetValue<int>();
 
                 float offer;
                 if (ask <= cap)
-                    offer = ask + 0.01f;                                     // Wunschpreis -> sicher
-                else if (round == 0 && declinesLeft > 0)
-                    offer = Mathf.Max(cap * 0.95f, Mathf.Min(cap, ask * 0.9f)); // 1. Versuch knapp unter Limit
+                    offer = ask + 0.01f;                                     // Wunschpreis lohnt sich -> genau den zahlen (sicher angenommen)
+                else if (round == 0 && declinesLeft > 0 && cap >= ask * 0.85f)
+                    offer = cap;                                             // knapp drüber: ein Angebot an unserer Grenze
                 else
-                    offer = cap;                                             // dann unser Maximum
+                {
+                    s.OnPressDecline();                                      // zu weit weg: gar nicht erst handeln (Kunde wird sonst ungeduldig)
+                    _statDeclined++;
+                    Note($"Ankauf abgelehnt: will {Price(ask)}, Markt {Price(market)}, uns wert {Price(cap)}" + (isNew ? (hard ? " (neu, Set nur schwer zu bekommen)" : " (neu)") : ""));
+                    yield break;
+                }
 
                 if (lastOffer >= 0f && offer <= lastOffer + 0.005f)
                 {
                     s.OnPressDecline();
                     _statDeclined++;
-                    Note($"Ankauf abgelehnt: will {Price(ask)}, Markt {Price(market)}, unser Limit {Price(cap)} ({capPct:0}%)");
+                    Note($"Ankauf abgelehnt: will {Price(ask)}, Markt {Price(market)}, uns wert {Price(cap)}");
                     yield break;
                 }
                 if (CPlayerData.m_CoinAmountDouble < offer)

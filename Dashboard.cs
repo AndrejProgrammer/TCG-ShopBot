@@ -603,7 +603,26 @@ namespace ShopBot
         private void PageCollection()
         {
             GUILayout.Label("Sammlung", _sH1);
-            GUILayout.Label("Der Bot kauft Packs der Sets mit den wenigsten fehlenden Karten und lässt sie in den Openern öffnen.", _sDim);
+            GUILayout.Label("Der Bot kauft Packs der Sets mit den meisten neuen Karten pro Dollar und lässt sie in den Openern öffnen. Fehlende Karten fast fertiger Sets kauft er von Kunden.", _sDim);
+
+            // Ziel: alle Pokémon-Karten
+            Section("Ziel: alle Karten", _goalHave >= 0 ? $"{_goalHave:N0} von {_goalTotal:N0} Karten" : "wird nach der ersten Runde berechnet (1 Min.)");
+            if (_goalHave >= 0)
+            {
+                int missing = _goalTotal - _goalHave;
+                float perDay = CardsPerDay();
+                GUILayout.BeginHorizontal();
+                ProgressCard("Karten gesammelt", $"{_goalHave:N0} / {_goalTotal:N0}", _goalTotal > 0 ? (float)_goalHave / _goalTotal : 0f, CGreen, $"{missing:N0} fehlen noch");
+                ProgressCard("Tempo", perDay > 0f ? $"{perDay:N0} neue Karten / Tag" : "–", 0f, CAccent,
+                             perDay > 0f ? $"noch ca. {Mathf.CeilToInt(missing / perDay):N0} Spieltage" : "nach dem ersten Tageswechsel");
+                GUILayout.EndHorizontal();
+                GUILayout.Label(_goalNoPacks.Count > 0
+                    ? "Ohne kaufbare Packs (nur über Kunden/Tausch oder nach Lizenz): " + string.Join(", ", _goalNoPacks)
+                    : "Alle unfertigen Sets haben kaufbare Packs.", _sDim);
+                GUILayout.Label(_goalPaused.Count > 0
+                    ? "Pausiert (fast fertig, Karten von Kunden kaufen): " + string.Join(", ", _goalPaused)
+                    : "Keine Sets pausiert.", _sDim);
+            }
 
             GUILayout.BeginHorizontal();
             ProgressCard("Pokémon-Sets fertig", $"{_cSetsDone} / {_cSetsTotal}", _cSetsTotal > 0 ? (float)_cSetsDone / _cSetsTotal : 0f, CGreen);
@@ -772,7 +791,9 @@ namespace ShopBot
             {
                 Section("Ankauf");
                 Slider(_buyMaxPercent2, "Limit normale Karten", 50f, 120f, 1f, Pct, "% vom Marktpreis – Weiterverkauf +20 %");
-                Slider(_buyMaxNewPercent, "Limit neue Karten (fehlen noch)", 80f, 200f, 5f, Pct, "für die Sammlung darf es mehr sein");
+                Slider(_buyMaxNewPercent, "Neue Karte (Set mit Packs): bis", 100f, 500f, 10f, Pct, "Wunschpreis zahlen bis zu so viel vom Marktpreis");
+                Slider(_buyNewHardPercent, "Neue Karte (Set pausiert/ohne Packs): bis", 100f, 1500f, 25f, Pct, "Kunde ist die einzige Quelle");
+                Slider(_buyNewMaxMoneyPct, "Neue Karte: höchstens % vom Geld", 1f, 50f, 1f, v => $"{v:0} %");
                 Slider(_buyAlwaysBelow, "Kleinkram immer kaufen unter", 0f, 20f, 0.5f, v => "$" + v.ToString("0.0"));
             }, () =>
             {
