@@ -191,3 +191,10 @@ Live-Test mit Log-Mitlesen: Bot-Kasse 125 Kunden / $82.757 an einem Tag ohne Kas
 
 - **Fehler behoben:** Abbuchungen laufen über `CEventPlayer_ReduceCoin` und kommen erst im nächsten Bild an. Der Bot kaufte innerhalb eines Durchgangs mehrere Sets mit demselben (alten) Kontostand → Konto ging ins Minus. Jetzt `Pay()`/`MarkSpent()`: eigene Ausgaben werden 3 s lang sofort vom Budget abgezogen (Packs, Nachbestellen, Lizenzen, Erweiterungen, Bonus, Einstellen).
 - **„Ganzes Geld nutzen (nur Rechnungen zurückhalten)“** (Standard an, Wunsch des Users): statt $20.000 Reserve werden nur offene Rechnungen + 1,5× die letzten Tagesrechnungen (~$4.300/Tag) zurückgehalten. Dashboard zeigt „zurückgehalten“.
+
+## v0.5.0 (23.11. abends)
+
+- **EPL-Lizenz-Falle (wichtig):** Enhanced Prefab Loader (CollectionWeaver) leitet Zugriffe auf `CPlayerData.m_IsItemLicenseUnlocked`, `m_RestockDataList` u. a. **nur im Spielcode** auf seinen eigenen Speicher um (Mod-Artikel ab Index > Vanilla-Anzahl, gespeichert als `ItemSaveData.IsBigBoxUnlocked/IsSmallBoxUnlocked`). Plugins, die die Liste **direkt** lesen, sehen Mod-Lizenzen immer als gesperrt. → Immer `CPlayerData.GetIsItemLicenseUnlocked(i)` und `InventoryBase.GetRestockData(i)` benutzen (Spielmethoden = umgeleitet). Weitere umgeleitete Felder: `m_SetItemPriceList`, `m_GeneratedMarketPriceList`, `m_AverageItemCostList`, `m_CurrentTotalItemCountList`, `m_ItemDataList` … (Liste in `EnhancedPrefabLoader.Core.InterceptorHandlers`).
+- **Kartons aus dem Lager:** `ShelfCompartment.TryPopLastStoredBoxRecord` + `StoredBoxVisualBatcher.RebuildImmediate` + `RestockManager.SpawnPackageBoxItemAtTransform` (wie `InteractableStorageCompartment.OnMouseButtonUp`). Lagerkartons sind nur Einträge (`StoredBoxRecord`), keine Objekte.
+- **Graden:** PSA Standard bleibt – höchster Durchsatz pro Platz (52/12 Tage = 4,3/Tag vs. 24/7 = 3,4, 10/4 = 2,5, 4/2 = 2).
+- **IMGUI:** keine Steuerelemente bedingt ein-/ausblenden, die sich durch einen Klick im selben Bild ändern (Layout/Repaint-Fehler).

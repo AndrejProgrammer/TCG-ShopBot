@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace ShopBot
 {
-    [BepInPlugin("ratta.shopbot", "ShopBot", "0.4.2")]
+    [BepInPlugin("ratta.shopbot", "ShopBot", "0.5.0")]
     public partial class Plugin : BaseUnityPlugin
     {
         // ---- Konfiguration ----

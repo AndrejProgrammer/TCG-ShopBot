@@ -55,7 +55,7 @@ namespace ShopBot
             var workersType = AccessTools.TypeByName("Upgrades.UpWorkers");
             if (store == null || itemType == null || catType == null)
             {
-                if (!_upWarned) { _upWarned = true; Logger.LogWarning("Upgrades-Mod nicht gefunden – Auto-Upgrades aus."); }
+                if (!_upWarned) { _upWarned = true; Logger.LogWarning("Upgrades-Mod nicht gefunden – Auto-Upgrades aus."); ModMissing("Upgrades", "Sammelpunkte-Upgrades"); }
                 return;
             }
 

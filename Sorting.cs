@@ -14,7 +14,8 @@ namespace ShopBot
     public partial class Plugin
     {
         private ConfigEntry<bool> _sortEnabled, _sortTrashEmpty, _sortKeepOpenerPacks;
-        private ConfigEntry<int> _sortPerSecond;
+        private ConfigEntry<int> _sortPerSecond, _pullPerTick;
+        private ConfigEntry<bool> _pullFromStorage;
         private float _sortAcc;
         private int _statSorted, _statTrashed;
         private float _sortFullLogAt;
@@ -26,6 +27,8 @@ namespace ShopBot
             _sortKeepOpenerPacks = Config.Bind("17. Einsortieren", "Packs für Opener am Boden lassen", true, "Packs unfertiger Sets bleiben liegen, bis eine Opener-Füllung erreicht ist – daraus befüllt der Bot die Opener selbst. Der Rest kommt ins Regal.");
             _sortTrashEmpty = Config.Bind("17. Einsortieren", "Leere Kartons wegwerfen", true, "Leere Kartons kommen in den Mülleimer (nur wenn einer im Laden steht).");
             _sortPerSecond = Config.Bind("17. Einsortieren", "Kartons pro Sekunde", 4, "Wie schnell der Bot einsortiert.");
+            _pullFromStorage = Config.Bind("17. Einsortieren", "Kartons aus dem Lagerregal holen", true, "Fehlen Packs für freie Opener oder Ware für halb leere Regalfächer, holt der Bot Kartons selbst aus dem Lagerregal (wie ein Klick aufs Lagerfach).");
+            _pullPerTick = Config.Bind("17. Einsortieren", "Kartons aus dem Lager pro Runde (Opener)", 6, "Höchstens so viele Kartons alle 2 Sekunden für die Opener.");
         }
 
         private void HandleSorting()
@@ -139,6 +142,49 @@ namespace ShopBot
             _sortAcc -= done;
             if (done > 0 && (_statSorted + _statTrashed) % 25 < done)
                 Note($"Einsortiert: {_statSorted} Kartons ins Lager, {_statTrashed} leere weggeworfen");
+        }
+
+        // ================= Kartons aus dem Lagerregal holen =================
+        // Wie das Spiel, wenn du auf ein Lagerfach klickst (InteractableStorageCompartment.OnMouseButtonUp):
+        // letzten Karton-Eintrag entnehmen und einen echten Karton daraus erzeugen – hier direkt an der Stelle, wo er gebraucht wird.
+        private int _statPulled;
+
+        private int PullFromStorage(Func<EItemType, int> priority, int max, Vector3 pos)
+        {
+            var sm = S<ShelfManager>();
+            if (sm == null || max <= 0) return 0;
+            var found = new List<(ShelfCompartment comp, EItemType type, int prio)>();
+            foreach (var ws in sm.m_WarehouseShelfList)
+            {
+                if (ws == null || !ws.IsValidObject()) continue;
+                var comps = Traverse.Create(ws).Field("m_ItemCompartmentList").GetValue<List<ShelfCompartment>>();
+                if (comps == null) continue;
+                foreach (var comp in comps)
+                {
+                    if (comp == null || comp.GetStoredBoxRecordCount() <= 0) continue;
+                    var recs = Traverse.Create(comp).Field("m_StoredBoxRecordList").GetValue<List<StoredBoxRecord>>();
+                    if (recs == null || recs.Count == 0) continue;
+                    var type = recs[recs.Count - 1].itemType;
+                    int p = priority(type);
+                    if (p >= 0) found.Add((comp, type, p));
+                }
+            }
+            int pulled = 0;
+            foreach (var f in found.OrderBy(x => x.prio))
+            {
+                if (pulled >= max) break;
+                try
+                {
+                    if (!f.comp.TryPopLastStoredBoxRecord(out var rec)) continue;
+                    StoredBoxVisualBatcher.RebuildImmediate(f.comp);
+                    var p = pos + new Vector3(UnityEngine.Random.Range(-0.4f, 0.4f), 0.6f + pulled * 0.35f, UnityEngine.Random.Range(-0.4f, 0.4f));
+                    var box = RestockManager.SpawnPackageBoxItemAtTransform(rec.itemType, rec.amount, rec.isBigBox, p, Quaternion.identity);
+                    if (box != null) { pulled++; _statPulled++; }
+                }
+                catch (Exception e) { Logger.LogWarning("[Lager holen] " + e.Message); break; }
+            }
+            if (pulled > 0 && _statPulled % 20 < pulled) Note($"Aus dem Lager geholt: {_statPulled} Kartons insgesamt");
+            return pulled;
         }
 
         // Wie die Arbeiter: zuerst Fächer mit passendem Etikett/Inhalt, dann freie Fächer

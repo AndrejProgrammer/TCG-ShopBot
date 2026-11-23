@@ -103,6 +103,7 @@ namespace ShopBot
         {
             if (_checkoutDay != CPlayerData.m_CurrentDay) { _checkoutDay = CPlayerData.m_CurrentDay; _checkoutDayMoney = 0f; }
             _statCheckouts++;
+            ReportCheckout(value);
             _checkoutDayMoney += value;
             if (_statCheckouts % 25 == 0)
                 Note($"Bot-Kasse: {_statCheckouts} Kunden abkassiert (heute {GameInstance.GetPriceString(_checkoutDayMoney)})");

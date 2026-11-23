@@ -3,7 +3,7 @@
 **ShopBot** ist ein BepInEx-Plugin für **TCG Card Shop Simulator**, das deinen Laden weitgehend automatisch führt – optimiert für das **Real TCG Overhaul**-Modpack (Pokémon).
 Ziel: **alle Pokémon-Karten im Collection Tracker besitzen** (später alle als PSA 10) – während der Laden Geld verdient.
 
-> Version **0.4.2** · Spiel: Steam-Standard-Branch (Unity 6) · BepInEx 5.4.x
+> Version **0.5.0** · Spiel: Steam-Standard-Branch (Unity 6) · BepInEx 5.4.x
 > 📖 **Neu hier? → [Schritt-für-Schritt-Anleitung](docs/ANLEITUNG.md)**
 
 ---
@@ -14,7 +14,7 @@ Ziel: **alle Pokémon-Karten im Collection Tracker besitzen** (später alle als 
 |---|---|
 | 💰 **Kasse** | Kassiert an **allen freien Kassen gleichzeitig** (scannen, Geld nehmen, Wechselgeld) – du brauchst keine Kassierer |
 | 👷 **Arbeiter** | Alle Arbeiter befüllen die **Pack-Opener** (nur Packs unfertiger Pokémon-Sets), Einsatzplan nach Stärken, täglich 3× Bonus, stellt neue Arbeiter ein |
-| 📦 **Packs & Sammlung** | Liest den Collection Tracker, kauft Packs der Sets mit den **wenigsten fehlenden Karten**, **Notfall-Nachkauf**, wenn die Opener leerlaufen |
+| 📦 **Packs & Sammlung** | Liest den Collection Tracker, kauft Packs der Sets mit den **meisten neuen Karten pro Dollar**, holt Kartons selbst aus dem Lager, **Notfall-Nachkauf**, wenn die Opener leerlaufen |
 | ⚙️ **Pack-Opener** | Befüllt Opener selbst, startet halbvolle, sammelt fertige ein |
 | 🏷️ **Preise** | Marktpreis **+20 %**, gerundet (Produkte, Einzelkarten, gegradete) |
 | 🛒 **Regale & Vitrinen** | Räumt Ware selbst ein, legt Karten in leere Vitrinen-Plätze (gegradete zuerst) |

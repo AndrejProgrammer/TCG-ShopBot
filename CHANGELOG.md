@@ -2,6 +2,16 @@
 
 Ausführliche Entwickler-Notizen: [docs/ENTWICKLUNG.md](docs/ENTWICKLUNG.md)
 
+## 0.5.0 – 23.11.2026
+- **Kartons aus dem Lagerregal holen:** Fehlen Packs für freie Opener oder Ware für halb leere Regalfächer, holt der Bot Kartons selbst aus dem Lager (wie ein Klick aufs Lagerfach) – alle Opener laufen voll, auch mit wenigen Arbeitern.
+- **Klügere Set-Auswahl:** Sets mit den meisten neuen Karten pro Dollar zuerst (abschaltbar). Fehlen nur noch 1–3 Karten, kauft der Bot höchstens 1.500 Packs pro fehlender Karte und pausiert das Set dann (die Karten lieber von Kunden ankaufen).
+- **Lizenzen richtig gelesen:** Mod-Artikel (Enhanced Prefab Loader) speichern ihre Lizenz extra – der Bot las die Liste direkt und hielt freigeschaltete Booster Boxes für gesperrt. Jetzt über die Spielfunktion → keine falschen „wieder gesperrt“-Meldungen, Booster-Box-Lizenzen werden wieder normal gekauft.
+- **Vitrinen voll:** Hinweis im Dashboard und Verlauf, wenn Karten in der Ablage warten, aber kein Vitrinen-Platz frei ist.
+- **Tagesbericht** im Dashboard (Einnahmen Bot-Kasse, Bot-Ausgaben, Kunden, Packs – heute + letzte Tage).
+- **Hinweis bei fehlenden Mods** (Collection Tracker, CardGrade Overhaul, Upgrades) im Dashboard.
+- **Tageslimit wächst mit** (mind. 15 % vom Geld), wenn „Ganzes Geld nutzen“ an ist.
+
+
 ## 0.4.2 – 23.11.2026
 - **Geld nie im Minus:** eigene Ausgaben werden sofort vom Budget abgezogen (vorher konnte der Bot innerhalb eines Einkaufs mehrfach mit altem Kontostand kaufen).
 - **Ganzes Geld nutzen:** statt fester Reserve werden nur offene + nächste Rechnungen zurückgehalten (abschaltbar).

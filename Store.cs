@@ -17,23 +17,7 @@ namespace ShopBot
         private HashSet<string> _licBoughtSet;
         private ConfigEntry<int> _stockPerSecond, _cardsPerSecond;
         private float _licTimer = 30f;
-        private readonly Dictionary<int, int> _licRestoreTries = new Dictionary<int, int>();
-        private readonly HashSet<int> _licRestoreGaveUp = new HashSet<int>();
-        private int _licRestoreDay = -1;
         private List<string> _setsWithoutPacks = new List<string>();
-        // Lizenzen, die sich während einer Sitzung immer wieder sperren (Mod) -> von dieser Art nichts Neues mehr kaufen
-        private ConfigEntry<string> _licUnstable;
-        private HashSet<string> _licUnstableSet;
-        private readonly Dictionary<string, int> _licRestoredSession = new Dictionary<string, int>();
-        private readonly HashSet<string> _licBoughtSession = new HashSet<string>();
-
-        // Art einer Lizenz = die letzten zwei Wörter, z. B. "Booster Box" oder "Booster Packs"
-        private static string LicKind(string name)
-        {
-            var w = (name ?? "").Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-            return w.Length >= 2 ? (w[w.Length - 2] + " " + w[w.Length - 1]).ToLowerInvariant() : (name ?? "").ToLowerInvariant();
-        }
-        private int UnstableOfKind(string kind) => _licUnstableSet.Count(n => LicKind(n) == kind);
 
         // Opener selbst befüllen / Arbeiter einstellen / Opener-Turbo
         private ConfigEntry<bool> _openerSelf, _hireEnabled;
@@ -56,8 +40,6 @@ namespace ShopBot
                 var p = part.Trim();
                 if (p.Length > 0 && !int.TryParse(p, out _)) _licBoughtSet.Add(p);   // alte Zahlen-Einträge (v0.1) sind wertlos
             }
-            _licUnstable = Config.Bind("15. Lizenzen", "Sperren sich immer wieder (intern)", "", "Lizenzen, die eine Mod nach dem Kauf immer wieder sperrt. Ab 2 derselben Art (z. B. Booster Box) kauft der Bot von dieser Art nichts Neues mehr. Leeren = neu lernen.");
-            _licUnstableSet = new HashSet<string>((_licUnstable.Value ?? "").Split('|').Select(p => p.Trim()).Where(p => p.Length > 0));
             _openerSelf = Config.Bind("2. Pack-Opener", "Bot befüllt Opener selbst", true, "Legt Packs unfertiger Pokémon-Sets aus Kartons direkt in freie Pack-Opener (Ziel-Sets zuerst). Opener stehen so nie leer.");
             _openerPerSecond = Config.Bind("2. Pack-Opener", "Packs pro Sekunde in Opener", 40, "Wie schnell der Bot die Opener befüllt.");
             _openerTurbo = Config.Bind("2. Pack-Opener", "Opener-Turbo (Tempo x)", 1f, "Opener öffnen Packs so viel schneller (1 = normal, Spielwert).");
@@ -78,69 +60,54 @@ namespace ShopBot
             SafeRun("Lizenzen", LicenseTick);
         }
 
+        // WICHTIG: Lizenzen nur über CPlayerData.GetIsItemLicenseUnlocked lesen und InventoryBase.GetRestockData holen.
+        // Der Enhanced Prefab Loader leitet diese Zugriffe im Spielcode für Mod-Artikel auf seinen eigenen Speicher um.
+        // Die Liste CPlayerData.m_IsItemLicenseUnlocked DIREKT zu lesen zeigt Mod-Artikel immer als "gesperrt"
+        // (Ursache der angeblich "immer wieder gesperrten" Booster-Box-Lizenzen bis v0.4.2).
+        private static List<(int idx, RestockData rd)> AllRestockEntries()
+        {
+            var list = new List<(int, RestockData)>();
+            int misses = 0;
+            for (int i = 0; i < 5000 && misses < 25; i++)
+            {
+                RestockData rd = null;
+                try { rd = InventoryBase.GetRestockData(i); } catch { }
+                if (rd == null) { misses++; continue; }
+                misses = 0;
+                list.Add((i, rd));
+            }
+            return list;
+        }
+
+        private static bool LicenseUnlocked(int idx)
+        {
+            try { return CPlayerData.GetIsItemLicenseUnlocked(idx); } catch { return true; }
+        }
+
+        private readonly HashSet<string> _licBoughtSession = new HashSet<string>();
+
         private void LicenseTick()
         {
-            var unlocked = CPlayerData.m_IsItemLicenseUnlocked;
-            if (unlocked == null) return;
             int level = CPlayerData.m_ShopLevel + 1;
-
-            // Das Spiel/die Mods setzen Lizenzen beim Laden zurück (Index-Verschiebung). Schon bezahlte -> kostenlos wieder frei.
-            var restored = new List<string>();
-            if (_licRestoreDay != CPlayerData.m_CurrentDay) { _licRestoreDay = CPlayerData.m_CurrentDay; _licRestoreTries.Clear(); }
-            for (int i = 0; i < unlocked.Count; i++)
-            {
-                if (unlocked[i]) continue;
-                RestockData rd;
-                try { rd = InventoryBase.GetRestockData(i); } catch { continue; }
-                if (rd == null || rd.itemType == EItemType.None) continue;
-                string nm = LicName(rd.itemType);
-                if (!_licBoughtSet.Contains(nm)) continue;
-                // Sperrt etwas (Mod) diese Lizenz immer wieder? Nach 2 Versuchen in Ruhe lassen – sie gilt trotzdem als gekauft.
-                _licRestoreTries.TryGetValue(i, out int tries);
-                if (tries >= 2)
-                {
-                    if (_licRestoreGaveUp.Add(i)) Logger.LogInfo($"[Lizenzen] {nm} (Eintrag {i}) wird immer wieder gesperrt – lasse ihn in Ruhe");
-                    continue;
-                }
-                _licRestoreTries[i] = tries + 1;
-                CPlayerData.SetUnlockItemLicense(i);
-                restored.Add(nm);
-                // Einmal beim Laden zurücksetzen ist normal. Erneut gesperrt (oder gleich nach dem Kauf) = instabil.
-                _licRestoredSession.TryGetValue(nm, out int rc);
-                _licRestoredSession[nm] = ++rc;
-                if ((rc >= 2 || _licBoughtSession.Contains(nm)) && _licUnstableSet.Add(nm))
-                {
-                    _licUnstable.Value = string.Join("|", _licUnstableSet);
-                    string kind = LicKind(nm);
-                    if (UnstableOfKind(kind) == 2)
-                        Note($"Lizenzen: '{kind}' sperrt eine Mod immer wieder – davon kauft der Bot keine neuen mehr");
-                }
-            }
-            if (restored.Count > 0)
-            {
-                GameInstance.m_IsItemLicenseUnlocked = true;
-                Note($"Lizenzen wiederhergestellt (schon bezahlt, kostenlos): {string.Join(", ", restored.Take(6))}{(restored.Count > 6 ? $" +{restored.Count - 6}" : "")}");
-            }
+            var entries = AllRestockEntries();
+            if (entries.Count == 0) return;
+            var unlockedTypes = new HashSet<EItemType>(entries.Where(e => LicenseUnlocked(e.idx)).Select(e => e.rd.itemType));
 
             var cands = new List<(int idx, RestockData rd)>();
-            for (int i = 0; i < unlocked.Count; i++)
+            foreach (var (i, rd) in entries)
             {
-                if (unlocked[i]) continue;
-                RestockData rd;
-                try { rd = InventoryBase.GetRestockData(i); } catch { continue; }
-                if (rd == null || rd.itemType == EItemType.None || rd.licensePrice <= 0f) continue;
+                if (rd.itemType == EItemType.None || rd.licensePrice <= 0f) continue;
+                if (LicenseUnlocked(i)) continue;
                 if (level < rd.licenseShopLevelRequired) continue;
-                if (_licBoughtSet.Contains(LicName(rd.itemType))) continue;  // schon einmal gekauft
-                if (UnstableOfKind(LicKind(LicName(rd.itemType))) >= 2) continue;   // diese Art sperrt eine Mod immer wieder
-                bool sameTypeUnlocked = false;                              // anderer Eintrag desselben Artikels schon frei?
-                for (int j = 0; j < unlocked.Count && !sameTypeUnlocked; j++)
+                if (unlockedTypes.Contains(rd.itemType)) continue;                 // derselbe Artikel ist unter anderem Eintrag schon frei
+                string nm = LicName(rd.itemType);
+                if (_licBoughtSession.Contains(nm))                                // Sicherheit: nie zweimal in einer Sitzung bezahlen
                 {
-                    if (j == i || !unlocked[j]) continue;
-                    try { var o = InventoryBase.GetRestockData(j); if (o != null && o.itemType == rd.itemType) sameTypeUnlocked = true; } catch { }
+                    if (_licRebuyWarned.Add(nm)) Logger.LogWarning($"[Lizenzen] {nm} ist nach dem Kauf wieder gesperrt – kaufe nicht erneut");
+                    continue;
                 }
-                if (sameTypeUnlocked) continue;
                 var data = InventoryBase.GetItemData(rd.itemType);
-                if (data == null || data.category != EItemCategory.TCG) continue;      // nur Packs/Displays
+                if (data == null || data.category != EItemCategory.TCG) continue;   // nur Packs/Displays
                 if (_licPokemonOnly.Value)
                 {
                     string app = EplShopAppId(rd.itemType) ?? "";
@@ -171,6 +138,7 @@ namespace ShopBot
                 if (bought >= 25) break;                                    // pro Minute höchstens 25
             }
         }
+        private readonly HashSet<string> _licRebuyWarned = new HashSet<string>();
 
         private void BuyLicense(int index, RestockData r)
         {
@@ -310,11 +278,13 @@ namespace ShopBot
 
             // Kartons mit Packs unfertiger Sets (auf dem Boden, nicht getragen) – Ziel-Sets zuerst, angebrochene zuerst
             var boxes = new List<InteractablePackagingBox_Item>();
+            int onFloor = 0;                                               // auch noch ungeöffnete/getragene mitzählen
             foreach (var b in rm.m_ItemPackagingBoxList)
             {
                 if (b == null || !b.gameObject.activeInHierarchy || b.m_ItemCompartment == null || b.m_IsStored) continue;
                 if (b.m_ItemCompartment.GetItemCount() <= 0 || !b.CanWorkerTakeBox()) continue;
                 if (!_openerPackTypes.Contains(b.m_ItemCompartment.GetItemType())) continue;
+                onFloor++;
                 var tb = Traverse.Create(b);
                 if (tb.Field("m_IsBeingHold").GetValue<bool>() || tb.Field("m_IsLerpingToPos").GetValue<bool>() || tb.Field("m_IsTogglingOpenClose").GetValue<bool>()) continue;
                 if (RealItemCount(b) <= 0)
@@ -323,6 +293,14 @@ namespace ShopBot
                     continue;                                              // Artikel entstehen erst beim Öffnen -> nächste Runde
                 }
                 boxes.Add(b);
+            }
+            // Keine Packs mehr am Boden, aber Opener frei -> Kartons aus dem Lagerregal neben den Opener holen (Ziel-Sets zuerst)
+            if (onFloor < Mathf.Max(1, free.Count / 2) && _pullFromStorage.Value && Time.unscaledTime >= _pullOpenerAt)
+            {
+                _pullOpenerAt = Time.unscaledTime + 2f;
+                var at = free[0].m_StandLoc != null ? free[0].m_StandLoc.position : free[0].transform.position;
+                PullFromStorage(t => !_openerPackTypes.Contains(t) ? -1 : _focusPackTypes.Contains(t) ? 0 : 1,
+                                Mathf.Clamp(free.Count, 1, _pullPerTick.Value), at);
             }
             if (boxes.Count == 0) return;
             boxes = boxes.OrderBy(b => _focusPackTypes.Contains(b.m_ItemCompartment.GetItemType()) ? 0 : 1)
@@ -379,6 +357,32 @@ namespace ShopBot
                 var type = b.m_ItemCompartment.GetItemType();
                 if (!boxes.TryGetValue(type, out var l)) boxes[type] = l = new List<InteractablePackagingBox_Item>();
                 l.Add(b);
+            }
+
+            // Regalfach braucht Ware, aber kein Karton davon am Boden -> einen Karton aus dem Lagerregal holen (max. 2 Sorten pro Runde)
+            if (_pullFromStorage.Value && Time.unscaledTime >= _pullShelfAt)
+            {
+                _pullShelfAt = Time.unscaledTime + 3f;
+                var floorTypes = new HashSet<EItemType>();
+                foreach (var b in rm.m_ItemPackagingBoxList)
+                    if (b != null && b.gameObject.activeInHierarchy && !b.m_IsStored && b.m_ItemCompartment != null && b.m_ItemCompartment.GetItemCount() > 0)
+                        floorTypes.Add(b.m_ItemCompartment.GetItemType());
+                int sorts = 0;
+                foreach (var shelf in shelves)
+                {
+                    if (sorts >= 2) break;
+                    if (shelf == null || shelf.m_ItemNotForSale || !shelf.IsValidObject()) continue;
+                    foreach (var comp in shelf.GetItemCompartmentList())
+                    {
+                        if (sorts >= 2) break;
+                        if (comp == null || !comp.m_CanPutItem || comp.m_ItemNotForSale) continue;
+                        var t = comp.GetItemType();
+                        if (t == EItemType.None || floorTypes.Contains(t) || !comp.HasEnoughSlot()) continue;
+                        if (comp.GetItemCount() > comp.GetMaxItemCount() / 2) continue;      // erst wenn das Fach halb leer ist
+                        if (PullFromStorage(x => x == t ? 0 : -1, 1, shelf.transform.position) > 0) { floorTypes.Add(t); sorts++; }
+                        else floorTypes.Add(t);                                                // nichts im Lager -> nicht nochmal suchen
+                    }
+                }
             }
             if (boxes.Count == 0) return;
 
@@ -443,12 +447,28 @@ namespace ShopBot
             if (placed > 0)
             {
                 _statSelfCards += placed;
+                _vitrinesFullSince = -1f;
                 _priceTimer = Mathf.Max(_priceTimer, 15f); // neue Karten gleich bepreisen
                 if (_statSelfCards % 20 < placed) Note($"Vitrinen selbst befüllt: {_statSelfCards} Karten insgesamt");
             }
+            else if (budget > 0)
+            {
+                // Karten warten in der Ablage, aber kein freier Vitrinen-Platz -> Verkauf stockt
+                if (_vitrinesFullSince < 0f) _vitrinesFullSince = Time.unscaledTime;
+                int waiting = storages.Where(s => s != null && s.IsValidObject()).Sum(s => s.GetTotalCardAmount());
+                _dashVitrinesFull = Time.unscaledTime - _vitrinesFullSince > 120f ? waiting : 0;
+                if (_dashVitrinesFull > 0 && Time.unscaledTime >= _vitrinesFullLogAt)
+                {
+                    _vitrinesFullLogAt = Time.unscaledTime + 1800f;
+                    Note($"Vitrinen voll: {waiting} Karten warten in der Kartenablage – mehr Karten-Vitrinen aufstellen, dann verkauft sich mehr");
+                }
+            }
         }
+        private float _vitrinesFullSince = -1f, _vitrinesFullLogAt;
+        private int _dashVitrinesFull;
 
         private int _statSelfStocked, _statSelfCards;
+        private float _pullOpenerAt, _pullShelfAt;
 
         // GetRandomCard wählt zufällig unter allen Einträgen – bei Tausenden normalen Karten kämen gegradete fast nie dran.
         // Darum: liegt eine gegradete Karte in der Ablage, kurz nur diese "anbieten" und die Liste danach wiederherstellen.

@@ -19,12 +19,29 @@ namespace ShopBot
         private ConfigEntry<int> _colCasesPerBuy;
         private ConfigEntry<float> _colFills;
         private ConfigEntry<float> _colBudgetPerExtraSet, _colBudgetPerExtraFill, _colMaxFills;
-        private ConfigEntry<int> _colMaxFocusSets;
+        private ConfigEntry<int> _colMaxFocusSets, _colPacksPerMissing;
+        private ConfigEntry<bool> _colEfficiency;
+        private ConfigEntry<string> _colPacksBoughtCfg;
+        private readonly Dictionary<string, int> _setPacksBought = new Dictionary<string, int>();
+        private float _cappedLogAt;
+        private void CountSetPacks(string set, int packs)
+        {
+            _setPacksBought[set] = (_setPacksBought.TryGetValue(set, out var n) ? n : 0) + packs;
+            _colPacksBoughtCfg.Value = string.Join("|", _setPacksBought.Select(kv => kv.Key.Replace("|", "/").Replace("=", "-") + "=" + kv.Value));
+        }
         private ConfigEntry<bool> _colPokemonOnly;
         private ConfigEntry<float> _dayBuyLimit, _dayBuyLimitPercent;
         // Wirksames Tageslimit: fester Wert, aber mindestens X % vom Geld über der Reserve (wenn eingestellt). 0 = kein Limit.
-        private float DayLimit => _dayBuyLimit.Value <= 0f ? 0f
-            : Mathf.Max(_dayBuyLimit.Value, _dayBuyLimitPercent.Value > 0f ? (float)(Math.Max(0.0, Budget) * _dayBuyLimitPercent.Value / 100.0) : 0f);
+        // Tageslimit: fester Wert, aber mindestens X % vom Geld. Bei "ganzes Geld nutzen" mindestens 15 %, wenn kein Prozentwert eingestellt ist.
+        private float DayLimit
+        {
+            get
+            {
+                if (_dayBuyLimit.Value <= 0f) return 0f;
+                float pct = _dayBuyLimitPercent.Value > 0f ? _dayBuyLimitPercent.Value : (_useAllMoney != null && _useAllMoney.Value ? 15f : 0f);
+                return Mathf.Max(_dayBuyLimit.Value, pct > 0f ? (float)(Math.Max(0.0, Budget) * pct / 100.0) : 0f);
+            }
+        }
         private ConfigEntry<int> _maxStockPacks;
         private float _daySpent; private int _daySpentDay = -1;
 
@@ -76,7 +93,15 @@ namespace ShopBot
             _colEnabled = Config.Bind("7. Sammlung", "Sammlung automatisch vervollständigen", true, "Kauft Packs von unfertigen Sets (Collection Tracker) und lässt sie in den Openern öffnen.");
             _colReserve = Config.Bind("7. Sammlung", "Sicherheitsreserve ($)", 20000f, "So viel Geld bleibt immer übrig (Miete/Löhne). Alles darüber darf für Packs ausgegeben werden.");
             _useAllMoney = Config.Bind("7. Sammlung", "Ganzes Geld nutzen (nur Rechnungen zurückhalten)", true, "An: der Bot darf alles ausgeben, hält aber offene Rechnungen + die nächsten Tagesrechnungen (x1,5) zurück – so geht das Konto nie ins Minus. Aus: feste Sicherheitsreserve."); 
-            _colFocusSets = Config.Bind("7. Sammlung", "Ziel-Sets gleichzeitig", 5, "An so vielen Sets wird gleichzeitig gearbeitet (die fast fertigen zuerst).");
+            _colFocusSets = Config.Bind("7. Sammlung", "Ziel-Sets gleichzeitig", 5, "An so vielen Sets wird gleichzeitig gearbeitet.");
+            _colEfficiency = Config.Bind("7. Sammlung", "Sets nach Effizienz wählen", true, "An: Sets, bei denen pro Dollar die meisten neuen Karten zu erwarten sind (viele fehlende Karten, günstige Packs). Aus: fast fertige Sets zuerst.");
+            _colPacksPerMissing = Config.Bind("7. Sammlung", "Fast fertige Sets: max. Packs pro fehlender Karte", 1500, "Fehlen nur noch 1-3 Karten, kauft der Bot höchstens so viele Packs pro fehlender Karte – danach wird das Set pausiert (Karten von Kunden ankaufen). 0 = kein Deckel.");
+            _colPacksBoughtCfg = Config.Bind("7. Sammlung", "Packs gekauft pro Set (intern)", "", "Zähler für den Deckel oben. Leeren = zurücksetzen.");
+            foreach (var part in (_colPacksBoughtCfg.Value ?? "").Split('|'))
+            {
+                int eq = part.LastIndexOf('=');
+                if (eq > 0 && int.TryParse(part.Substring(eq + 1), out var n)) _setPacksBought[part.Substring(0, eq)] = n;
+            }
             _colFills = Config.Bind("7. Sammlung", "Vorrat in Opener-Füllungen", 2f, "Vorrat = Kapazität ALLER Pack-Opener x diesen Wert (z. B. 11 Automaten x 448 Packs x 2 = 9856 Packs), verteilt auf die Ziel-Sets. Passt sich automatisch an, wenn neue Automaten dazukommen.");
             _colBudgetPerExtraSet = Config.Bind("7. Sammlung", "Budget pro zusätzlichem Ziel-Set ($)", 50000f, "Je so viel Geld über der Reserve wird ein Ziel-Set mehr gleichzeitig bespielt. 0 = aus.");
             _colPokemonOnly = Config.Bind("7. Sammlung", "Nur Pokémon-Sets", true, "Nur Sets aus Pokémon-Shops (Pokemon Shop, Pokemon Pocket Shop) – keine Tetramon/Grundspiel-Sets.");
@@ -120,6 +145,7 @@ namespace ShopBot
             HandleHiring();
             HandleSorting();
             HandlePackEmergency();
+            DayReportTick();
 
             if (_colEnabled.Value && (_colTimer += 1f) >= 60f) { _colTimer = 0f; SafeRun("Sammlung", CollectionTick); }
             if (_bulkEnabled.Value && (_bulkTimer += 1f) >= 300f) { _bulkTimer = 0f; SafeRun("Kartenablage", BulkTick); }
@@ -484,7 +510,7 @@ namespace ShopBot
             if (_ctOrderType == null) _ctOrderType = AccessTools.TypeByName("CollectionTracker.CTSetOrdering");
             if (_ctShopType == null || _ctOrderType == null)
             {
-                if (!_ctWarned) { _ctWarned = true; Logger.LogWarning("Collection Tracker nicht gefunden – Sammel-Funktionen aus."); }
+                if (!_ctWarned) { _ctWarned = true; Logger.LogWarning("Collection Tracker nicht gefunden – Sammel-Funktionen aus."); ModMissing("Collection Tracker", "Sammlung / Pack-Kauf"); }
                 return false;
             }
             return true;
@@ -738,7 +764,32 @@ namespace ShopBot
             float PackPrice(int restockIdx) { float c = CaseCost(restockIdx, out int per); return per > 0 ? c / per : 999f; }
             int extra = _colBudgetPerExtraSet.Value > 0 ? (int)(Budget / _colBudgetPerExtraSet.Value) : 0;
             int focusCount = Mathf.Clamp(_colFocusSets.Value + extra, 1, Mathf.Max(1, _colMaxFocusSets.Value));
-            var focus = candidates.OrderBy(c => c.Key.Total - c.Key.Have)
+            // Fast fertige Sets (nur noch 1–3 seltene Karten) nicht endlos weiterkaufen: Deckel pro fehlender Karte
+            var allCandidates = candidates.ToList();   // Opener öffnen auch Packs pausierter Sets (schon gekauft)
+            var capped = new List<string>();
+            candidates = candidates.Where(c =>
+            {
+                int miss = c.Key.Total - c.Key.Have;
+                if (miss > 3 || _colPacksPerMissing.Value <= 0) return true;
+                int boughtPacks = _setPacksBought.TryGetValue(c.Key.Name, out var bp) ? bp : 0;
+                if (boughtPacks < _colPacksPerMissing.Value * miss) return true;
+                capped.Add($"{c.Key.Name} ({miss} fehlen, {boughtPacks} Packs gekauft)");
+                return false;
+            }).ToList();
+            if (capped.Count > 0 && Time.unscaledTime >= _cappedLogAt)
+            {
+                _cappedLogAt = Time.unscaledTime + 1800f;
+                Note($"Sammlung: fast fertige Sets pausiert (fehlende Karten lieber von Kunden ankaufen): {string.Join(", ", capped.Take(5))}");
+            }
+
+            // Effizienz: Anteil fehlender Karten pro Dollar Packpreis = wie viele NEUE Karten bringt ein Dollar ungefähr
+            //  (Alternative: fast fertige Sets zuerst – für die Boost-Stufen des Collection Trackers)
+            List<KeyValuePair<SetInfo, int>> focus;
+            if (_colEfficiency.Value)
+                focus = candidates.OrderByDescending(c => (c.Key.Total - c.Key.Have) / (float)Mathf.Max(1, c.Key.Total) / Mathf.Max(0.01f, PackPrice(c.Value)))
+                                  .Take(focusCount).ToList();
+            else
+                focus = candidates.OrderBy(c => c.Key.Total - c.Key.Have)
                                   .ThenBy(c => PackPrice(c.Value))
                                   .Take(focusCount).ToList();
 
@@ -746,7 +797,7 @@ namespace ShopBot
             foreach (var f in focus) foreach (var t in GetSetPackTypes(f.Key.Type)) _focusPackTypes.Add(t);
             // Opener-Arbeiter: Packs ALLER unfertigen (kaufbaren) Pokémon-Sets – nie von fertigen Sets
             _openerPackTypes.Clear();
-            foreach (var c in candidates) foreach (var t in GetSetPackTypes(c.Key.Type)) _openerPackTypes.Add(t);
+            foreach (var c in allCandidates) foreach (var t in GetSetPackTypes(c.Key.Type)) _openerPackTypes.Add(t);
             _focusText = focus.Count == 0 ? "-" : string.Join(", ", focus.Select(f => $"{f.Key.Name} {f.Key.Have}/{f.Key.Total}"));
             _dashFocus = focus.Select(f => (f.Key.Name, f.Key.Have, f.Key.Total)).ToList();
             _dashSetsTotal = sets.Count;
@@ -804,6 +855,7 @@ namespace ShopBot
                     _statSpent += cost * cases;
                     AddBuySpent(cost * cases);
                     _statPackCases += cases;
+                    CountSetPacks(f.Key.Name, cases * perCase);
                     Note($"Gekauft: {cases} Kartons {f.Key.Name} ({cases * perCase} Packs, ~{GameInstance.GetPriceString(cost * cases)}) – Set {f.Key.Have}/{f.Key.Total}");
                 }
                 else Logger.LogInfo($"Kauf {f.Key.Name} nicht möglich: {msg}");

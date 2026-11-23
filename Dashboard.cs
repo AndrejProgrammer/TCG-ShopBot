@@ -558,6 +558,29 @@ namespace ShopBot
             ProgressCard("Pack-Vorrat Ziel-Sets", $"{_dashStockHave:N0} / {_dashStockTarget:N0}", _dashStockTarget > 0 ? (float)_dashStockHave / _dashStockTarget : 0f, CBlue, "Lager + unterwegs");
             GUILayout.EndHorizontal();
 
+            // Warnungen: fehlende Mods, volle Vitrinen
+            if (_modWarnings.Count > 0 || _dashVitrinesFull > 0)
+            {
+                Section("Hinweise");
+                foreach (var w in _modWarnings) GUILayout.Label("⚠ " + w, Txt(13, CRed, FontStyle.Bold, false));
+                if (_dashVitrinesFull > 0) GUILayout.Label($"⚠ Vitrinen voll – {_dashVitrinesFull:N0} Karten warten in der Kartenablage. Mehr Karten-Vitrinen aufstellen.", Txt(13, CRed, FontStyle.Bold, false));
+            }
+
+            // Tagesbericht: heute + letzte Tage
+            Section("Tagesbericht", "Bot-Kasse und Bot-Ausgaben");
+            void DayRow(string label, DayRecord r)
+            {
+                GUILayout.BeginHorizontal(_sCard);
+                GUILayout.Label(label, _sTxt, GUILayout.Width(110));
+                GUILayout.Label($"Einnahmen {Money(r.Income)}", Txt(13, CGreen, FontStyle.Bold, false), GUILayout.Width(200));
+                GUILayout.Label($"Ausgaben {Money(r.Spent)}", Txt(13, CRed, FontStyle.Bold, false), GUILayout.Width(200));
+                GUILayout.Label($"{r.Customers} Kunden · ~{r.Packs:N0} Packs gekauft", _sDim);
+                GUILayout.FlexibleSpace();
+                GUILayout.EndHorizontal();
+            }
+            if (_today != null) DayRow($"Heute (Tag {_today.Day + 1})", _today);
+            for (int i = _dayHistory.Count - 1; i >= 0 && i >= _dayHistory.Count - 3; i--) DayRow($"Tag {_dayHistory[i].Day + 1}", _dayHistory[i]);
+
             Section("Schnellaktionen");
             GUILayout.BeginHorizontal();
             if (GUILayout.Button("Preise jetzt prüfen", _sBtn)) { _priceTimer = 999f; Note("Preise werden sofort geprüft"); }
@@ -607,13 +630,16 @@ namespace ShopBot
             Switch(_colPokemonOnly, "Nur Pokémon-Sets", "keine Tetramon-/Grundspiel-Sets");
             Two(() =>
             {
-                Slider(_colReserve, "Sicherheitsreserve", 0f, 200000f, 5000f, Usd, "bleibt immer übrig");
+                Switch(_useAllMoney, "Ganzes Geld nutzen", $"hält nur Rechnungen zurück (jetzt {Money(Reserve)}) – nie ins Minus");
+                Slider(_colReserve, "Sicherheitsreserve", 0f, 200000f, 5000f, Usd, "nur wenn \"Ganzes Geld nutzen\" aus ist");
                 Slider(_colFills, "Vorrat (Opener-Füllungen)", 0.5f, 6f, 0.5f, v => $"{v:0.0}x", "Grundvorrat = Kapazität aller Opener × Wert");
                 SliderInt(_colCasesPerBuy, "Max. Kartons pro Bestellung", 5, 100, "", "pro Set und Bestellung");
             }, () =>
             {
                 Slider(_colBudgetPerExtraSet, "Budget pro zusätzlichem Ziel-Set", 0f, 200000f, 5000f, v => v <= 0 ? "aus" : Usd(v), "mehr Geld = mehr Sets gleichzeitig");
                 SliderInt(_colMaxFocusSets, "Max. Ziel-Sets gleichzeitig", 1, 20, "");
+                Switch(_colEfficiency, "Sets nach Effizienz wählen", "meiste neue Karten pro Dollar (aus = fast fertige zuerst)");
+                SliderInt(_colPacksPerMissing, "Fast fertige Sets: max. Packs pro fehlender Karte", 0, 10000, "", "0 = kein Deckel");
                 Slider(_colMaxFills, "Max. Vorrat (Füllungen)", 1f, 8f, 0.5f, v => $"{v:0.0}x");
             });
 
@@ -709,6 +735,7 @@ namespace ShopBot
             {
                 Switch(_sortEnabled, "Volle Kartons ins Lagerregal", "Ware mit Laden-Regalfach bleibt liegen (Bot räumt daraus ein)");
                 Switch(_sortKeepOpenerPacks, "Packs für Opener am Boden lassen", "bis eine Opener-Füllung, Rest ins Lager");
+                Switch(_pullFromStorage, "Kartons aus dem Lagerregal holen", $"für freie Opener und halb leere Regale · {_statPulled} geholt");
             }, () =>
             {
                 Switch(_sortTrashEmpty, "Leere Kartons wegwerfen", "braucht einen Mülleimer im Laden");

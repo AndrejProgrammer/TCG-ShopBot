@@ -49,7 +49,7 @@ namespace ShopBot
             var tWant = AccessTools.TypeByName("CardGradeOverhaul.Want");
             if (tGrading == null || tCompanies == null || tCompany == null || tWant == null)
             {
-                if (!_gradeWarned) { _gradeWarned = true; Logger.LogWarning("CardGrade Overhaul nicht gefunden – Auto-Graden aus."); }
+                if (!_gradeWarned) { _gradeWarned = true; Logger.LogWarning("CardGrade Overhaul nicht gefunden – Auto-Graden aus."); ModMissing("CardGrade Overhaul", "Graden"); }
                 return;
             }
 
