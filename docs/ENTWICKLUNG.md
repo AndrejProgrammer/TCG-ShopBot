@@ -230,3 +230,15 @@ Problem: Pack-Vorrat lag fast durchgehend unter 1 Opener-Füllung (25 Opener, 30
 - **Config englisch + Migration (`ConfigMigration.cs`):** Tabelle alt (deutsch) → neu. Beim Start werden Werte aus `ConfigFile.OrphanedEntries` (per Traverse) übernommen, alte Einträge entfernt, gespeichert; dann Sprache = de.
 - **Dashboard-Animation:** Werte pro Control in `_anim` (Schlüssel `GUIUtility.GetControlID`), nur bei `EventType.Repaint` nachgeführt (sonst mehrfach pro Bild). Feste IDs ≥ 0x7F000000, damit sie nicht mit Unity-IDs kollidieren. Sanftes Scrollen: Mausrad-Event abfangen (`Use()`), Ziel in `_scrollTarget`, in `Update` interpolieren; Inhaltshöhe aus einem leeren Rect am Ende der ScrollView. Sprach-Popup: Klicks am Anfang der Fensterfunktion abfangen, sonst bekommt sie das darunterliegende Control.
 - **Build:** `-p:CopyToGame=false` verhindert das Kopieren ins Spiel (läuft das Spiel, wird die DLL sonst schon überschrieben). Release: `tools/release.ps1` → `dist/ShopBot-<version>.zip`.
+
+## v0.6.1–0.6.3 (25.11.) – Neustart-Werte, Regale, Kartenablagen
+
+- **Tageswerte über Neustart (`DayState.cs`):** Ausgaben des Spieltags + Tagesbericht in internen Config-Einträgen („99. Internal“, in F1 versteckt über eine Klasse `ConfigurationManagerAttributes { Browsable = false }`). Rückfall: `CPlayerData.m_GameReportDataCollect.supplyCost` (wird mit dem Spielstand gespeichert). Beim Wechsel ins Hauptmenü `ResetDayStateRestore()`.
+- **Regale – drei Fallen, alle im Spiel bestätigt (Regal-Übersicht `[Shelves]` im Log):**
+  1. **Hängender Merker:** Gelieferte Kartons vor dem Eingang behalten `m_IsTogglingOpenClose = true` (tausende Treffer pro Minute) – der Bot hielt sie für „wird gerade geöffnet“ und nahm sie nie. `BoxBusy()` gibt sie frei, wenn sie still liegen: „öffnen“ nach 3 s, getragen/bewegt nach 15 s.
+  2. **`ShelfCompartment.CheckItemType()` schaut auf den Inhalt**, nicht aufs Etikett: bei leerem Fach kommt nicht die Etikett-Ware zurück → Abbruch. Leere Fächer: erstes Stück mit `InteractablePackagingBox_Item.DispenseItem(false, comp)` (Spiel prüft Passform und setzt das Etikett), Rest manuell.
+  3. **Nachbestellen** prüfte „Regal gesamt ≥ halber Karton“ – ein paar halb volle Fächer versteckten 26 leere. Jetzt Lücke = Σ `GetMaxItemCount()` der beschrifteten Fächer − Inhalt, bis 3 Kartons; zählt nicht gegen das Pack-Tageslimit (das war in Minuten verbraucht).
+- **Etikett überschreiben geht:** `DispenseItem` in ein leeres Fach mit fremdem Etikett belegt es neu (Neubelegung 100 % erfolgreich).
+- **Wichtig: `FirstOrDefault()` auf `EItemType`** liefert den ersten Enum-Wert `BasicCardPack`, nicht `None` → nullable verwenden.
+- **Kein Lagerregal** beim User (Shop B frei, aber keine Regale) – Kartons liegen vor dem Eingang. `m_WarehouseShelfList` leer → kein Holen aus dem Lager versuchen.
+- **Kartenablagen:** Doppelte über alle Ablagen mit Platz, gegradete in die mit dem meisten Platz; Vitrinen nehmen aus allen (gegradete zuerst). Verkaufsregeln: normale Karten nur Duplikate (1 bleibt), gegradete zuerst, genau 1 PSA 10 je Karte bleibt.

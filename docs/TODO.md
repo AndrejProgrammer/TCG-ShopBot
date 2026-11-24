@@ -10,8 +10,11 @@ Reihenfolge = Empfehlung. ⭐ = wichtig vor dem Public-Schalten.
 - [x] (0.6.1) 8 verwaiste deutsche Einträge aus uralten Versionen in der Config aufräumen (z. B. „Anzahl Kassierer“, „Gleichzeitige Ziel-Sets“) – stören nicht.
 - [ ] ⭐ **Testinstallation auf frischem Spielstand ohne alte Config** – wie erlebt ein neuer Nutzer den Bot? (Standardwerte sind auf späten Spielstand abgestimmt.)
 
-- [ ] **0.6.2 im Spiel prüfen:** Log „Reordered: …“ erscheint, beschriftete Regale werden voll; leere Regale ohne Etikett bekommen Ware (keine Opener-Packs!); Kartenablage-Meldung „… (N storages)“ mit N > 1; Vitrinen bekommen Karten aus allen Ablagen.
-- [ ] **0.6.1 im Spiel prüfen:** Neustart am selben Tag → Log „already spent today (restored after restart)“, Dashboard „Einkauf heute“ nicht $0; Tagesbericht/Tempo nach Neustart weiter da; Log „unused old entries removed“.
+- [x] (0.6.3, getestet 24.11.) Regale: leere Fächer 188 → 66 in 3 Min., 4.500–6.600 Artikel/Min., Neubelegung 100 %, Nachbestellen nach Lücke, Kartenablagen alle 4, keine Fehler. Ursprünglich geplant: Log „Reordered: …“ erscheint, beschriftete Regale werden voll; leere Regale ohne Etikett bekommen Ware (keine Opener-Packs!); Kartenablage-Meldung „… (N storages)“ mit N > 1; Vitrinen bekommen Karten aus allen Ablagen.
+- [x] (getestet 24.11.) **0.6.1 im Spiel prüfen:** Neustart am selben Tag → Log „already spent today (restored after restart)“, Dashboard „Einkauf heute“ nicht $0; Tagesbericht/Tempo nach Neustart weiter da; Log „unused old entries removed“.
+
+- [ ] **Beobachten:** „Regale vor Openern“ – lässt sich ein beschriftetes Fach nie befüllen, bekommen die Opener diese Pack-Sorte nicht mehr (keine Absicherung eingebaut). In der Regal-Übersicht prüfen.
+- [ ] **Beobachten:** Nachbestellen für große Regallücken kostet anfangs einige 10.000 $ – ggf. Menge pro Bestellung/Tag begrenzen (User gefragt, noch offen).
 
 ## Bot passt sich dem Spielverlauf an (ersetzt den starren Assistenten)
 - [ ] ⭐ **Schritt 1 – Messen & anzeigen:** Ø Einnahmen/Kosten pro Tag (letzte 3 Tage), Level, Erweiterungen, Opener/Kassen/Vitrinen/Arbeiter, Lizenzen, Sammlungsfortschritt. Daraus **Spielphase** erkennen und im Dashboard zeigen („Phase: Sammeln (erkannt)“) – noch ohne Verhalten zu ändern, ein paar Spieltage beobachten.

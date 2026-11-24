@@ -2,15 +2,20 @@
 
 Ausführliche Entwickler-Notizen: [docs/ENTWICKLUNG.md](docs/ENTWICKLUNG.md)
 
-## 0.6.2 – 25.11.2026
-- **Fix – shop shelves were never restocked:** reordering goods for the shelves (and goods customers miss) no longer counts against the pack daily limit – pack buying used it up within minutes. The many pack boxes for the openers no longer count toward the box limit either. Only the safety reserve applies.
+## 0.6.3 – 25.11.2026 – shelves really get filled
+- **Fix – boxes in front of the entrance were never used:** delivered boxes keep an "opening" flag forever, so the bot skipped them (seen: 176 boxes, all "busy"). A box stuck in "opening" is now treated as free after 3 s, a carried/moved box that lies still after 15 s – for shelves, openers and sorting.
+- **Fix – empty shelf slots with a label stayed empty:** the bot asked the game which goods are inside the slot – for an empty slot that is "none", so it stopped. Only half-full slots were topped up. Now the first item goes in the game's own way, the rest as before.
 - **Empty labeled slots get new goods:** if the goods of an empty labeled slot are gone (no box anywhere, nothing on the way), the bot relabels it with goods that are here – booster boxes/displays first, then packs of the new sets. Packs for the openers may go onto the shelves too (only a few hundred fit). Can be switched off.
 - **Smarter shelf restocking:** orders by the real gap (room in all labeled slots of a goods type minus what is on them), up to 3 boxes at once. Before, a few half-full slots counted as "enough" and completely empty slots of the same goods were never refilled.
 - **Shelves first:** while labeled shelf slots of a pack type still miss items, the openers leave those boxes for the shelves (a few hundred items) – then all packs go to the openers again.
-- **Fix – boxes in front of the entrance were never used:** delivered boxes can keep a "being carried/moved/opened" flag forever, so the bot skipped them (seen: 176 boxes, all "busy"). A flagged box that has not moved for 15 s is now treated as free – for shelves, openers and sorting.
-- **Fix – empty shelf slots with a label stayed empty:** the bot asked the game which goods are inside the slot – for an empty slot that is "none", so it stopped. Only half-full slots were topped up. Now the first item goes in the game's own way, the rest as before.
 - **Shelf status** once a minute in the log (`[Shelves] …`) and in the dashboard: empty slots with/without label, items stocked, goods without any box.
-- **Empty shelves without a label get filled:** the bot picks goods itself – boxes on the floor whose goods have the fewest shelf slots, otherwise goods from the storage shelf that are on no shelf yet. Booster boxes/displays first, then packs; never packs meant for the openers. The first item is placed the game's own way, so the game checks the fit and labels the slot. Can be switched off.
+- Stocking speed in the dashboard up to 150 items per second (was 30) – the bot puts goods in directly, 120/s fills a shop in a few minutes.
+- No more useless storage pulls when there is no storage shelf.
+- Tested in the game: empty slots 188 → 66 within 3 minutes, 4,500–6,600 items stocked per minute, relabeling 100 % successful, no errors.
+
+## 0.6.2 – 25.11.2026
+- **Fix – shop shelves were never restocked:** reordering goods for the shelves (and goods customers miss) no longer counts against the pack daily limit – pack buying used it up within minutes. The many pack boxes for the openers no longer count toward the box limit either. Only the safety reserve applies.
+- **Empty shelves without a label get filled:** the bot picks goods itself – boxes on the floor whose goods have the fewest shelf slots, otherwise goods from the storage shelf that are on no shelf yet. Booster boxes/displays first, then packs. The first item is placed the game's own way, so the game checks the fit and labels the slot. Can be switched off.
 - **All card storages are used:** duplicates are spread over every card storage with room (not only the first one); a single graded card no longer blocks the duplicates. Graded cards go into the storage with the most room. Runs every 2 minutes instead of 5.
 - **Display cases take cards from all card storages** – the ones with graded cards first.
 - Selling rules unchanged: normal cards only as duplicates (one copy always stays, sets stay complete), graded cards first, exactly one PSA 10 of every card stays.

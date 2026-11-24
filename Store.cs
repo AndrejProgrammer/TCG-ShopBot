@@ -431,6 +431,7 @@ namespace ShopBot
                         var t = comp.GetItemType();
                         if (t == EItemType.None || floorTypes.Contains(t) || !comp.HasEnoughSlot()) continue;
                         if (comp.GetItemCount() > comp.GetMaxItemCount() / 2) continue;      // erst wenn das Fach halb leer ist
+                        if ((S<ShelfManager>()?.m_WarehouseShelfList?.Count ?? 0) == 0) break;   // no storage shelf
                         _shelfPullTries++;
                         if (PullFromStorage(x => x == t ? 0 : -1, 1, shelf.transform.position) > 0) { floorTypes.Add(t); sorts++; _shelfPulled++; }
                         else floorTypes.Add(t);                                                // nichts im Lager -> nicht nochmal suchen

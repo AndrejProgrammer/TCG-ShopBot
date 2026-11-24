@@ -57,7 +57,9 @@ namespace ShopBot
                 if (_busySince.Count > 2000) foreach (var k in _busySince.Keys.Where(k => k == null).ToList()) _busySince.Remove(k);
                 return true;
             }
-            if (Time.unscaledTime - s.since < 15f) return true;
+            // "opening" takes about 1 s in the game – a box stuck in it is freed after 3 s; carried/moving boxes after 15 s
+            float wait = (!hold && !lerp && toggle) ? 3f : 15f;
+            if (Time.unscaledTime - s.since < wait) return true;
             _busyStuck++;
             return false;                                           // flag stuck, box lies still -> free
         }
@@ -184,6 +186,7 @@ namespace ShopBot
         {
             var sm = S<ShelfManager>();
             if (sm == null || max <= 0) return 0;
+            if (sm.m_WarehouseShelfList == null || sm.m_WarehouseShelfList.Count == 0) return 0;   // no storage shelf at all -> nothing to take
             var found = new List<(ShelfCompartment comp, System.Collections.IList recs, int index, EItemType type, int prio)>();
             int compartments = 0, records = 0;
             foreach (var ws in sm.m_WarehouseShelfList)
