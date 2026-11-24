@@ -1165,10 +1165,19 @@ namespace ShopBot
         private void PageAdvisor()
         {
             PageTitle(T("Advisor"), T("The bot thinks like a good player: what holds the shop back, what pays off next, what only you can do."));
+            if (!_advReady)
+            {
+                GUILayout.Space(10);
+                GUILayout.Label(T("Calculating … (a few seconds after loading)"), _sDim);
+                return;
+            }
+            bool fullDays = IncomeDays >= 1;
+            float todaySoFar = _today != null ? _today.ShopIncome : 0f;
             GUILayout.BeginHorizontal();
-            Stat(T("Income / day"), _advIncome > 0f ? Money(_advIncome) : "…", IncomeDays < 1 ? T("measured from the first full day") : T("average of the last days"), CGreen);
+            Stat(fullDays ? T("Income / day") : T("Income so far today"), fullDays ? Money(_advIncome) : Money(todaySoFar),
+                 fullDays ? T("average of the last days") : T("full days are averaged from tomorrow on"), CGreen);
             Stat(T("Fixed costs / day"), Money(_advFixed), T("rent, electricity, wages"), CRed);
-            Stat(T("Profit / day"), _advIncome > 0f ? Money(_advProfit) : "…", T("before packs and investments"), _advProfit >= 0f ? CGreen : CRed);
+            Stat(T("Profit / day"), fullDays ? Money(_advProfit) : "…", fullDays ? T("before packs and investments") : T("after the first full day"), _advProfit >= 0f ? CGreen : CRed);
             Stat(T("Reserve"), Money(_advReserveTarget), T("3 days of fixed costs"));
             GUILayout.EndHorizontal();
 

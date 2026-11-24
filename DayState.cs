@@ -14,6 +14,7 @@ namespace ShopBot
     public partial class Plugin
     {
         private ConfigEntry<string> _dayState, _dayReportState;
+        private ConfigEntry<float> _billsState;
         private bool _dayRestored, _reportRestored;
         // hides internal entries in the Configuration Manager (F1); it looks for a class with this name
         private static readonly ConfigurationManagerAttributes Hidden = new ConfigurationManagerAttributes { Browsable = false };
@@ -23,6 +24,9 @@ namespace ShopBot
         {
             _dayState = Config.Bind("99. Internal", "Day purchases", "", new ConfigDescription(
                 "Internal: purchases of the current game day (day;spent;emergency) so a restart does not reset the daily limit. Do not edit.", null, Hidden));
+            _billsState = Config.Bind("99. Internal", "Fixed costs per day", 0f, new ConfigDescription(
+                "Internal: measured rent + electricity + wages per day (survives a restart). Do not edit.", null, Hidden));
+            if (_billsState.Value > 0f) _billsEstimate = _billsState.Value;
             _dayReportState = Config.Bind("99. Internal", "Daily report", "", new ConfigDescription(
                 "Internal: daily report of the last days (survives a restart). Do not edit.", null, Hidden));
         }

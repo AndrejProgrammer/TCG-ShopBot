@@ -493,6 +493,7 @@ namespace ShopBot
             if (_billsDay != CPlayerData.m_CurrentDay) { _billsDay = CPlayerData.m_CurrentDay; _billsToday = 0f; }
             _billsToday += amount;
             _billsEstimate = Mathf.Max(_billsToday, _billsEstimate * 0.9f);     // folgt steigenden Rechnungen sofort, sinkenden langsam
+            if (_billsState != null) _billsState.Value = _billsEstimate;          // keep it across restarts (advisor, reserve)
         }
         private float OpenBills()
         {

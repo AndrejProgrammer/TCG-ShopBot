@@ -19,7 +19,8 @@ namespace ShopBot
         internal readonly List<FormattableString> _advTips = new List<FormattableString>();
         internal readonly List<(FormattableString what, float cost, FormattableString verdict)> _advInvest = new List<(FormattableString, float, FormattableString)>();
         internal string _gradeTierText = "";
-        private float _advTimer = 45f;
+        private float _advTimer = 55f;
+        internal bool _advReady;
         // shelf facts from the shelf status (Store.cs)
         internal int _advShelfSlots, _advShelfEmpty, _advShelfCapacity;
         private int _advOpenerSamples, _advOpenerIdleSum, _advOpenersTotal;
@@ -48,6 +49,7 @@ namespace ShopBot
 
         private void AdvisorTick()
         {
+            _advReady = true;
             _advIncome = _phAvgIncome;
             _advFixed = FixedPerDay;
             _advProfit = _advIncome - _advFixed;
