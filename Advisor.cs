@@ -44,12 +44,37 @@ namespace ShopBot
             SafeRun("Advisor", AdvisorTick);
         }
 
+        // ---- game clock speed: game minutes per real minute (measured, smoothed) ----
+        private float _clockPrevReal = -1f, _gameMinPerRealMin;
+        private int _clockPrevGame = -1;
+
+        private void SampleClock()
+        {
+            try
+            {
+                if (!CSingleton<LightManager>.IsSet || LightManager.GetHasDayEnded()) { _clockPrevReal = -1f; return; }
+                int game = CPlayerData.m_CurrentDay * 1440 + LightManager.GetTimeHour() * 60 + LightManager.GetTimeMinute();
+                float real = Time.unscaledTime;
+                if (_clockPrevReal >= 0f && game > _clockPrevGame && game - _clockPrevGame < 600)   // same day, clock running
+                {
+                    float rate = (game - _clockPrevGame) / ((real - _clockPrevReal) / 60f);
+                    _gameMinPerRealMin = _gameMinPerRealMin <= 0f ? rate : _gameMinPerRealMin * 0.7f + rate * 0.3f;
+                }
+                _clockPrevReal = real; _clockPrevGame = game;
+            }
+            catch { }
+        }
+
+        // real minutes one shop day (8:00-21:00) takes; unknown -> 15 min
+        private float RealMinutesPerShopDay => _gameMinPerRealMin > 0.1f ? 780f / _gameMinPerRealMin : 15f;
+
         // average fixed costs per day (rent + electricity + wages): measured from paid bills
         private float FixedPerDay => Mathf.Max(0f, _billsEstimate);
 
         private void AdvisorTick()
         {
             _advReady = true;
+            SampleClock();
             _advIncome = _phAvgIncome;
             _advFixed = FixedPerDay;
             _advProfit = _advIncome - _advFixed;
@@ -94,7 +119,8 @@ namespace ShopBot
             if (turnover > 1.5f && _advShelfEmpty == 0) _advTips.Add($"Place more shelves – the shelves sell out {turnover:0.0}× per day");   // i18n-fs
             if (_packStarving && _advProfit > 0f && _packRatePerMin > 0f)
             {
-                float perDay = _packRatePerMin * 60f * 12f;   // rough: openers run about 12 h of game time per day
+                // packs per real minute x real minutes of one shop day (8:00-21:00 = 780 game minutes, clock speed measured)
+                float perDay = _packRatePerMin * RealMinutesPerShopDay;
                 _advTips.Add($"The openers use ~{perDay:N0} packs a day – more than the income buys. Fewer openers or a higher daily limit");   // i18n-fs
             }
             else if (!_packStarving && openerIdle < 0.05f && _advOpenersTotal > 0 && _advProfit > 20000f)
