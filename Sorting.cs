@@ -38,11 +38,28 @@ namespace ShopBot
             SafeRun("Sorting", SortTick);
         }
 
-        private static bool BoxBusy(InteractablePackagingBox_Item b)
+        // Is a box being carried / moved / opened right now?
+        // Boxes delivered in front of the entrance can keep such a flag forever (seen: 176 boxes, all "busy", never stocked).
+        // So: a flagged box that has not moved for 15 s is treated as free. A box someone really carries keeps moving.
+        private readonly Dictionary<InteractablePackagingBox_Item, (float since, Vector3 pos)> _busySince = new Dictionary<InteractablePackagingBox_Item, (float, Vector3)>();
+        private int _busyHold, _busyLerp, _busyToggle, _busyStuck;
+
+        private bool BoxBusy(InteractablePackagingBox_Item b)
         {
             var tb = Traverse.Create(b);
-            return tb.Field("m_IsBeingHold").GetValue<bool>() || tb.Field("m_IsLerpingToPos").GetValue<bool>()
-                   || tb.Field("m_IsTogglingOpenClose").GetValue<bool>();
+            bool hold = tb.Field("m_IsBeingHold").GetValue<bool>(), lerp = tb.Field("m_IsLerpingToPos").GetValue<bool>(), toggle = tb.Field("m_IsTogglingOpenClose").GetValue<bool>();
+            if (!hold && !lerp && !toggle) { _busySince.Remove(b); return false; }
+            if (hold) _busyHold++; if (lerp) _busyLerp++; if (toggle) _busyToggle++;
+            var p = b.transform.position;
+            if (!_busySince.TryGetValue(b, out var s) || (s.pos - p).sqrMagnitude > 0.0004f)
+            {
+                _busySince[b] = (Time.unscaledTime, p);
+                if (_busySince.Count > 2000) foreach (var k in _busySince.Keys.Where(k => k == null).ToList()) _busySince.Remove(k);
+                return true;
+            }
+            if (Time.unscaledTime - s.since < 15f) return true;
+            _busyStuck++;
+            return false;                                           // flag stuck, box lies still -> free
         }
 
         private void SortTick()

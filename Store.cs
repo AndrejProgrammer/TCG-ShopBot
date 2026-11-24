@@ -299,7 +299,7 @@ namespace ShopBot
                 if (!_openerPackTypes.Contains(b.m_ItemCompartment.GetItemType())) continue;
                 onFloor++;
                 var tb = Traverse.Create(b);
-                if (tb.Field("m_IsBeingHold").GetValue<bool>() || tb.Field("m_IsLerpingToPos").GetValue<bool>() || tb.Field("m_IsTogglingOpenClose").GetValue<bool>()) continue;
+                if (BoxBusy(b)) continue;
                 if (RealItemCount(b) <= 0)
                 {
                     if (!tb.Field("m_IsBoxOpened").GetValue<bool>()) { try { b.SetOpenCloseBox(true, false); } catch { } }
@@ -379,9 +379,8 @@ namespace ShopBot
                 if (b == null || !b.gameObject.activeInHierarchy || b.m_ItemCompartment == null) continue;
                 if (b.m_ItemCompartment.GetItemCount() <= 0) continue;
                 var tb = Traverse.Create(b);
-                if (tb.Field("m_IsBeingHold").GetValue<bool>() || tb.Field("m_IsLerpingToPos").GetValue<bool>()) continue;
+                if (BoxBusy(b)) continue;
                 if (b.m_IsStored) continue;                                   // Kartons im Lagerregal holen die Arbeiter
-                if (tb.Field("m_IsTogglingOpenClose").GetValue<bool>()) continue;
                 // Artikel existieren erst nach dem ersten Öffnen – wie ein Arbeiter den Karton öffnen und nächste Runde nutzen
                 if (RealItemCount(b) <= 0)
                 {
@@ -487,7 +486,7 @@ namespace ShopBot
                     survey.TryGetValue(bt, out var v);
                     v.total++;
                     bool closed = !tb.Field("m_IsBoxOpened").GetValue<bool>();
-                    bool busy = tb.Field("m_IsBeingHold").GetValue<bool>() || tb.Field("m_IsLerpingToPos").GetValue<bool>() || tb.Field("m_IsTogglingOpenClose").GetValue<bool>();
+                    bool busy = BoxBusy(b);
                     bool noItems = RealItemCount(b) <= 0;
                     if (closed) v.closed++; if (noItems) v.noItems++; if (busy) v.busy++;
                     if (!busy && !noItems) v.usable++;
@@ -522,9 +521,9 @@ namespace ShopBot
                 }
             }
             string miss = missing.Count == 0 ? "-" : string.Join(", ", missing.OrderByDescending(k => k.Value).Take(6).Select(k => $"{k.Key} ({k.Value})"));
-            Logger.LogInfo($"[Shelves] {slots} slots, empty: {emptyLabeled} labeled + {emptyUnlabeled} without label | last minute: {_shelfStatMoved} items stocked, {_shelfStatEmpty} into slots without label | empty labeled: {onFloor} have boxes on the floor, {onlyStorage} only in storage | those floor boxes: {fTotal} (closed {fClosed}, no items {fNoItems}, busy {fBusy}, usable {fUsable}) | first item into empty slot: {_dispOk}/{_dispTry}{(_dispWhy.Length > 0 ? " (" + _dispWhy + ")" : "")} | storage pulls: {_shelfPulled}/{_shelfPullTries} | no box for: {miss}");
+            Logger.LogInfo($"[Shelves] {slots} slots, empty: {emptyLabeled} labeled + {emptyUnlabeled} without label | last minute: {_shelfStatMoved} items stocked, {_shelfStatEmpty} into slots without label | empty labeled: {onFloor} have boxes on the floor, {onlyStorage} only in storage | those floor boxes: {fTotal} (closed {fClosed}, no items {fNoItems}, busy {fBusy}, usable {fUsable}) | first item into empty slot: {_dispOk}/{_dispTry}{(_dispWhy.Length > 0 ? " (" + _dispWhy + ")" : "")} | busy flags: held {_busyHold}, moving {_busyLerp}, opening {_busyToggle}, stuck->free {_busyStuck} | storage pulls: {_shelfPulled}/{_shelfPullTries} | no box for: {miss}");
             _dashShelfStatus = F($"{slots} slots · empty: {emptyLabeled} labeled, {emptyUnlabeled} without label");
-            _shelfStatMoved = 0; _shelfStatEmpty = 0; _shelfPullTries = 0; _shelfPulled = 0; _dispTry = 0; _dispOk = 0; _dispWhy = "";
+            _shelfStatMoved = 0; _shelfStatEmpty = 0; _shelfPullTries = 0; _shelfPulled = 0; _dispTry = 0; _dispOk = 0; _dispWhy = ""; _busyHold = _busyLerp = _busyToggle = _busyStuck = 0;
         }
         private readonly Dictionary<EItemType, bool> _isBoxGoods = new Dictionary<EItemType, bool>();
 
