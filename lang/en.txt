@@ -41,10 +41,10 @@
 About = About
 about {0:N0} game days left = about {0:N0} game days left
 ACTIVE = ACTIVE
+Adapt to demand during the day = Adapt to demand during the day
 after the first day change = after the first day change
 All = All
 all in History = all in History
-all others fill the pack openers = all others fill the pack openers
 All Pokémon sets = All Pokémon sets
 All unfinished sets have buyable packs. = All unfinished sets have buyable packs.
 Always buy small stuff below = Always buy small stuff below
@@ -151,6 +151,7 @@ Emergency restock: only {0} packs left for the openers (target at least {1}) –
 End day automatically = End day automatically
 End of day: waiting {0:0}s{1}{2} = End of day: waiting {0:0}s{1}{2}
 English is the default = English is the default
+every 2 min: workers go where work is left; side task \= next task with work = every 2 min: workers go where work is left; side task \= next task with work
 every free opener gets a portion and starts right away = every free opener gets a portion and starts right away
 Expansions = Expansions
 F8 on/off · F9 dashboard = F8 on/off · F9 dashboard
@@ -209,6 +210,7 @@ Max stock (fills) = Max stock (fills)
 Max target sets at once = Max target sets at once
 Max warehouse expansions = Max warehouse expansions
 Max workers (0 \= all) = Max workers (0 \= all)
+minimum – the rest is split by demand = minimum – the rest is split by demand
 Minimum markup on complaints = Minimum markup on complaints
 Minimum portion per opener = Minimum portion per opener
 Missing your language? Copy lang/en.txt from the GitHub page, translate it and put it into BepInEx/plugins/ShopBot/lang/ as <code>.txt (e.g. it.txt). The log file always stays English. = Missing your language? Copy lang/en.txt from the GitHub page, translate it and put it into BepInEx/plugins/ShopBot/lang/ as <code>.txt (e.g. it.txt). The log file always stays English.
@@ -383,8 +385,9 @@ Warehouse expansion {0} bought ({1}) – more room for boxes = Warehouse expansi
 when stock is low: no expansions, only licenses for sets without packs = when stock is low: no expansions, only licenses for sets without packs
 Windows only after X sec without input = Windows only after X sec without input
 Without buyable packs (only via customers/swaps or after a license):  = Without buyable packs (only via customers/swaps or after a license): 
+Work left for the workers (next 2 min, after the bot): openers {0:N0} · shelves {1:N0} · displays {2:N0} = Work left for the workers (next 2 min, after the bot): openers {0:N0} · shelves {1:N0} · displays {2:N0}
 Work plan day {0} = Work plan day {0}
-Work plan day {0}: {1} = Work plan day {0}: {1}
+Work plan day {0} (work left for workers: openers {1:N0}, shelves {2:N0}, displays {3:N0}): {4} = Work plan day {0} (work left for workers: openers {1:N0}, shelves {2:N0}, displays {3:N0}): {4}
 Work plan is recalculated = Work plan is recalculated
 Worker {0} back to the old task = Worker {0} back to the old task
 Workers = Workers

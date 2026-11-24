@@ -61,6 +61,12 @@ namespace ShopBot
             float wait = (!hold && !lerp && toggle) ? 3f : 15f;
             if (Time.unscaledTime - s.since < wait) return true;
             _busyStuck++;
+            // reset the stuck flag in the game too, so the WORKERS can take the box again (not "being held" – that is real)
+            if (!hold)
+            {
+                try { if (toggle) tb.Field("m_IsTogglingOpenClose").SetValue(false); if (lerp) tb.Field("m_IsLerpingToPos").SetValue(false); } catch { }
+            }
+            _busySince.Remove(b);
             return false;                                           // flag stuck, box lies still -> free
         }
 

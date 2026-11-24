@@ -1095,6 +1095,7 @@ namespace ShopBot
         {
             PageTitle(T("Workers"));
             Section(F($"Work plan day {CPlayerData.m_CurrentDay + 1}"), T("strengths + level per task"));
+            GUILayout.Label(F($"Work left for the workers (next 2 min, after the bot): openers {_dashDemand.opener:N0} · shelves {_dashDemand.shelf:N0} · displays {_dashDemand.display:N0}"), _sDim);
             if (_cWorkers.Count == 0) GUILayout.Label(T("No workers in the shop (they come in the morning)."), _sDim);
             foreach (var p in _cWorkers)
             {
@@ -1117,6 +1118,7 @@ namespace ShopBot
             Two(() =>
             {
                 Switch(_workersAuto, T("Assign workers by strengths"), T("new every morning"));
+                Switch(_planAdapt, T("Adapt to demand during the day"), T("every 2 min: workers go where work is left; side task = next task with work"));
                 Switch(_bonusEnabled, T("3× bonus for everyone daily"), T("+1 level per bonus, double experience"));
                 Switch(_upEnabled, T("Upgrades with collection points"), T("working speed first for openers & checkout"));
                 Switch(_hireEnabled, T("Hire new workers automatically"), _statHired > 0 ? F($"this session: {_statHired} hired") : T("as soon as level & money allow"));
@@ -1125,7 +1127,7 @@ namespace ShopBot
             {
                 SliderInt(_planCashiers, T("Cashiers (0 = as many as registers)"), 0, 8, "");
                 SliderInt(_planDisplays, T("Display fillers"), 0, 6, "");
-                SliderInt(_planShelves, T("Shelf stockers"), 0, 6, "", T("all others fill the pack openers"));
+                SliderInt(_planShelves, T("Shelf stockers"), 0, 6, "", T("minimum – the rest is split by demand"));
                 if (BigButton(T("Recalculate work plan now"), CAccent)) { _lastPlanKey = null; _workerTimer = 59f; Note("Work plan is recalculated"); }
             });
         }

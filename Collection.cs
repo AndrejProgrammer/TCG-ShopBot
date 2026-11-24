@@ -1154,14 +1154,52 @@ namespace ShopBot
         }
 
         // ================= Arbeiter einteilen (Einsatzplan nach Stärken) =================
-        private string _lastPlanKey;
+        private string _lastPlanKey, _lastPlanSig;
+        private float _planAdaptAt;
+        private ConfigEntry<bool> _planAdapt;
+        internal (float opener, float shelf, float display) _dashDemand;
+
+        // Work that is left for the workers in the next 2 minutes (items), after what the bot does itself
+        private (float opener, float shelf, float display) WorkDemand()
+        {
+            float window = 120f;
+            float opener = 0f, shelf = 0f, display = 0f;
+            try
+            {
+                // openers: free room in openers that are not running, as far as packs are lying around
+                int freeRoom = 0;
+                var ops = ShelfManager.GetAutoPackOpenerList();
+                if (ops != null) foreach (var o in ops) if (o != null && !o.GetIsProcessing()) freeRoom += Mathf.Max(0, o.m_MaxPackCount - o.GetStoredItemList().Count);
+                var floor = new Dictionary<EItemType, int>();
+                var rm = S<RestockManager>();
+                if (rm != null)
+                    foreach (var b in rm.m_ItemPackagingBoxList)
+                        if (b != null && b.gameObject.activeInHierarchy && !b.m_IsStored && b.m_ItemCompartment != null && b.m_ItemCompartment.GetItemCount() > 0)
+                        { var t = b.m_ItemCompartment.GetItemType(); floor[t] = (floor.TryGetValue(t, out var n) ? n : 0) + b.m_ItemCompartment.GetItemCount(); }
+                int packs = floor.Where(kv => _openerPackTypes.Contains(kv.Key) && !(_shelfNeed.TryGetValue(kv.Key, out var sn) && sn > 0)).Sum(kv => kv.Value);
+                opener = Mathf.Min(freeRoom, packs) - (_openerSelf.Value ? _openerPerSecond.Value * window : 0f);
+                // shelves: missing items in labeled slots, as far as the goods are lying around
+                foreach (var kv in _shelfNeed) shelf += Mathf.Min(kv.Value, floor.TryGetValue(kv.Key, out var n2) ? n2 : 0);
+                shelf -= _stockSelf.Value ? _stockPerSecond.Value * window : 0f;
+                // display cases: empty card slots, as far as cards wait in the card storage
+                int emptyCards = 0;
+                var cs = ShelfManager.GetCardShelfList();
+                if (cs != null) foreach (var c in cs) if (c != null) foreach (var comp in c.GetCardCompartmentList()) if (comp != null && !comp.m_ItemNotForSale && comp.m_StoredCardList.Count == 0) emptyCards++;
+                int waiting = ShelfManager.GetCardStorageShelfList()?.Where(x => x != null).Sum(x => x.GetTotalCardAmount()) ?? 0;
+                display = Mathf.Min(emptyCards, waiting) - (_cardsSelf.Value ? _cardsPerSecond.Value * window : 0f);
+            }
+            catch { }
+            return (Mathf.Max(0f, opener), Mathf.Max(0f, shelf), Mathf.Max(0f, display));
+        }
         private ConfigEntry<int> _planCashiers, _planDisplays, _planShelves;
 
         private void BindWorkerPlanConfig()
         {
             _planCashiers = Config.Bind("9. Workers", "Number of cashiers (0 means as many as registers)", 0, "Main AND side task checkout. Those with the best checkout speed (incl. level).");
             _planDisplays = Config.Bind("9. Workers", "Display fillers (bot fills them itself)", 0, "Workers for display cases. 0 = the bot fills the display cases itself.");
-            _planShelves = Config.Bind("9. Workers", "Shelf stockers (bot stocks itself)", 0, "Workers for shelves. 0 = the bot stocks itself. All other workers fill the pack openers (main AND side task).");
+            _planShelves = Config.Bind("9. Workers", "Shelf stockers (bot stocks itself)", 0, "Minimum number of workers for shelves. The rest is split by demand.");
+            _planAdapt = Config.Bind("9. Workers", "Adapt work plan to demand during the day", true,
+                "Every 2 minutes: where is work left that the bot does not do itself (openers, shelves, display cases)? Workers go there by their strengths; the side task is the next task with work, so nobody stands around.");
             _cashTurbo = Config.Bind("5. Checkout", "Checkout turbo (scan speed x)", 2f, "Cashiers scan this much faster (1 = normal). Works like a second person at every register.");
         }
 
@@ -1187,10 +1225,12 @@ namespace ShopBot
                                     && w.m_PrimaryTask != EWorkerTask.Fired && w.m_PrimaryTask != EWorkerTask.GoBackHome).ToList();
             if (ws.Count == 0) return;
 
-            // Nur neu planen, wenn ein neuer Tag ist oder sich die Belegschaft ändert (deine Änderungen tagsüber bleiben)
+            // Plan anew on a new day / staff change, and during the day when the demand has shifted (at most every 2 min)
             string key = CPlayerData.m_CurrentDay + "|" + _autoCheckout.Value + "|" + string.Join(",", ws.Select(w => w.m_WorkerIndex).OrderBy(i => i));
-            if (key == _lastPlanKey) return;
-            _lastPlanKey = key;
+            bool fresh = key != _lastPlanKey;
+            if (!fresh && (!_planAdapt.Value || Time.unscaledTime < _planAdaptAt)) return;
+            var demand = WorkDemand();
+            _dashDemand = demand;
 
             // Echte Geschwindigkeit pro Aufgabe = Grundwert x Level-Bonus (jede Stufe 7 % schneller). Kleiner = schneller.
             float Lvl(Worker w, EWorkerTask task)
@@ -1218,21 +1258,56 @@ namespace ShopBot
             foreach (var w in free.OrderByDescending(w => CS(w) - 0.3f * RS(w)).Take(nCash).ToList())
             { plan[w] = (EWorkerTask.ManCounter, EWorkerTask.ManCounter); free.Remove(w); }
 
-            // 2) Vitrinen und Regale bekommen je feste Anzahl – der REST (die schnellsten Einräumer) geht an die Opener
-            int nDisp = hasStorage ? Mathf.Min(_planDisplays.Value, free.Count) : 0;
-            int nShelf = Mathf.Min(_planShelves.Value, Mathf.Max(0, free.Count - nDisp));
-            int nOpen = hasOpeners ? Mathf.Max(0, free.Count - nDisp - nShelf) : 0;
-            if (hasOpeners && nOpen == 0 && free.Count > 0) { nOpen = 1; if (nShelf > 0) nShelf--; else if (nDisp > 0) nDisp--; }
+            // 2) The rest goes where the work is. Demand = what is left after the bot's own share (it fills openers,
+            //    shelves and display cases itself). Main task = the task with the most demand that the worker is best at,
+            //    side task = the next task with demand - so nobody stands around when the main task runs out.
+            var tasks = new List<(EWorkerTask task, float need)>();
+            if (hasOpeners) tasks.Add((EWorkerTask.RefillCardOpener, demand.opener));
+            tasks.Add((EWorkerTask.RestockShelf, demand.shelf));
+            if (hasStorage) tasks.Add((EWorkerTask.RestockCardDisplay, demand.display));
+            int nFree = free.Count;
+            var count = tasks.ToDictionary(t => t.task, t => 0);
+            // fixed minimums from the settings
+            if (hasStorage) count[EWorkerTask.RestockCardDisplay] = Mathf.Min(_planDisplays.Value, nFree);
+            count[EWorkerTask.RestockShelf] = Mathf.Min(_planShelves.Value, nFree - count.Values.Sum());
+            int rest = nFree - count.Values.Sum();
+            float total = tasks.Sum(t => t.need);
+            if (total <= 0f)
+            {
+                // nothing left over for the workers: openers (if any) as main task, shelves as backup
+                count[hasOpeners ? EWorkerTask.RefillCardOpener : EWorkerTask.RestockShelf] += rest;
+            }
+            else
+            {
+                var share = tasks.Select(t => (t.task, exact: rest * t.need / total)).ToList();
+                foreach (var sh in share) count[sh.task] += Mathf.FloorToInt(sh.exact);
+                int left = nFree - count.Values.Sum();
+                foreach (var sh in share.OrderByDescending(x => x.exact - Mathf.Floor(x.exact)))
+                { if (left <= 0) break; count[sh.task]++; left--; }
+                // every task with demand gets at least one worker (taken from the biggest group)
+                foreach (var t in tasks.Where(t => t.need > 0f && count[t.task] == 0).ToList())
+                {
+                    var big = count.OrderByDescending(kv => kv.Value).First();
+                    if (big.Value > 1) { count[big.Key]--; count[t.task]++; }
+                }
+            }
+            // side task: the task with the most demand that is not the main task
+            EWorkerTask Side(EWorkerTask main)
+            {
+                var o = tasks.Where(t => t.task != main).OrderByDescending(t => t.need).Select(t => (EWorkerTask?)t.task).FirstOrDefault();
+                return o ?? (main == EWorkerTask.RestockShelf && hasOpeners ? EWorkerTask.RefillCardOpener : EWorkerTask.RestockShelf);
+            }
+            // fill the tasks with the most demand first, each with the workers who are fastest at it (incl. level)
+            foreach (var t in tasks.OrderByDescending(t => t.need))
+                foreach (var w in free.OrderBy(w => Restock(w, t.task)).Take(count[t.task]).ToList())
+                { plan[w] = (t.task, Side(t.task)); free.Remove(w); }
+            foreach (var w in free) plan[w] = (EWorkerTask.RestockShelf, Side(EWorkerTask.RestockShelf));
 
-            // Opener zuerst: die Schnellsten (mit Level im Opener-Befüllen)
-            foreach (var w in free.OrderBy(w => Restock(w, EWorkerTask.RefillCardOpener)).Take(nOpen).ToList())
-            { plan[w] = (EWorkerTask.RefillCardOpener, EWorkerTask.RefillCardOpener); free.Remove(w); }
-
-            foreach (var w in free.OrderBy(w => Restock(w, EWorkerTask.RestockCardDisplay)).Take(nDisp).ToList())
-            { plan[w] = (EWorkerTask.RestockCardDisplay, hasOpeners ? EWorkerTask.RefillCardOpener : EWorkerTask.RestockShelf); free.Remove(w); }
-
-            foreach (var w in free)
-                plan[w] = (EWorkerTask.RestockShelf, hasOpeners ? EWorkerTask.RefillCardOpener : EWorkerTask.RestockCardDisplay);
+            // during the day only apply when the split really changed
+            string sig = string.Join(",", plan.Values.GroupBy(v => v).OrderBy(g => g.Key.ToString()).Select(g => g.Key + "=" + g.Count()));
+            _planAdaptAt = Time.unscaledTime + 120f;
+            if (!fresh && sig == _lastPlanSig) return;
+            _lastPlanKey = key; _lastPlanSig = sig;
 
             // Anwenden (nur wo nötig) + speichern, damit es auch am nächsten Tag gilt
             var lines = new List<FormattableString>();
@@ -1246,7 +1321,7 @@ namespace ShopBot
                 lines.Add($"{WorkerName(w)}: {L(TaskName(main))} / {L(TaskName(side))}{(changed ? " *" : "")}");
             }
             _dashPlan = plan.OrderBy(k => k.Value.main).Select(k => (WorkerName(k.Key), TaskName(k.Value.main), TaskName(k.Value.side))).ToList();
-            NoteF($"Work plan day {CPlayerData.m_CurrentDay + 1}: {new LList(lines, " | ")}");
+            NoteF($"Work plan day {CPlayerData.m_CurrentDay + 1} (work left for workers: openers {demand.opener:N0}, shelves {demand.shelf:N0}, displays {demand.display:N0}): {new LList(lines, " | ")}");
             Logger.LogInfo("[Workers] Work plan (main / side, * = changed):\n  " + string.Join("\n  ", lines.Select(Lang.Source)));
         }
 

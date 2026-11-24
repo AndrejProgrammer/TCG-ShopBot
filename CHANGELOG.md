@@ -9,6 +9,8 @@ Ausführliche Entwickler-Notizen: [docs/ENTWICKLUNG.md](docs/ENTWICKLUNG.md)
 - **Smarter shelf restocking:** orders by the real gap (room in all labeled slots of a goods type minus what is on them), up to 3 boxes at once. Before, a few half-full slots counted as "enough" and completely empty slots of the same goods were never refilled.
 - **Shelves first:** while labeled shelf slots of a pack type still miss items, the openers leave those boxes for the shelves (a few hundred items) – then all packs go to the openers again.
 - **Shelf status** once a minute in the log (`[Shelves] …`) and in the dashboard: empty slots with/without label, items stocked, goods without any box.
+- **Workers go where the work is:** every 2 minutes the bot measures the work left for workers (openers, shelves, display cases – minus what the bot does itself) and splits the workers by demand and strengths. The side task is the next task with work, so nobody stands around when the main task runs out (before: everyone had Opener/Opener and waited). Can be switched off.
+- **Stuck box flags are reset in the game too**, so the workers can take those boxes again (before only the bot ignored the flag).
 - Stocking speed in the dashboard up to 150 items per second (was 30) – the bot puts goods in directly, 120/s fills a shop in a few minutes.
 - No more useless storage pulls when there is no storage shelf.
 - Tested in the game: empty slots 188 → 66 within 3 minutes, 4,500–6,600 items stocked per minute, relabeling 100 % successful, no errors.
