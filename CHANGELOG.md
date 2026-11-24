@@ -2,6 +2,14 @@
 
 Ausführliche Entwickler-Notizen: [docs/ENTWICKLUNG.md](docs/ENTWICKLUNG.md)
 
+## 0.6.0 – 24.11.2026 – first public version
+- **English & German:** the dashboard, status line and history are available in English (default) and German – switch with the language button at the top right or on the new **Settings** page. More languages: drop a translated `lang/<code>.txt` into `BepInEx/plugins/ShopBot/lang/`. Old history entries switch language too.
+- **New dashboard design:** smooth open/close and page animations, gliding bars and switches, hover effects, smooth scrolling, sliding sidebar marker, cards with a subtle edge, gradient header.
+- **Settings page:** language, dashboard size, status line, hotkeys, timing.
+- **English log and config:** the log file is always English (readable bug reports). Config names are English now – **your old settings are carried over automatically** on the first start; whoever used a German version gets the German dashboard.
+- Dashboard controls for "Packs first", emergency restock, even spreading and the minimum portion per opener.
+- Release ZIP (`tools/release.ps1`), MIT license, English guide (`docs/INSTALL.md`), issue templates.
+
 ## 0.5.4 – 24.11.2026
 - **Opener ständig befüllt:** Ist der Pack-Vorrat knapp (weniger als eine Opener-Füllung), verteilt der Bot die vorhandenen Packs gleichmäßig auf alle freien Opener und startet sie sofort – alle laufen, statt dass wenige voll und der Rest leer ist (abschaltbar, Mindestportion 64 Packs).
 - **Packs zuerst:** Bei knappem Vorrat wartet der Bot mit Erweiterungen und Lizenzen, die nur „nice to have“ sind (z. B. Booster Boxes). Lizenzen für Sets ganz ohne kaufbare Packs gibt es weiter. Abschaltbar.

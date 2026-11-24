@@ -27,7 +27,12 @@
     <Reference Include="UnityEngine.TextRenderingModule"><HintPath>$(Managed)\UnityEngine.TextRenderingModule.dll</HintPath><Private>false</Private></Reference>
   </ItemGroup>
 
-  <Target Name="CopyToGame" AfterTargets="Build">
+  <ItemGroup>
+    <EmbeddedResource Include="lang/*.txt" LogicalName="ShopBot.lang.%(Filename).txt" />
+  </ItemGroup>
+
+  <!-- Copies the DLL into the game. Turn off with -p:CopyToGame=false (release build). -->
+  <Target Name="CopyToGame" AfterTargets="Build" Condition="'$(CopyToGame)' != 'false'">
     <MakeDir Directories="$(GameDir)\BepInEx\plugins\ShopBot" />
     <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(GameDir)\BepInEx\plugins\ShopBot" />
   </Target>

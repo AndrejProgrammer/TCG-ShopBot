@@ -22,23 +22,23 @@ namespace ShopBot
 
         private void BindGradingConfig()
         {
-            _gradeEnabled = Config.Bind("12. Graden", "Karten automatisch graden", true,
-                "Schickt Karten zu PSA (Standard, günstigste Stufe). Teuerste Karten zuerst, alle 8 Einsende-Plätze werden genutzt.");
-            _gradeMinValue = Config.Bind("12. Graden", "Nur Karten ab Wert ($)", 50f,
-                "Graden kostet ca. $20 pro Karte – billigere Karten lohnen sich nicht.");
-            _gradeKeepOne = Config.Bind("12. Graden", "1 Stück jeder Karte im Album lassen", true,
-                "Damit die Sammlung im Tracker nicht kleiner wird. Aus = auch Einzelstücke graden.");
-            _gradeOnlyFull = Config.Bind("12. Graden", "Nur volle Einsendungen schicken", true,
-                "Erst abschicken, wenn die Einsendung voll ist (PSA Standard: 52 Karten).");
-            _gradePsa10Hunt = Config.Bind("12. Graden", "PSA-10-Sammlung (alle Karten als PSA 10)", false,
-                "Später-Ziel: auch billige Doppelte graden, solange es von der Karte noch keine PSA 10 gibt. Wertvolle Karten haben weiter Vorrang. Eine PSA 10 jeder Karte bleibt immer.");
+            _gradeEnabled = Config.Bind("12. Grading", "Grade cards automatically", true,
+                "Sends cards to PSA (Standard, cheapest tier). Most expensive cards first, all 8 submission slots are used.");
+            _gradeMinValue = Config.Bind("12. Grading", "Only cards from value ($)", 50f,
+                "Grading costs about $20 per card – cheaper cards are not worth it.");
+            _gradeKeepOne = Config.Bind("12. Grading", "Keep 1 copy of every card in the album", true,
+                "So the collection in the tracker does not shrink. Off = grade single copies too.");
+            _gradeOnlyFull = Config.Bind("12. Grading", "Only send full submissions", true,
+                "Only send when the submission is full (PSA Standard: 52 cards).");
+            _gradePsa10Hunt = Config.Bind("12. Grading", "PSA 10 collection (all cards as PSA 10)", false,
+                "Later goal: also grade cheap duplicates as long as there is no PSA 10 of that card yet. Valuable cards still come first. One PSA 10 of every card always stays.");
         }
 
         private void HandleGrading()
         {
             if (!_gradeEnabled.Value || (_gradeTimer += 1f) < 60f) return;
             _gradeTimer = 0f;
-            SafeRun("Graden", GradingTick);
+            SafeRun("Grading", GradingTick);
         }
 
         private void GradingTick()
@@ -49,7 +49,7 @@ namespace ShopBot
             var tWant = AccessTools.TypeByName("CardGradeOverhaul.Want");
             if (tGrading == null || tCompanies == null || tCompany == null || tWant == null)
             {
-                if (!_gradeWarned) { _gradeWarned = true; Logger.LogWarning("CardGrade Overhaul nicht gefunden – Auto-Graden aus."); ModMissing("CardGrade Overhaul", "Graden"); }
+                if (!_gradeWarned) { _gradeWarned = true; Logger.LogWarning("CardGrade Overhaul not found – auto grading off."); ModMissing("CardGrade Overhaul", "Grading"); }  // i18n-last
                 return;
             }
 
@@ -129,13 +129,13 @@ namespace ShopBot
                 if (Time.unscaledTime >= _gradeWaitLogAt)
                 {
                     _gradeWaitLogAt = Time.unscaledTime + 600f;
-                    Logger.LogInfo($"[Graden] Warte auf volle Einsendung: {wants.Count}/{limit} Karten ab {GameInstance.GetPriceString(_gradeMinValue.Value)} vorhanden");
+                    Logger.LogInfo($"[Grading] Waiting for a full submission: {wants.Count}/{limit} cards from {GameInstance.GetPriceString(_gradeMinValue.Value)} available");
                 }
                 return;
             }
 
             float fee = 10f + perCard * wants.Count;
-            if (Budget < fee) { Note($"Graden: Budget reicht nicht ({GameInstance.GetPriceString(fee)})"); return; }
+            if (Budget < fee) { NoteF($"Grading: budget not enough ({GameInstance.GetPriceString(fee)})"); return; }
 
             var send = AccessTools.Method(tGrading, "SendFor");
             var args = new object[] { psa, tier, wants, null, null };
@@ -144,9 +144,9 @@ namespace ShopBot
             {
                 _statSpent += fee;
                 _statGraded += sent;
-                Note($"Graden: {sent} Karten an PSA geschickt (Wert ~{GameInstance.GetPriceString(sumValue)}, Gebühr {GameInstance.GetPriceString(fee)}) – Platz {running + 1}/{maxSets}");
+                NoteF($"Grading: {sent} cards sent to PSA (value ~{GameInstance.GetPriceString(sumValue)}, fee {GameInstance.GetPriceString(fee)}) – slot {running + 1}/{maxSets}");
             }
-            else Logger.LogInfo($"[Graden] Nicht geschickt: {args[3]}");
+            else Logger.LogInfo($"[Grading] Not sent: {args[3]}");
         }
     }
 }

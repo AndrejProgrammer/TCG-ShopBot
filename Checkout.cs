@@ -29,10 +29,10 @@ namespace ShopBot
 
         private void BindCheckoutConfig()
         {
-            _autoCheckout = Config.Bind("5. Kasse", "Bot kassiert an allen freien Kassen", true,
-                "Der Bot bedient alle Kassen gleichzeitig, an denen weder du noch ein Arbeiter steht. Dann braucht es keine Kassierer – alle Arbeiter befüllen die Pack-Opener.");
-            _autoCheckoutScansPerSecond = Config.Bind("5. Kasse", "Bot-Kasse Artikel pro Sekunde", 8f,
-                "So schnell scannt der Bot an jeder Kasse.");
+            _autoCheckout = Config.Bind("5. Checkout", "Bot serves all free registers", true,
+                "The bot serves every register where neither you nor a worker is standing. No cashiers needed – all workers can fill the pack openers.");
+            _autoCheckoutScansPerSecond = Config.Bind("5. Checkout", "Bot checkout items per second", 8f,
+                "How fast the bot scans at each register.");
         }
 
         // Jedes Bild (Update), unabhängig von Fenstern und davon, ob du gerade spielst
@@ -50,7 +50,7 @@ namespace ShopBot
                 if (cust == null) continue;
                 if (_counterNext.TryGetValue(c, out var next) && now < next) continue;
                 try { _counterNext[c] = now + CheckoutStep(c, cust); }
-                catch (Exception e) { _counterNext[c] = now + 2f; Logger.LogWarning("[Kasse] " + e.Message); }
+                catch (Exception e) { _counterNext[c] = now + 2f; Logger.LogWarning("[Checkout]" + e.Message); }
             }
         }
 
@@ -89,7 +89,7 @@ namespace ShopBot
                         // Genau passendes Wechselgeld (wie der Arbeiter, nur in einem Schritt)
                         F_Change(c) = Math.Max(0.0, F_Paid(c) - total);
                         Traverse.Create(c).Method("CheckChangeReady").GetValue();
-                        if (!F_ChangeReady(c)) { Logger.LogWarning($"[Kasse] Wechselgeld passt nicht (gezahlt {F_Paid(c):0.00}, Summe {total:0.00})"); return 1f; }
+                        if (!F_ChangeReady(c)) { Logger.LogWarning($"[Checkout] Change does not fit (paid {F_Paid(c):0.00}, total {total:0.00})"); return 1f; }
                         c.OnPressSpaceBar();
                     }
                     CountCheckout((float)total);
@@ -106,7 +106,7 @@ namespace ShopBot
             ReportCheckout(value);
             _checkoutDayMoney += value;
             if (_statCheckouts % 25 == 0)
-                Note($"Bot-Kasse: {_statCheckouts} Kunden abkassiert (heute {GameInstance.GetPriceString(_checkoutDayMoney)})");
+                NoteF($"Bot checkout: {_statCheckouts} customers served (today {GameInstance.GetPriceString(_checkoutDayMoney)})");
         }
     }
 }

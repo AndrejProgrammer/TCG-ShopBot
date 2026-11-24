@@ -30,30 +30,30 @@ namespace ShopBot
 
         private void BindStoreConfig()
         {
-            _licEnabled = Config.Bind("15. Lizenzen", "Neue Produkte freischalten", true, "Kauft Lizenzen für neue Packs/Displays, sobald Level und Geld reichen (günstigste zuerst).");
-            _licPokemonOnly = Config.Bind("15. Lizenzen", "Nur Pokémon-Produkte", true, "Nur Lizenzen aus den Pokémon-Shops.");
-            _licMoneyFactor = Config.Bind("15. Lizenzen", "Nur kaufen wenn Budget mindestens X mal Preis", 3f, "Schutz, damit genug Geld für Packs bleibt.");
-            _licBought = Config.Bind("15. Lizenzen", "Schon gekauft (intern)", "", "Vom Bot gekaufte Lizenzen – werden nie erneut gekauft, auch wenn das Spiel sie zurücksetzt.");
+            _licEnabled = Config.Bind("15. Licenses", "Unlock new products", true, "Buys licenses for new packs/displays as soon as level and money allow (cheapest first).");
+            _licPokemonOnly = Config.Bind("15. Licenses", "Pokémon products only", true, "Only licenses from the Pokémon shops.");
+            _licMoneyFactor = Config.Bind("15. Licenses", "Only buy if budget is at least X times the price", 3f, "Safety so enough money stays for packs.");
+            _licBought = Config.Bind("15. Licenses", "Already bought (internal)", "", "Licenses bought by the bot – never bought again, even if the game resets them.");
             _licBoughtSet = new HashSet<string>();
             foreach (var part in (_licBought.Value ?? "").Split('|'))
             {
                 var p = part.Trim();
                 if (p.Length > 0 && !int.TryParse(p, out _)) _licBoughtSet.Add(p);   // alte Zahlen-Einträge (v0.1) sind wertlos
             }
-            _openerSelf = Config.Bind("2. Pack-Opener", "Bot befüllt Opener selbst", true, "Legt Packs unfertiger Pokémon-Sets aus Kartons direkt in freie Pack-Opener (Ziel-Sets zuerst). Opener stehen so nie leer.");
-            _openerPerSecond = Config.Bind("2. Pack-Opener", "Packs pro Sekunde in Opener", 40, "Wie schnell der Bot die Opener befüllt.");
-            _openerSpread = Config.Bind("2. Pack-Opener", "Bei knappem Vorrat gleichmäßig verteilen", true,
-                "Reichen die Packs am Boden nicht für alle freien Opener, bekommt jeder eine gleich große Portion und startet sofort – so laufen alle Opener statt weniger voller.");
-            _openerMinBatch = Config.Bind("2. Pack-Opener", "Mindestportion pro Opener (Packs)", 64,
-                "Kleinste Portion beim gleichmäßigen Verteilen.");
-            _openerTurbo = Config.Bind("2. Pack-Opener", "Opener-Turbo (Tempo x)", 1f, "Opener öffnen Packs so viel schneller (1 = normal, Spielwert).");
-            _hireEnabled = Config.Bind("9. Arbeiter", "Neue Arbeiter automatisch einstellen", true, "Stellt freie Arbeiter ein, sobald Level und Geld reichen (Einsatzplan teilt sie danach ein).");
-            _hireMax = Config.Bind("9. Arbeiter", "Max. Arbeiter (0 bedeutet alle)", 0, "Höchstens so viele Arbeiter insgesamt.");
-            _hireMoneyFactor = Config.Bind("9. Arbeiter", "Einstellen nur wenn Budget mindestens X mal Einstellgebühr", 10f, "Schutz, damit genug Geld für Packs bleibt.");
-            _stockSelf = Config.Bind("16. Selbst einräumen", "Bot räumt Regale selbst ein", true, "Legt Ware aus Kartons direkt in Regalfächer, die für diese Ware vorgesehen sind (zusätzlich zu den Arbeitern).");
-            _stockPerSecond = Config.Bind("16. Selbst einräumen", "Artikel pro Sekunde", 6, "Wie schnell der Bot einräumt.");
-            _cardsSelf = Config.Bind("16. Selbst einräumen", "Bot füllt leere Vitrinen-Plätze", true, "Nimmt Karten aus der Kartenablage und legt sie in leere Kartenfächer.");
-            _cardsPerSecond = Config.Bind("16. Selbst einräumen", "Karten pro Sekunde", 2, "Wie schnell der Bot Vitrinen füllt.");
+            _openerSelf = Config.Bind("2. Pack opener", "Bot fills openers itself", true, "Puts packs of unfinished Pokémon sets from boxes straight into free pack openers (target sets first). Openers are never empty.");
+            _openerPerSecond = Config.Bind("2. Pack opener", "Packs per second into openers", 40, "How fast the bot fills the openers.");
+            _openerSpread = Config.Bind("2. Pack opener", "Spread evenly when stock is low", true,
+                "If the packs on the floor are not enough for all free openers, each gets an equal portion and starts right away – all openers run instead of a few full ones.");
+            _openerMinBatch = Config.Bind("2. Pack opener", "Minimum portion per opener (packs)", 64,
+                "Smallest portion when spreading evenly.");
+            _openerTurbo = Config.Bind("2. Pack opener", "Opener turbo (speed x)", 1f, "Openers open packs this much faster (1 = normal, game value).");
+            _hireEnabled = Config.Bind("9. Workers", "Hire new workers automatically", true, "Hires free workers as soon as level and money allow (the work plan assigns them afterwards).");
+            _hireMax = Config.Bind("9. Workers", "Max workers (0 means all)", 0, "At most this many workers in total.");
+            _hireMoneyFactor = Config.Bind("9. Workers", "Only hire if budget is at least X times the hiring fee", 10f, "Safety so enough money stays for packs.");
+            _stockSelf = Config.Bind("16. Self-stocking", "Bot stocks shelves itself", true, "Puts goods from boxes straight into shelf slots meant for those goods (in addition to the workers).");
+            _stockPerSecond = Config.Bind("16. Self-stocking", "Items per second", 6, "How fast the bot stocks.");
+            _cardsSelf = Config.Bind("16. Self-stocking", "Bot fills empty display slots", true, "Takes cards from the card storage and puts them into empty card slots.");
+            _cardsPerSecond = Config.Bind("16. Self-stocking", "Cards per second", 2, "How fast the bot fills display cases.");
         }
 
         // ---------------- Lizenzen ----------------
@@ -61,7 +61,7 @@ namespace ShopBot
         {
             if (!_licEnabled.Value || (_licTimer += 1f) < 60f) return;
             _licTimer = 0f;
-            SafeRun("Lizenzen", LicenseTick);
+            SafeRun("Licenses", LicenseTick);
         }
 
         // WICHTIG: Lizenzen nur über CPlayerData.GetIsItemLicenseUnlocked lesen und InventoryBase.GetRestockData holen.
@@ -107,7 +107,7 @@ namespace ShopBot
                 string nm = LicName(rd.itemType);
                 if (_licBoughtSession.Contains(nm))                                // Sicherheit: nie zweimal in einer Sitzung bezahlen
                 {
-                    if (_licRebuyWarned.Add(nm)) Logger.LogWarning($"[Lizenzen] {nm} ist nach dem Kauf wieder gesperrt – kaufe nicht erneut");
+                    if (_licRebuyWarned.Add(nm)) Logger.LogWarning($"[Licenses] {nm} is locked again after buying – not buying again");
                     continue;
                 }
                 var data = InventoryBase.GetItemData(rd.itemType);
@@ -146,7 +146,7 @@ namespace ShopBot
             if (waiting > 0 && Time.unscaledTime >= _starveLogLic)
             {
                 _starveLogLic = Time.unscaledTime + 600f;
-                Logger.LogInfo($"[Lizenzen] {waiting} warten: Pack-Vorrat knapp ({_packHave}/{_packNeed}) – Geld geht zuerst in Packs");
+                Logger.LogInfo($"[Licenses] {waiting} waiting: pack stock low ({_packHave}/{_packNeed}) – money goes to packs first");
             }
         }
         private readonly HashSet<string> _licRebuyWarned = new HashSet<string>();
@@ -167,7 +167,7 @@ namespace ShopBot
             GameInstance.m_IsItemLicenseUnlocked = true;
             _statSpent += price;
             _packTypeCache.Clear(); // neue Packs können zu Sets gehören
-            Note($"Neue Lizenz: {InventoryBase.GetItemData(r.itemType)?.GetName() ?? r.itemType.ToString()} freigeschaltet ({GameInstance.GetPriceString(price)})");
+            NoteF($"New license: {InventoryBase.GetItemData(r.itemType)?.GetName() ?? r.itemType.ToString()} unlocked ({GameInstance.GetPriceString(price)})");
         }
 
         private float LicenseMargin(EItemType t)
@@ -194,7 +194,7 @@ namespace ShopBot
         {
             if (!_hireEnabled.Value || (_hireTimer += 1f) < 60f) return;
             _hireTimer = 0f;
-            SafeRun("Einstellen", HireTick);
+            SafeRun("Hiring", HireTick);
         }
 
         private void HireTick()
@@ -231,7 +231,7 @@ namespace ShopBot
             _statSpent += bestCost;
             _statHired++;
             _lastPlanKey = null; _workerTimer = 55f;                         // gleich in den Einsatzplan aufnehmen
-            Note($"Neuer Arbeiter eingestellt: {wm.m_WorkerDataList[best].GetName()} ({GameInstance.GetPriceString(bestCost)}, Lohn {GameInstance.GetPriceString(wm.m_WorkerDataList[best].costPerDay)}/Tag) – jetzt {count + 1} Arbeiter");
+            NoteF($"New worker hired: {wm.m_WorkerDataList[best].GetName()} ({GameInstance.GetPriceString(bestCost)}, wage {GameInstance.GetPriceString(wm.m_WorkerDataList[best].costPerDay)}/day) – now {count + 1} workers");
         }
 
         // ---------------- Selbst einräumen ----------------
@@ -239,10 +239,10 @@ namespace ShopBot
 
         private void HandleSelfStocking()
         {
-            if (_stockSelf.Value) { _stockAcc += _stockPerSecond.Value; SafeRun("Einräumen", StockShelves); }
-            if (_cardsSelf.Value) { _cardAcc += _cardsPerSecond.Value; SafeRun("Vitrinen", StockCards); }
-            if (_openerSelf.Value) { _openerAcc = Mathf.Min(_openerAcc + _openerPerSecond.Value, _openerPerSecond.Value * 2f); SafeRun("Opener befüllen", StockOpeners); }
-            SafeRun("Opener-Turbo", ApplyOpenerTurbo);
+            if (_stockSelf.Value) { _stockAcc += _stockPerSecond.Value; SafeRun("Stocking", StockShelves); }
+            if (_cardsSelf.Value) { _cardAcc += _cardsPerSecond.Value; SafeRun("Displays", StockCards); }
+            if (_openerSelf.Value) { _openerAcc = Mathf.Min(_openerAcc + _openerPerSecond.Value, _openerPerSecond.Value * 2f); SafeRun("Fill openers", StockOpeners); }
+            SafeRun("Opener turbo", ApplyOpenerTurbo);
         }
 
         // Opener-Turbo: Öffnungszeit pro Pack = Spielwert / Turbo (Spielwert pro Automat gemerkt, 1 = zurück auf normal)
@@ -356,7 +356,7 @@ namespace ShopBot
             if (moved > 0)
             {
                 _statSelfOpener += moved;
-                if (_statSelfOpener % 500 < moved) Note($"Opener selbst befüllt: {_statSelfOpener} Packs insgesamt");
+                if (_statSelfOpener % 500 < moved) NoteF($"Openers filled by the bot: {_statSelfOpener} packs in total");
             }
         }
 
@@ -445,7 +445,7 @@ namespace ShopBot
                     }
                 }
             }
-            if (moved > 0) { _statSelfStocked += moved; if (_statSelfStocked % 50 < moved) Note($"Selbst eingeräumt: {_statSelfStocked} Artikel insgesamt"); }
+            if (moved > 0) { _statSelfStocked += moved; if (_statSelfStocked % 50 < moved) NoteF($"Stocked by the bot: {_statSelfStocked} items in total"); }
         }
 
         private void StockCards()
@@ -481,7 +481,7 @@ namespace ShopBot
                 _statSelfCards += placed;
                 _vitrinesFullSince = -1f;
                 _priceTimer = Mathf.Max(_priceTimer, 15f); // neue Karten gleich bepreisen
-                if (_statSelfCards % 20 < placed) Note($"Vitrinen selbst befüllt: {_statSelfCards} Karten insgesamt");
+                if (_statSelfCards % 20 < placed) NoteF($"Display cases filled by the bot: {_statSelfCards} cards in total");
             }
             else if (budget > 0)
             {
@@ -492,7 +492,7 @@ namespace ShopBot
                 if (_dashVitrinesFull > 0 && Time.unscaledTime >= _vitrinesFullLogAt)
                 {
                     _vitrinesFullLogAt = Time.unscaledTime + 1800f;
-                    Note($"Vitrinen voll: {waiting} Karten warten in der Kartenablage – mehr Karten-Vitrinen aufstellen, dann verkauft sich mehr");
+                    NoteF($"Display cases full: {waiting} cards waiting in the card storage – place more card display cases to sell more");
                 }
             }
         }

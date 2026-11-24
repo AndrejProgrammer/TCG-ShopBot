@@ -3,16 +3,16 @@ using UnityEngine;
 
 namespace ShopBot
 {
-    // Tagesbericht (Einnahmen Bot-Kasse / Ausgaben Bot pro Tag) und Warnungen über fehlende Mods
+    // Daily report (bot checkout income / bot spending per day) and warnings about missing mods
     public partial class Plugin
     {
         // ---------------- Fehlende Mods ----------------
-        private readonly List<string> _modWarnings = new List<string>();
+        private readonly List<(string mod, string feature)> _modWarnings = new List<(string, string)>();
         private void ModMissing(string mod, string feature)
         {
-            string w = $"{mod} nicht gefunden – {feature} ist aus";
-            if (!_modWarnings.Contains(w)) _modWarnings.Add(w);
+            if (!_modWarnings.Contains((mod, feature))) _modWarnings.Add((mod, feature));
         }
+        private string ModWarningText((string mod, string feature) w) => F($"{w.mod} not found – {L(w.feature)} is off");
 
         // ---------------- Tagesbericht ----------------
         private class DayRecord { public int Day; public float Income, Spent; public int Customers, Packs, HaveStart = -1; }
@@ -34,7 +34,7 @@ namespace ShopBot
             {
                 _dayHistory.Add(_today);
                 if (_dayHistory.Count > 7) _dayHistory.RemoveAt(0);
-                Logger.LogInfo($"[Tagesbericht] Tag {_today.Day + 1}: Bot-Kasse {GameInstance.GetPriceString(_today.Income)} ({_today.Customers} Kunden), Bot-Ausgaben {GameInstance.GetPriceString(_today.Spent)}");
+                Logger.LogInfo($"[Daily report] Day {_today.Day + 1}: bot checkout {GameInstance.GetPriceString(_today.Income)} ({_today.Customers} customers), bot spending {GameInstance.GetPriceString(_today.Spent)}");
             }
             _today = new DayRecord { Day = day, HaveStart = _goalHave };
             _todaySpentStart = _statSpent;

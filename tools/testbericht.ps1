@@ -19,56 +19,57 @@ $out    = Join-Path (Split-Path $PSScriptRoot -Parent) "TESTBERICHT.md"
 $start  = Get-Date
 
 $checks = @(
-  @{ n="Bot startet";                       p="ShopBot geladen";                                   test="neu" },
-  @{ n="Rechnungen bezahlen";               p="Rechnungen bezahlt";                                test="alt" },
-  @{ n="Bonus an Arbeiter";                 p="Bonus gezahlt";                                     test="alt" },
-  @{ n="Einsatzplan";                       p="Einsatzplan Tag";                                   test="alt" },
-  @{ n="Sammlung: Vorrat berechnet";        p="\[Sammlung\] Opener";                               test="alt" },
-  @{ n="Sammlung: Packs gekauft";           p="Gekauft: \d+ Kartons";                              test="alt" },
-  @{ n="Tageslimit greift";                 p="Tageslimit erreicht";                               test="neu" },
-  @{ n="Selbst einräumen (Regale)";         p="Selbst eingeräumt";                                 test="neu" },
-  @{ n="Selbst einräumen (Vitrinen)";       p="Vitrinen selbst befüllt";                           test="alt" },
-  @{ n="Opener selbst befüllt (v0.2)";      p="Opener selbst befüllt";                             test="neu" },
-  @{ n="Arbeiter eingestellt (v0.2)";       p="Neuer Arbeiter eingestellt";                        test="neu" },
-  @{ n="Bot-Kasse (v0.4)";                  p="Bot-Kasse:";                                        test="neu" },
-  @{ n="Einsortieren (v0.3)";               p="Einsortiert:";                                      test="neu" },
-  @{ n="Lizenzen freischalten";             p="Neue Lizenz";                                       test="neu" },
-  @{ n="Erweiterungen kaufen";              p="Laden-Erweiterung|Lager-Erweiterung|Lager \(Shop B\)"; test="neu" },
-  @{ n="Bewertungen: nachbestellt";         p="Kunden vermissen";                                  test="alt" },
-  @{ n="Bewertungen: Lager statt Kauf";     p="liegt aber im Lager";                               test="neu" },
-  @{ n="Aushilfe Regale";                   p="Regale ein\b|räumt 10 Min";                         test="neu" },
-  @{ n="Preis bei Beschwerde gesenkt";      p="zu teuer – Aufschlag";                              test="alt" },
-  @{ n="Nachbestellen Packs/Displays";      p="Nachbestellt:";                                     test="alt" },
-  @{ n="Kunden: Ankauf";                    p="Gekauft für";                                       test="alt" },
-  @{ n="Kunden: Tausch angenommen";         p="Tausch angenommen";                                 test="alt" },
-  @{ n="Graden (PSA)";                      p="Graden: \d+ Karten";                                test="alt" },
-  @{ n="Grading-Pakete öffnen";             p="Grading-Paket geöffnet";                            test="neu" },
-  @{ n="Kartenablage";                      p="Kartenablage:";                                     test="alt" },
-  @{ n="Opener einsammeln/starten";         p="Opener eingesammelt|Opener gestartet";              test="alt" },
-  @{ n="Upgrades (Sammelpunkte)";           p="Upgrade gekauft";                                   test="alt" },
-  @{ n="Tagesende";                         p="Tag \d+ beendet";                                   test="alt" },
-  @{ n="Notfall-Nachkauf (v0.4.2)";         p="Notfall-Nachkauf";                                  test="alt" },
-  @{ n="Lager-Kartons holen (v0.5.0)";      p="Aus dem Lager geholt";                              test="neu" },
-  @{ n="Fast fertige Sets pausiert (v0.5.0)"; p="fast fertige Sets pausiert";                      test="neu" },
-  @{ n="Hinweis Vitrinen voll (v0.5.0)";    p="Vitrinen voll:";                                    test="neu" },
-  @{ n="Ankauf neue Karte (v0.5.2)";        p="Gekauft für.*neue Karte";                           test="neu" },
-  @{ n="Feilschen Doppelte (v0.5.3)";       p="Gekauft für.*Runde [2-9]";                          test="neu" },
-  @{ n="Ankauf abgelehnt (v0.5.1)";         p="Ankauf abgelehnt";                                  test="neu" },
-  @{ n="Kunde gegangen beim Feilschen";     p="Kunde ist gegangen";                                test="neu" },
-  @{ n="Tausch abgelehnt (v0.5.1)";         p="Tausch abgelehnt";                                  test="neu" },
-  @{ n="Packs zuerst: Lizenzen warten (v0.5.4)"; p="\[Lizenzen\] \d+ warten";                      test="neu" },
-  @{ n="Packs zuerst: Erweiterungen warten (v0.5.4)"; p="\[Erweiterungen\] warten";                test="neu" }
+  @{ n="Bot startet";                       p="ShopBot .*loaded";                                   test="neu" },
+  @{ n="Rechnungen bezahlen";               p="Bills paid";                                test="alt" },
+  @{ n="Bonus an Arbeiter";                 p="Bonus paid";                                     test="alt" },
+  @{ n="Einsatzplan";                       p="Work plan day";                                   test="alt" },
+  @{ n="Sammlung: Vorrat berechnet";        p="\[Collection\] Openers";                            test="alt" },
+  @{ n="Sammlung: Packs gekauft";           p="Bought: \d+ boxes";                              test="alt" },
+  @{ n="Tageslimit greift";                 p="Daily limit reached";                               test="neu" },
+  @{ n="Selbst einräumen (Regale)";         p="Stocked by the bot";                                 test="neu" },
+  @{ n="Selbst einräumen (Vitrinen)";       p="Display cases filled by the bot";                           test="alt" },
+  @{ n="Opener selbst befüllt (v0.2)";      p="Openers filled by the bot";                             test="neu" },
+  @{ n="Arbeiter eingestellt (v0.2)";       p="New worker hired";                        test="neu" },
+  @{ n="Bot-Kasse (v0.4)";                  p="Bot checkout:";                                        test="neu" },
+  @{ n="Einsortieren (v0.3)";               p="Sorted:";                                      test="neu" },
+  @{ n="Lizenzen freischalten";             p="New license";                                       test="neu" },
+  @{ n="Erweiterungen kaufen";              p="Shop expansion|Warehouse expansion|Warehouse \(Shop B\)"; test="neu" },
+  @{ n="Bewertungen: nachbestellt";         p="Customers miss";                                  test="alt" },
+  @{ n="Bewertungen: Lager statt Kauf";     p="but it is in storage";                               test="neu" },
+  @{ n="Aushilfe Regale";                   p="restocks shelves for 10 min";                         test="neu" },
+  @{ n="Preis bei Beschwerde gesenkt";      p="too expensive – markup";                              test="alt" },
+  @{ n="Nachbestellen Packs/Displays";      p="Reordered:";                                     test="alt" },
+  @{ n="Kunden: Ankauf";                    p="Bought for";                                       test="alt" },
+  @{ n="Kunden: Tausch angenommen";         p="Swap accepted";                                 test="alt" },
+  @{ n="Graden (PSA)";                      p="Grading: \d+ cards";                                test="alt" },
+  @{ n="Grading-Pakete öffnen";             p="Grading package opened";                            test="neu" },
+  @{ n="Kartenablage";                      p="Card storage:";                                     test="alt" },
+  @{ n="Opener einsammeln/starten";         p="Opener collected|Opener started";              test="alt" },
+  @{ n="Upgrades (Sammelpunkte)";           p="Upgrade bought";                                   test="alt" },
+  @{ n="Tagesende";                         p="Day \d+ ended";                                   test="alt" },
+  @{ n="Notfall-Nachkauf (v0.4.2)";         p="Emergency restock";                                  test="alt" },
+  @{ n="Lager-Kartons holen (v0.5.0)";      p="Taken from storage";                              test="neu" },
+  @{ n="Fast fertige Sets pausiert (v0.5.0)"; p="nearly finished sets paused";                      test="neu" },
+  @{ n="Hinweis Vitrinen voll (v0.5.0)";    p="Display cases full:";                                    test="neu" },
+  @{ n="Ankauf neue Karte (v0.5.2)";        p="Bought for.*new card";                           test="neu" },
+  @{ n="Feilschen Doppelte (v0.5.3)";       p="Bought for.*round [2-9]";                          test="neu" },
+  @{ n="Ankauf abgelehnt (v0.5.1)";         p="Purchase declined";                                  test="neu" },
+  @{ n="Kunde gegangen beim Feilschen";     p="Customer left";                                test="neu" },
+  @{ n="Tausch abgelehnt (v0.5.1)";         p="Swap declined";                                  test="neu" },
+  @{ n="Packs zuerst: Lizenzen warten (v0.5.4)"; p="\[Licenses\] \d+ waiting";                     test="neu" },
+  @{ n="Packs zuerst: Erweiterungen warten (v0.5.4)"; p="\[Expansions\] waiting";                  test="neu" },
+  @{ n="Config übernommen (v0.6)";          p="settings carried over";                             test="neu" }
 )
 
 function Write-Report($final) {
   $lines = @()
   if (Test-Path $log) { $all = Get-Content $log -Encoding UTF8 -ErrorAction SilentlyContinue } else { $all = @() }
   $idx = -1
-  for ($i = $all.Count - 1; $i -ge 0; $i--) { if ($all[$i] -match "ShopBot geladen") { $idx = $i; break } }
+  for ($i = $all.Count - 1; $i -ge 0; $i--) { if ($all[$i] -match "ShopBot .*loaded") { $idx = $i; break } }
   $sess = if ($idx -ge 0) { $all[$idx..($all.Count-1)] } else { @() }
   $bot  = $sess | Where-Object { $_ -match "\[ShopBot\]|ShopBot\]" }
 
-  $errs = $sess | Where-Object { $_ -match "Error.*ShopBot|ShopBot.*Exception|Fehler im Bot-Takt|Dashboard:|\[(Sammlung|Kartenablage|Graden|Bewertungen|Rechnungen|Bonus|Lizenzen|Einräumen|Vitrinen|Erweiterungen|Upgrades|Arbeiter|Nachbestellen)\] System\." }
+  $errs = $sess | Where-Object { $_ -match "Error.*ShopBot|ShopBot.*Exception|Error in bot tick|Dashboard:|Config migration|Language files:" }
   $unity = @()
   if (Test-Path $player) { $unity = Select-String -Path $player -Encoding UTF8 -Pattern "GUI Error|Mismatched LayoutGroup|Getting control|tooltip data is NULL|NullReferenceException.*ShopBot" -ErrorAction SilentlyContinue | ForEach-Object { $_.Line } }
 
@@ -118,7 +119,7 @@ while (-not (Get-Process -Name "Card Shop Simulator" -ErrorAction SilentlyContin
 }
 # 2) auf ShopBot-Meldung im NEUEN Log warten
 while ($true) {
-  if ((Test-Path $log) -and (Get-Item $log).LastWriteTime -gt $start -and (Select-String -Path $log -Pattern "ShopBot geladen" -Quiet)) { break }
+  if ((Test-Path $log) -and (Get-Item $log).LastWriteTime -gt $start -and (Select-String -Path $log -Pattern "ShopBot .*loaded" -Quiet)) { break }
   if (-not (Get-Process -Name "Card Shop Simulator" -ErrorAction SilentlyContinue)) { Write-Report $true; exit }
   Start-Sleep -Seconds 10
 }

@@ -219,3 +219,14 @@ Problem: Pack-Vorrat lag fast durchgehend unter 1 Opener-Füllung (25 Opener, 30
 - **Gleichmäßig verteilen** (Config „2. Pack-Opener“): reichen die Packs am Boden nicht für den freien Platz, bekommt jeder freie Opener `max(Mindestportion 64, Packs/freie Opener)` und wird sofort gestartet (`OnMouseButtonUp`).
 - Dashboard: Pack-Vorrat zeigt Verbrauch/Min und Reichweite in Minuten.
 - Einsortieren: „passen nicht mehr“ nennt jetzt die Artikel (+ groß/klein).
+
+## v0.6.0 (24.11.) – Sprachen, neues Dashboard, öffentliche Version
+
+- **Übersetzung (`Lang.cs`):** Englisch ist die Quellsprache im Code. UI: `T("…")`, mit Werten `F($"… {x}")` (FormattableString → Vorlage `{0}` wird übersetzt). Meldungen: `Note("…")` / `NoteF($"…")` – Log bekommt Englisch (`Lang.Source`), der Verlauf speichert Vorlage + Werte und übersetzt beim Anzeigen (Sprachwechsel wirkt auch rückwirkend). Teile, die erst beim Anzeigen übersetzt werden: `L("…")` (LStr), Listen: `new LList(items, sep)`.
+- **Achtung C#:** `T(string)` und `T(FormattableString)` gleichnamig geht nicht – ein `$"…"` nimmt immer die string-Überladung. Deshalb getrennte Namen `T`/`F` und `Note`/`NoteF`.
+- **Statische Felder** nie mit `T()` initialisieren (laufen vor dem Laden der Sprache) – dort englischen Text speichern und beim Anzeigen `T()`/`L()`.
+- **Sprachdateien:** `lang/<code>.txt`, als EmbeddedResource `ShopBot.lang.<code>.txt` in der DLL; Dateien in `BepInEx/plugins/ShopBot/lang/` überschreiben/ergänzen. Format `Englisch = Übersetzung`, `=` im Text als `\=`, Zeilenumbruch `\n`, `@name = Sprachname`. `node tools/i18n-keys.js` sammelt alle Schlüssel (T/F/Note/NoteF/L + Zeilen mit `// i18n` bzw. `// i18n-last`) nach `lang/en.txt` und meldet fehlende pro Sprache (`--missing` hängt sie an).
+- Interne Vergleichswerte (z. B. `TaskName()` → "Cashier", "Opener") sind englische Schlüssel, übersetzt wird erst beim Anzeigen.
+- **Config englisch + Migration (`ConfigMigration.cs`):** Tabelle alt (deutsch) → neu. Beim Start werden Werte aus `ConfigFile.OrphanedEntries` (per Traverse) übernommen, alte Einträge entfernt, gespeichert; dann Sprache = de.
+- **Dashboard-Animation:** Werte pro Control in `_anim` (Schlüssel `GUIUtility.GetControlID`), nur bei `EventType.Repaint` nachgeführt (sonst mehrfach pro Bild). Feste IDs ≥ 0x7F000000, damit sie nicht mit Unity-IDs kollidieren. Sanftes Scrollen: Mausrad-Event abfangen (`Use()`), Ziel in `_scrollTarget`, in `Update` interpolieren; Inhaltshöhe aus einem leeren Rect am Ende der ScrollView. Sprach-Popup: Klicks am Anfang der Fensterfunktion abfangen, sonst bekommt sie das darunterliegende Control.
+- **Build:** `-p:CopyToGame=false` verhindert das Kopieren ins Spiel (läuft das Spiel, wird die DLL sonst schon überschrieben). Release: `tools/release.ps1` → `dist/ShopBot-<version>.zip`.

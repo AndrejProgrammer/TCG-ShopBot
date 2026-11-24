@@ -9,3 +9,6 @@ TESTBERICHT.md
 Session Claude.txt
 *.log
 GameDir.local.props
+
+# Release-Ausgabe
+dist/

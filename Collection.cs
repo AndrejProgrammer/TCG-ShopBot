@@ -83,54 +83,54 @@ namespace ShopBot
 
         private void BindCollectionConfig()
         {
-            _billsEnabled = Config.Bind("0. Rechnungen", "Rechnungen automatisch bezahlen", true, "Miete, Strom und Löhne werden sofort bezahlt, sobald sie da sind (vor allen Einkäufen).");
-            _bonusEnabled = Config.Bind("9. Arbeiter", "Jeden Tag Bonus an alle Arbeiter", true, "Wie der Bonus-Knopf: 3x pro Tag und Arbeiter (kostet je 1 Tageslohn). Jeder Bonus = +1 Level auf alle Aufgaben und doppelte Erfahrung.");
-            _expEnabled = Config.Bind("14. Erweiterungen", "Laden-Erweiterungen kaufen", true, "Kauft die nächste Laden-Erweiterung, sobald Level und Geld reichen.");
-            _expWarehouse = Config.Bind("14. Erweiterungen", "Lager (Shop B) und Lager-Erweiterungen kaufen", true, "Schaltet das Lager frei und erweitert es.");
-            _expMaxShop = Config.Bind("14. Erweiterungen", "Max. Laden-Erweiterungen", 30, "Bis zu dieser Anzahl (Spiel-Maximum 30).");
-            _expMaxWarehouse = Config.Bind("14. Erweiterungen", "Max. Lager-Erweiterungen", 14, "Bis zu dieser Anzahl (Spiel-Maximum 14).");
-            _expMoneyFactor = Config.Bind("14. Erweiterungen", "Nur kaufen wenn Budget mindestens X mal Preis", 5f, "Schutz: Erweiterung nur, wenn das Geld über der Reserve mindestens so oft den Preis abdeckt.");
-            _reviewEnabled = Config.Bind("13. Bewertungen", "Auf Kundenbewertungen reagieren", true, "Vermisste Packs/Displays sofort nachbestellen, bei 'zu teuer' den Aufschlag für diesen Artikel senken.");
-            _reviewCases = Config.Bind("13. Bewertungen", "Kartons pro vermisstem Artikel", 3, "So viele Kartons werden bestellt, wenn Kunden einen Artikel vermissen.");
-            _reviewMinMarkup = Config.Bind("13. Bewertungen", "Minimaler Aufschlag (%)", 10f, "Tiefer wird der Aufschlag bei Preis-Beschwerden nie gesenkt.");
-            _colEnabled = Config.Bind("7. Sammlung", "Sammlung automatisch vervollständigen", true, "Kauft Packs von unfertigen Sets (Collection Tracker) und lässt sie in den Openern öffnen.");
-            _colReserve = Config.Bind("7. Sammlung", "Sicherheitsreserve ($)", 20000f, "So viel Geld bleibt immer übrig (Miete/Löhne). Alles darüber darf für Packs ausgegeben werden.");
-            _useAllMoney = Config.Bind("7. Sammlung", "Ganzes Geld nutzen (nur Rechnungen zurückhalten)", true, "An: der Bot darf alles ausgeben, hält aber offene Rechnungen + die nächsten Tagesrechnungen (x1,5) zurück – so geht das Konto nie ins Minus. Aus: feste Sicherheitsreserve."); 
-            _colFocusSets = Config.Bind("7. Sammlung", "Ziel-Sets gleichzeitig", 5, "An so vielen Sets wird gleichzeitig gearbeitet.");
-            _colEfficiency = Config.Bind("7. Sammlung", "Sets nach Effizienz wählen", true, "An: Sets, bei denen pro Dollar die meisten neuen Karten zu erwarten sind (viele fehlende Karten, günstige Packs). Aus: fast fertige Sets zuerst.");
-            _colPacksPerMissing = Config.Bind("7. Sammlung", "Fast fertige Sets: max. Packs pro fehlender Karte", 1500, "Fehlen nur noch 1-3 Karten, kauft der Bot höchstens so viele Packs pro fehlender Karte – danach wird das Set pausiert (Karten von Kunden ankaufen). 0 = kein Deckel.");
-            _colPacksBoughtCfg = Config.Bind("7. Sammlung", "Packs gekauft pro Set (intern)", "", "Zähler für den Deckel oben. Leeren = zurücksetzen.");
+            _billsEnabled = Config.Bind("0. Bills", "Pay bills automatically", true, "Rent, electricity and wages are paid as soon as they are due (before any purchases).");
+            _bonusEnabled = Config.Bind("9. Workers", "Daily bonus for all workers", true, "Like the bonus button: 3x per day and worker (costs 1 day's wage each). Every bonus = +1 level on all tasks and double experience.");
+            _expEnabled = Config.Bind("14. Expansions", "Buy shop expansions", true, "Buys the next shop expansion as soon as level and money allow.");
+            _expWarehouse = Config.Bind("14. Expansions", "Buy warehouse (Shop B) and warehouse expansions", true, "Unlocks the warehouse and expands it.");
+            _expMaxShop = Config.Bind("14. Expansions", "Max shop expansions", 30, "Up to this number (game maximum 30).");
+            _expMaxWarehouse = Config.Bind("14. Expansions", "Max warehouse expansions", 14, "Up to this number (game maximum 14).");
+            _expMoneyFactor = Config.Bind("14. Expansions", "Only buy if budget is at least X times the price", 5f, "Safety: expansion only if the money above the reserve covers the price at least this many times.");
+            _reviewEnabled = Config.Bind("13. Reviews", "React to customer reviews", true, "Reorder missing packs/displays right away; lower the markup of an item when customers say 'too expensive'.");
+            _reviewCases = Config.Bind("13. Reviews", "Boxes per missing item", 3, "This many boxes are ordered when customers miss an item.");
+            _reviewMinMarkup = Config.Bind("13. Reviews", "Minimum markup (%)", 10f, "The markup is never lowered below this on price complaints.");
+            _colEnabled = Config.Bind("7. Collection", "Complete the collection automatically", true, "Buys packs of unfinished sets (Collection Tracker) and lets the openers open them.");
+            _colReserve = Config.Bind("7. Collection", "Safety reserve ($)", 20000f, "This much money is always kept (rent/wages). Everything above may be spent on packs.");
+            _useAllMoney = Config.Bind("7. Collection", "Use all money (only hold back bills)", true, "On: the bot may spend everything but holds back open bills + the next day's bills (x1.5) – the account never goes negative. Off: fixed safety reserve."); 
+            _colFocusSets = Config.Bind("7. Collection", "Target sets at once", 5, "This many sets are worked on at the same time.");
+            _colEfficiency = Config.Bind("7. Collection", "Choose sets by efficiency", true, "On: sets with the most new cards per dollar (many missing cards, cheap packs). Off: nearly finished sets first.");
+            _colPacksPerMissing = Config.Bind("7. Collection", "Nearly finished sets: max packs per missing card", 1500, "If only 1-3 cards are missing, the bot buys at most this many packs per missing card – then the set is paused (buy the cards from customers). 0 = no cap.");
+            _colPacksBoughtCfg = Config.Bind("7. Collection", "Packs bought per set (internal)", "", "Counter for the cap above. Clear = reset.");
             foreach (var part in (_colPacksBoughtCfg.Value ?? "").Split('|'))
             {
                 int eq = part.LastIndexOf('=');
                 if (eq > 0 && int.TryParse(part.Substring(eq + 1), out var n)) _setPacksBought[part.Substring(0, eq)] = n;
             }
-            _colFills = Config.Bind("7. Sammlung", "Vorrat in Opener-Füllungen", 2f, "Vorrat = Kapazität ALLER Pack-Opener x diesen Wert (z. B. 11 Automaten x 448 Packs x 2 = 9856 Packs), verteilt auf die Ziel-Sets. Passt sich automatisch an, wenn neue Automaten dazukommen.");
-            _colBudgetPerExtraSet = Config.Bind("7. Sammlung", "Budget pro zusätzlichem Ziel-Set ($)", 50000f, "Je so viel Geld über der Reserve wird ein Ziel-Set mehr gleichzeitig bespielt. 0 = aus.");
-            _colPokemonOnly = Config.Bind("7. Sammlung", "Nur Pokémon-Sets", true, "Nur Sets aus Pokémon-Shops (Pokemon Shop, Pokemon Pocket Shop) – keine Tetramon/Grundspiel-Sets.");
-            _dayBuyLimit = Config.Bind("7. Sammlung", "Einkaufslimit pro Tag ($)", 60000f, "Höchstens so viel gibt der Bot pro Spieltag für Packs/Displays aus (Sammlung + Nachbestellen + Bewertungen). 0 = kein Limit.");
-            _dayBuyLimitPercent = Config.Bind("7. Sammlung", "Tageslimit mindestens Prozent vom Geld", 0f, "Das Tageslimit wächst mit: mindestens so viel Prozent vom Geld über der Reserve. 0 = aus (nur fester Wert).");
-            _maxStockPacks = Config.Bind("7. Sammlung", "Max. Packs im Vorrat gesamt", 15000, "Obergrenze für den Pack-Vorrat aller Ziel-Sets zusammen – egal wie viel Geld da ist.");
-            _colMaxFocusSets = Config.Bind("7. Sammlung", "Max. Ziel-Sets gleichzeitig", 10, "Obergrenze für die Anzahl gleichzeitiger Ziel-Sets.");
-            _colBudgetPerExtraFill = Config.Bind("7. Sammlung", "Budget pro zusätzlicher Opener-Füllung ($)", 150000f, "Je so viel Geld über der Reserve wird der Vorrat um eine Opener-Füllung erhöht. 0 = aus.");
-            _colMaxFills = Config.Bind("7. Sammlung", "Max. Opener-Füllungen Vorrat", 4f, "Obergrenze für den Vorrat.");
-            _colCasesPerBuy = Config.Bind("7. Sammlung", "Max. Kartons pro Bestellung", 40, "Höchstens so viele Kartons pro Set und Bestellung.");
-            _restockOnlyTcg = Config.Bind("10. Nachbestellen", "Nur Packs und Displays", true, "Nur Booster-Packs und Booster-Boxen/Displays nachbestellen – keine Figuren, Spiele, Hüllen, Matten usw.");
-            _colMaxBoxesOnFloor = Config.Bind("7. Sammlung", "Max. volle Kartons im Laden insgesamt", 600, "Über dieser Anzahl voller Kartons (Laden + Lager) wird nichts mehr bestellt.");
-            _colSetWorkerPacks = Config.Bind("7. Sammlung", "Opener-Arbeiter auf Ziel-Sets einstellen", true, "Arbeiter mit Aufgabe 'Opener befüllen' nehmen nur Packs der Ziel-Sets.");
-            _colClaimBoost = Config.Bind("7. Sammlung", "Pack-Automaten-Boost abholen", true, "Holt die nächste Boost-Stufe im Collection Tracker automatisch ab.");
+            _colFills = Config.Bind("7. Collection", "Stock in opener fills", 2f, "Stock = capacity of ALL pack openers x this value (e.g. 11 openers x 448 packs x 2 = 9856 packs), split across the target sets. Adapts automatically when you add openers.");
+            _colBudgetPerExtraSet = Config.Bind("7. Collection", "Budget per extra target set ($)", 50000f, "For every this much money above the reserve, one more target set is worked on at the same time. 0 = off.");
+            _colPokemonOnly = Config.Bind("7. Collection", "Pokémon sets only", true, "Only sets from Pokémon shops (Pokemon Shop, Pokemon Pocket Shop) – no Tetramon/base game sets.");
+            _dayBuyLimit = Config.Bind("7. Collection", "Daily purchase limit ($)", 60000f, "The bot spends at most this much per game day on packs/displays (collection + restocking + reviews). 0 = no limit.");
+            _dayBuyLimitPercent = Config.Bind("7. Collection", "Daily limit at least percent of money", 0f, "The daily limit grows with your money: at least this percent of the money above the reserve. 0 = off (fixed value only).");
+            _maxStockPacks = Config.Bind("7. Collection", "Max packs in stock overall", 15000, "Upper limit for the pack stock of all target sets together – no matter how much money there is.");
+            _colMaxFocusSets = Config.Bind("7. Collection", "Max target sets at once", 10, "Upper limit for the number of target sets at the same time.");
+            _colBudgetPerExtraFill = Config.Bind("7. Collection", "Budget per extra opener fill ($)", 150000f, "For every this much money above the reserve, the stock grows by one opener fill. 0 = off.");
+            _colMaxFills = Config.Bind("7. Collection", "Max opener fills in stock", 4f, "Upper limit for the stock.");
+            _colCasesPerBuy = Config.Bind("7. Collection", "Max boxes per order", 40, "At most this many boxes per set and order.");
+            _restockOnlyTcg = Config.Bind("10. Restocking", "Packs and displays only", true, "Only reorder booster packs and booster boxes/displays – no figures, games, sleeves, mats etc.");
+            _colMaxBoxesOnFloor = Config.Bind("7. Collection", "Max full boxes in the shop overall", 600, "Above this number of full boxes (shop + warehouse) nothing more is ordered.");
+            _colSetWorkerPacks = Config.Bind("7. Collection", "Set opener workers to target sets", true, "Workers with the task 'Fill opener' only take packs of the target sets.");
+            _colClaimBoost = Config.Bind("7. Collection", "Claim pack machine boost", true, "Claims the next boost level in the Collection Tracker automatically.");
 
-            _bulkEnabled = Config.Bind("8. Kartenablage", "Doppelte in Kartenablage legen", true, "Doppelte Karten in die Kartenablage (Card Storage) legen, damit Arbeiter sie in die Vitrinen stellen. 1 Stück bleibt immer im Album.");
-            _bulkMaxValue = Config.Bind("8. Kartenablage", "Nur Karten unter ($)", 100f, "Wertvollere Doppelte bleiben im Album.");
-            _bulkMaxPerRun = Config.Bind("8. Kartenablage", "Max. Karten pro Durchgang", 2000, "Begrenzung pro Durchgang (alle 5 Minuten).");
-            _gradedSell = Config.Bind("8. Kartenablage", "Gegradete Karten zuerst verkaufen", true, "Gegradete Karten kommen zuerst in die Kartenablage -> Arbeiter stellen sie in die Vitrinen (Marktpreis +20 %). Normale Doppelte erst, wenn keine gegradeten mehr warten.");
-            _gradedKeepTen = Config.Bind("8. Kartenablage", "Grade 10 (PSA 10): nur Duplikate verkaufen", true, "Von jeder Karte mit Grade 10 bleibt immer eine im Album.");
+            _bulkEnabled = Config.Bind("8. Card storage", "Put duplicates into card storage", true, "Puts duplicate cards into the card storage so they end up in the display cases. 1 copy always stays in the album.");
+            _bulkMaxValue = Config.Bind("8. Card storage", "Only cards below ($)", 100f, "More valuable duplicates stay in the album.");
+            _bulkMaxPerRun = Config.Bind("8. Card storage", "Max cards per run", 2000, "Limit per run (every 5 minutes).");
+            _gradedSell = Config.Bind("8. Card storage", "Sell graded cards first", true, "Graded cards go into the card storage first -> display cases (market price +20 %). Normal duplicates only when no graded cards are waiting.");
+            _gradedKeepTen = Config.Bind("8. Card storage", "Grade 10 (PSA 10): only sell duplicates", true, "One of every grade 10 card always stays in the album.");
 
-            _workersAuto = Config.Bind("9. Arbeiter", "Arbeiter automatisch einteilen", true, "Einsatzplan nach Stärken (Haupt- + Nebenrolle), jeden Morgen und wenn sich die Belegschaft ändert.");
+            _workersAuto = Config.Bind("9. Workers", "Assign workers automatically", true, "Work plan by strengths (main + side task), every morning and when the staff changes.");
             BindWorkerPlanConfig();
 
-            _restockEnabled = Config.Bind("10. Nachbestellen", "Produkte nachbestellen", true, "Bestellt Produkte nach, wenn Regal + Lager fast leer sind.");
-            _restockMaxPerMinute = Config.Bind("10. Nachbestellen", "Max. Bestellungen pro Minute", 3, "Begrenzung, damit nicht zu viele Kartons kommen.");
+            _restockEnabled = Config.Bind("10. Restocking", "Reorder products", true, "Reorders products when shelf + storage are almost empty.");
+            _restockMaxPerMinute = Config.Bind("10. Restocking", "Max orders per minute", 3, "Limit so not too many boxes arrive.");
         }
 
         // Wird aus dem Haupt-Takt (1x pro Sekunde) aufgerufen
@@ -150,10 +150,10 @@ namespace ShopBot
             HandlePackEmergency();
             DayReportTick();
 
-            if (_colEnabled.Value && (_colTimer += 1f) >= 60f) { _colTimer = 0f; SafeRun("Sammlung", CollectionTick); }
-            if (_bulkEnabled.Value && (_bulkTimer += 1f) >= 300f) { _bulkTimer = 0f; SafeRun("Kartenablage", BulkTick); }
-            if (_workersAuto.Value && (_workerTimer += 1f) >= 60f) { _workerTimer = 0f; SafeRun("Arbeiter", WorkerTick); }
-            if (_restockEnabled.Value && (_restockTimer += 1f) >= 60f) { _restockTimer = 0f; SafeRun("Nachbestellen", RestockTick); }
+            if (_colEnabled.Value && (_colTimer += 1f) >= 60f) { _colTimer = 0f; SafeRun("Collection", CollectionTick); }
+            if (_bulkEnabled.Value && (_bulkTimer += 1f) >= 300f) { _bulkTimer = 0f; SafeRun("Card storage", BulkTick); }
+            if (_workersAuto.Value && (_workerTimer += 1f) >= 60f) { _workerTimer = 0f; SafeRun("Workers", WorkerTick); }
+            if (_restockEnabled.Value && (_restockTimer += 1f) >= 60f) { _restockTimer = 0f; SafeRun("Restocking", RestockTick); }
             HandleUpgrades();
             HandleGrading();
         }
@@ -165,11 +165,11 @@ namespace ShopBot
         {
             if (!_billsEnabled.Value || (_billTimer += 1f) < 15f) return;
             _billTimer = 0f;
-            SafeRun("Rechnungen", () =>
+            SafeRun("Bills", () =>
             {
                 var screen = S<PhoneManager>()?.m_RentBillScreen;
                 if (screen == null) return;
-                var parts = new List<string>();
+                var parts = new List<FormattableString>();
                 void Pay(EBillType type, string name, Action<bool> payFn)
                 {
                     var bill = CPlayerData.GetBill(type);
@@ -178,12 +178,12 @@ namespace ShopBot
                     float amount = bill.amountToPay;
                     payFn(false);
                     var after = CPlayerData.GetBill(type);
-                    if (after == null || after.amountToPay <= 0f) { parts.Add($"{name} {GameInstance.GetPriceString(amount)}"); NoteBillPaid(amount); }
+                    if (after == null || after.amountToPay <= 0f) { parts.Add($"{L(name)} {GameInstance.GetPriceString(amount)}"); NoteBillPaid(amount); }
                 }
-                Pay(EBillType.Rent, "Miete", screen.OnPressPayRentBill);
-                Pay(EBillType.Electric, "Strom", screen.OnPressPayElectricBill);
-                Pay(EBillType.Employee, "Löhne", screen.OnPressPaySalaryBill);
-                if (parts.Count > 0) Note("Rechnungen bezahlt: " + string.Join(", ", parts));
+                Pay(EBillType.Rent, "Rent", screen.OnPressPayRentBill);  // i18n
+                Pay(EBillType.Electric, "Electricity", screen.OnPressPayElectricBill);  // i18n
+                Pay(EBillType.Employee, "Wages", screen.OnPressPaySalaryBill);  // i18n
+                if (parts.Count > 0) NoteF($"Bills paid: {new LList(parts, ", ")}");
             });
         }
 
@@ -200,7 +200,7 @@ namespace ShopBot
         {
             if (!_reviewEnabled.Value || (_reviewTimer += 1f) < 30f) return;
             _reviewTimer = 0f;
-            SafeRun("Bewertungen", ReviewTick);
+            SafeRun("Reviews", ReviewTick);
         }
 
         private void ReviewTick()
@@ -244,12 +244,12 @@ namespace ShopBot
                 string name = data?.GetName() ?? type.ToString();
                 if (_restockOnlyTcg.Value && data?.category != EItemCategory.TCG)
                 {
-                    Logger.LogInfo($"[Bewertungen] {kv.Value}x vermisst: {name} (kein Pack/Display – nicht bestellt)");
+                    Logger.LogInfo($"[Reviews] {kv.Value}x missed: {name} (not a pack/display – not ordered)");
                     continue;
                 }
                 if (RecentlyOrdered(type)) continue;
                 int idx = BestRestockIndex(type);
-                if (idx < 0) { Logger.LogInfo($"[Bewertungen] {name} vermisst, aber keine Lizenz – kann nicht bestellt werden"); continue; }
+                if (idx < 0) { Logger.LogInfo($"[Reviews] {name} missed, but no license – cannot be ordered"); continue; }
 
                 // Liegt schon im Lager (und ist kein Ziel-Set-Pack, das die Opener verbrauchen)? -> nicht kaufen, nur einräumen lassen
                 if (!_focusPackTypes.Contains(type))
@@ -259,7 +259,7 @@ namespace ShopBot
                     if (stockNow.TryGetValue(type, out var inStock) && inStock >= Mathf.Max(1, perCaseNow / 2))
                     {
                         needShelfHelp = true;
-                        Logger.LogInfo($"[Bewertungen] {name} vermisst, liegt aber im Lager ({inStock} Stück) – wird eingeräumt statt neu gekauft");
+                        Logger.LogInfo($"[Reviews] {name} missed, but it is in storage ({inStock} pcs) – stocking it instead of buying");
                         continue;
                     }
                 }
@@ -272,7 +272,7 @@ namespace ShopBot
                     MarkOrdered(type); MarkSpent(cost * cases);
                     _statSpent += cost * cases;
                     AddDaySpent(cost * cases);
-                    Note($"Kunden vermissen {name} ({kv.Value}x) – {cases} Kartons bestellt (~{GameInstance.GetPriceString(cost * cases)})");
+                    NoteF($"Customers miss {name} ({kv.Value}x) – ordered {cases} boxes (~{GameInstance.GetPriceString(cost * cases)})");
                 }
             }
 
@@ -287,7 +287,7 @@ namespace ShopBot
                 {
                     _itemMarkup[kv.Key] = next;
                     _priceTimer = 999f; // Preise sofort neu setzen
-                    Note($"Kunden finden {InventoryBase.GetItemData(kv.Key)?.GetName() ?? kv.Key.ToString()} zu teuer – Aufschlag {cur:0}% -> {next:0}%");
+                    NoteF($"Customers find {InventoryBase.GetItemData(kv.Key)?.GetName() ?? kv.Key.ToString()} too expensive – markup {cur:0}% -> {next:0}%");
                 }
             }
         }
@@ -301,7 +301,7 @@ namespace ShopBot
         {
             if (!_expEnabled.Value || (_expTimer += 1f) < 60f) return;
             _expTimer = 0f;
-            SafeRun("Erweiterungen", ExpansionTick);
+            SafeRun("Expansions", ExpansionTick);
         }
 
         private void ExpansionTick()
@@ -313,7 +313,7 @@ namespace ShopBot
                 if (Time.unscaledTime >= _starveLogExp)
                 {
                     _starveLogExp = Time.unscaledTime + 600f;
-                    Logger.LogInfo($"[Erweiterungen] warten: Pack-Vorrat knapp ({_packHave}/{_packNeed}) – Geld geht zuerst in Packs");
+                    Logger.LogInfo($"[Expansions] waiting: pack stock low ({_packHave}/{_packNeed}) – money goes to packs first");
                 }
                 return;
             }
@@ -330,7 +330,7 @@ namespace ShopBot
                 if (level >= req && Budget >= cost * factor)
                 {
                     BuyExpansion(cost, isWarehouse: false, idx);
-                    Note($"Laden-Erweiterung {idx + 1} gekauft ({GameInstance.GetPriceString(cost)}) – mehr Fläche für Regale/Opener");
+                    NoteF($"Shop expansion {idx + 1} bought ({GameInstance.GetPriceString(cost)}) – more space for shelves/openers");
                     return; // max. 1 pro Runde
                 }
             }
@@ -349,7 +349,7 @@ namespace ShopBot
                     CPlayerData.m_GameReportDataCollect.upgradeCost -= price;
                     CPlayerData.m_GameReportDataCollectPermanent.upgradeCost -= price;
                     StartCoroutine(SaveShelvesSoon());
-                    Note($"Lager (Shop B) freigeschaltet ({GameInstance.GetPriceString(price)})");
+                    NoteF($"Warehouse (Shop B) unlocked ({GameInstance.GetPriceString(price)})");
                     return;
                 }
             }
@@ -366,7 +366,7 @@ namespace ShopBot
                     if (level >= req && Budget >= cost * factor)
                     {
                         BuyExpansion(cost, isWarehouse: true, widx);
-                        Note($"Lager-Erweiterung {widx + 1} gekauft ({GameInstance.GetPriceString(cost)}) – mehr Platz für Kartons");
+                        NoteF($"Warehouse expansion {widx + 1} bought ({GameInstance.GetPriceString(cost)}) – more room for boxes");
                     }
                 }
             }
@@ -407,7 +407,7 @@ namespace ShopBot
                 {
                     _shelfHelper.SetTask(_shelfHelperOldMain);
                     _shelfHelper.SetSecondaryTask(_shelfHelperOldSide);
-                    Note($"{WorkerName(_shelfHelper)} zurück an {TaskName(_shelfHelperOldMain)}");
+                    NoteF($"{WorkerName(_shelfHelper)} back to {TaskName(_shelfHelperOldMain)}");
                 }
                 _shelfHelper = null;
             }
@@ -426,7 +426,7 @@ namespace ShopBot
             _shelfHelperUntil = now + 600f;
             pick.SetTask(EWorkerTask.RestockShelf);
             pick.SetSecondaryTask(EWorkerTask.RefillCardOpener);
-            Note($"Kunden vermissen Ware aus dem Lager – {WorkerName(pick)} räumt 10 Min. Regale ein");
+            NoteF($"Customers miss items from storage – {WorkerName(pick)} restocks shelves for 10 min");
         }
 
         // ================= Arbeiter-Bonus (Geld) =================
@@ -463,7 +463,7 @@ namespace ShopBot
                     }
                     if (n > 0) given.Add($"{WorkerName(w)} +{n}");
                 }
-                if (given.Count > 0) Note("Bonus gezahlt: " + string.Join(", ", given));
+                if (given.Count > 0) NoteF($"Bonus paid: {string.Join(", ", given)}");
             });
         }
 
@@ -522,7 +522,7 @@ namespace ShopBot
             if (_ctOrderType == null) _ctOrderType = AccessTools.TypeByName("CollectionTracker.CTSetOrdering");
             if (_ctShopType == null || _ctOrderType == null)
             {
-                if (!_ctWarned) { _ctWarned = true; Logger.LogWarning("Collection Tracker nicht gefunden – Sammel-Funktionen aus."); ModMissing("Collection Tracker", "Sammlung / Pack-Kauf"); }
+                if (!_ctWarned) { _ctWarned = true; Logger.LogWarning("Collection Tracker not found – collection features off."); ModMissing("Collection Tracker", "Collection / pack buying"); }  // i18n-last
                 return false;
             }
             return true;
@@ -649,14 +649,14 @@ namespace ShopBot
 
         private void BindEmergencyConfig()
         {
-            _emergencyEnabled = Config.Bind("7. Sammlung", "Notfall-Nachkauf wenn Packs ausgehen", true,
-                "Prüft alle 10 s den Pack-Vorrat unfertiger Sets (Boden + Lager + unterwegs). Fällt er unter die eingestellten Opener-Füllungen, wird sofort viel nachbestellt – auch über das Tageslimit hinaus (bis zum Notfall-Limit).");
-            _emergencyFills = Config.Bind("7. Sammlung", "Notfall ab weniger als X Opener-Füllungen", 1f,
-                "1 = sobald weniger Packs da sind, als alle Opener zusammen fassen.");
-            _emergencyExtraLimit = Config.Bind("7. Sammlung", "Notfall zusätzliches Limit pro Tag ($)", 100000f,
-                "So viel darf der Notfall-Nachkauf pro Tag zusätzlich zum normalen Tageslimit ausgeben.");
-            _packsFirst = Config.Bind("7. Sammlung", "Packs zuerst (Lizenzen/Erweiterungen warten bei knappem Vorrat)", true,
-                "Solange weniger Packs da sind als eine Opener-Füllung, kauft der Bot keine Erweiterungen und nur Lizenzen für Sets ganz ohne kaufbare Packs – das Geld geht in Packs.");
+            _emergencyEnabled = Config.Bind("7. Collection", "Emergency restock when packs run out", true,
+                "Checks the pack stock of unfinished sets every 10 s (floor + storage + on the way). If it drops below the set opener fills, a lot is ordered right away – even beyond the daily limit (up to the emergency limit).");
+            _emergencyFills = Config.Bind("7. Collection", "Emergency below X opener fills", 1f,
+                "1 = as soon as there are fewer packs than all openers hold together.");
+            _emergencyExtraLimit = Config.Bind("7. Collection", "Emergency extra limit per day ($)", 100000f,
+                "The emergency restock may spend this much per day on top of the normal daily limit.");
+            _packsFirst = Config.Bind("7. Collection", "Packs first (licenses/expansions wait when stock is low)", true,
+                "While there are fewer packs than one opener fill, the bot buys no expansions and only licenses for sets without any buyable packs – the money goes to packs.");
         }
 
         private float EmergencyLeft()
@@ -706,9 +706,9 @@ namespace ShopBot
         private string PackSupplyText()
         {
             string s = _packRatePerMin > 1f
-                ? $"Verbrauch ~{_packRatePerMin:N0}/Min · reicht ~{PackMinutesLeft:N0} Min"
-                : "Lager + unterwegs";
-            return PacksFirstBlocks ? s + " · knapp: Packs zuerst" : s;
+                ? F($"Usage ~{_packRatePerMin:N0}/min · lasts ~{PackMinutesLeft:N0} min")
+                : T("Floor + storage + on the way");
+            return PacksFirstBlocks ? s + T(" · low: packs first") : s;
         }
 
         private void HandlePackEmergency()
@@ -716,7 +716,7 @@ namespace ShopBot
             if (!_emergencyEnabled.Value || !_colEnabled.Value || (_emergencyTimer += 1f) < 10f) return;
             _emergencyTimer = 0f;
             if (_openerPackTypes.Count == 0 || LightManager.GetHasDayEnded()) return;
-            SafeRun("Notfall-Nachkauf", () =>
+            SafeRun("Emergency restock", () =>
             {
                 int cap = 0;
                 var ops = ShelfManager.GetAutoPackOpenerList();
@@ -729,7 +729,7 @@ namespace ShopBot
                 UpdatePackSupply(have, need);
                 if (EmergencyActive || have >= need) return;
                 _emergencyUntil = Time.unscaledTime + 30f;
-                Note($"Notfall-Nachkauf: nur noch {have} Packs für die Opener (Ziel mind. {need}) – bestelle sofort");
+                NoteF($"Emergency restock: only {have} packs left for the openers (target at least {need}) – ordering now");
                 _colTimer = 60f;                                       // Sammlung gleich im nächsten Takt
             });
         }
@@ -787,7 +787,7 @@ namespace ShopBot
             {
                 var claim = AccessTools.Method(screen.GetType(), "TabletClaimReward");
                 if (claim != null && (bool)claim.Invoke(screen, new object[] { "PackMachineBoost" }))
-                    Note("Pack-Automaten-Boost: nächste Stufe abgeholt! (schneller + mehr Kapazität)");
+                    Note("Pack machine boost: next level claimed! (faster + more capacity)");
             }
 
             // 2) Ziel-Sets: unfertig + kaufbar, fast fertige zuerst
@@ -806,9 +806,9 @@ namespace ShopBot
                 if (box < 0) { noBox.Add(s.Name); _hardSetTypes.Add(s.Type); continue; }
                 candidates.Add(new KeyValuePair<SetInfo, int>(s, box));
             }
-            Logger.LogInfo($"[Sammlung] {sets.Count} Sets gelesen, {incomplete} unfertig, {candidates.Count} kaufbar, {errors} Fehler" +
-                           (noBox.Count > 0 ? $" | ohne kaufbare Packs: {string.Join(", ", noBox.Take(8))}{(noBox.Count > 8 ? " ..." : "")}" : "") +
-                           $" | Budget: {GameInstance.GetPriceString((float)Budget)}");
+            Logger.LogInfo($"[Collection] {sets.Count} sets read, {incomplete} unfinished, {candidates.Count} buyable, {errors} errors" +
+                           (noBox.Count > 0 ? $" | without buyable packs: {string.Join(", ", noBox.Take(8))}{(noBox.Count > 8 ? " ..." : "")}" : "") +
+                           $" | budget: {GameInstance.GetPriceString((float)Budget)}");
             // Kaufstrategie:
             //  1) wenigste fehlende Karten zuerst (schnell fertig -> Boost-Stufen)
             //  2) bei Gleichstand: günstigerer Preis pro Pack
@@ -825,13 +825,13 @@ namespace ShopBot
                 if (miss > 3 || _colPacksPerMissing.Value <= 0) return true;
                 int boughtPacks = _setPacksBought.TryGetValue(c.Key.Name, out var bp) ? bp : 0;
                 if (boughtPacks < _colPacksPerMissing.Value * miss) return true;
-                capped.Add($"{c.Key.Name} ({miss} fehlen, {boughtPacks} Packs gekauft)"); _hardSetTypes.Add(c.Key.Type);
+                capped.Add($"{c.Key.Name} ({miss} missing, {boughtPacks} packs bought)"); _hardSetTypes.Add(c.Key.Type);
                 return false;
             }).ToList();
             if (capped.Count > 0 && Time.unscaledTime >= _cappedLogAt)
             {
                 _cappedLogAt = Time.unscaledTime + 1800f;
-                Note($"Sammlung: fast fertige Sets pausiert (fehlende Karten lieber von Kunden ankaufen): {string.Join(", ", capped.Take(5))}");
+                NoteF($"Collection: nearly finished sets paused (better buy the missing cards from customers): {string.Join(", ", capped.Take(5))}");
             }
 
             // Effizienz: Anteil fehlender Karten pro Dollar Packpreis = wie viele NEUE Karten bringt ein Dollar ungefähr
@@ -882,11 +882,11 @@ namespace ShopBot
             int targetPerSet = Mathf.Max(64, totalTarget / Mathf.Max(1, focus.Count));
             _dashStockTarget = totalTarget;
             _dashStockHave = focus.Sum(f => GetSetPackTypes(f.Key.Type).Sum(t => (stock.TryGetValue(t, out var c) ? c : 0) + (coming.TryGetValue(t, out var d) ? d : 0)));
-            Logger.LogInfo($"[Sammlung] Opener: {openerList?.Count ?? 0} Stück, {openerCapacity} Packs Kapazität -> Ziel-Vorrat {totalTarget} Packs ({targetPerSet} pro Set)");
+            Logger.LogInfo($"[Collection] Openers: {openerList?.Count ?? 0}, {openerCapacity} packs capacity -> target stock {totalTarget} packs ({targetPerSet} per set)");
 
             foreach (var f in focus)
             {
-                if (boxes >= _colMaxBoxesOnFloor.Value) { Note($"Sammlung: {boxes} volle Kartons im Laden (Limit {_colMaxBoxesOnFloor.Value}) – warte"); break; }
+                if (boxes >= _colMaxBoxesOnFloor.Value) { NoteF($"Collection: {boxes} full boxes in the shop (limit {_colMaxBoxesOnFloor.Value}) – waiting"); break; }
                 float cost = CaseCost(f.Value, out int perCase);
                 var setTypes = GetSetPackTypes(f.Key.Type);
                 // Lieferung noch unterwegs -> nicht nochmal; im Notfall nur warten, wenn wirklich etwas von diesem Set unterwegs ist
@@ -894,7 +894,7 @@ namespace ShopBot
                 int have = setTypes.Sum(t => (stock.TryGetValue(t, out var c) ? c : 0) + (coming.TryGetValue(t, out var d) ? d : 0));
                 if (have >= targetPerSet)
                 {
-                    Logger.LogInfo($"[Sammlung] {f.Key.Name}: genug Vorrat ({have}/{targetPerSet} Packs)");
+                    Logger.LogInfo($"[Collection] {f.Key.Name}: enough stock ({have}/{targetPerSet} packs)");
                     continue;
                 }
                 // Große Mengen: auf den berechneten Vorrat auffüllen, max. X Kartons pro Bestellung, so viel das Budget hergibt
@@ -902,8 +902,8 @@ namespace ShopBot
                 int cases = Mathf.Min(Mathf.Max(1, _colCasesPerBuy.Value), Mathf.Max(1, missingCases));
                 cases = Mathf.Min(cases, (int)(Budget / (cost * 1.1f)));
                 cases = Mathf.Min(cases, (int)(BuyLeft() / Mathf.Max(0.01f, cost)));
-                if (cases < 1 && BuyLeft() < cost) { Note($"Tageslimit erreicht ({GameInstance.GetPriceString(DayLimit)}) – morgen geht es weiter"); break; }
-                if (cases < 1) { Note($"Sammlung: Budget reicht nicht für {f.Key.Name} ({GameInstance.GetPriceString(cost)})"); break; }
+                if (cases < 1 && BuyLeft() < cost) { NoteF($"Daily limit reached ({GameInstance.GetPriceString(DayLimit)}) – continuing tomorrow"); break; }
+                if (cases < 1) { NoteF($"Collection: budget not enough for {f.Key.Name} ({GameInstance.GetPriceString(cost)})"); break; }
 
                 if (PurchaseSet(f.Key.Type, cases, out var msg))
                 {
@@ -915,9 +915,9 @@ namespace ShopBot
                     _statPackCases += cases;
                     _packsBoughtSince += cases * perCase;
                     CountSetPacks(f.Key.Name, cases * perCase);
-                    Note($"Gekauft: {cases} Kartons {f.Key.Name} ({cases * perCase} Packs, ~{GameInstance.GetPriceString(cost * cases)}) – Set {f.Key.Have}/{f.Key.Total}");
+                    NoteF($"Bought: {cases} boxes {f.Key.Name} ({cases * perCase} packs, ~{GameInstance.GetPriceString(cost * cases)}) – set {f.Key.Have}/{f.Key.Total}");
                 }
-                else Logger.LogInfo($"Kauf {f.Key.Name} nicht möglich: {msg}");
+                else Logger.LogInfo($"Purchase {f.Key.Name} not possible: {msg}");
             }
         }
 
@@ -938,7 +938,7 @@ namespace ShopBot
                     bool want = _openerPackTypes.Contains(types[i]);
                     if (enabled[i] != want) { w.SetCardPackItemTypeEnabled(i, want); changed = true; }
                 }
-                if (changed) Note($"{WorkerName(w)} befüllt Opener jetzt nur mit Ziel-Sets: {_focusText}");
+                if (changed) NoteF($"{WorkerName(w)} now fills openers only with target sets: {_focusText}");
             }
         }
 
@@ -964,7 +964,7 @@ namespace ShopBot
                     if (free < need)
                     {
                         int back = ReturnCheapCardsToAlbum(gt, Mathf.Min(need - free, 5000), out float backValue);
-                        if (back > 0) Note($"Kartenablage voll: {back} billige Doppelte (~{GameInstance.GetPriceString(backValue)}) zurück ins Album – Platz für gegradete Karten");
+                        if (back > 0) NoteF($"Card storage full: {back} cheap duplicates (~{GameInstance.GetPriceString(backValue)}) back to the album – room for graded cards");
                     }
                     target = gt;
                 }
@@ -983,7 +983,7 @@ namespace ShopBot
                     target.SetCompactCardDataAmountList(list);
                     S<InteractionPlayerController>()?.m_CollectionBinderFlipAnimCtrl?.SetCanUpdateSort(true);
                     _statBulk += g;
-                    Note($"Kartenablage: {g} gegradete Karten zum Verkauf eingelegt (Wert ~{GameInstance.GetPriceString(gValue)})");
+                    NoteF($"Card storage: {g} graded cards put up for sale (value ~{GameInstance.GetPriceString(gValue)})");
                 }
                 // Solange noch gegradete Karten in der Ablage warten, keine normalen Karten dazu -> Vitrinen zeigen zuerst gegradete
                 if (list.Any(e => e.gradedCardIndex > 0)) return;
@@ -1028,7 +1028,7 @@ namespace ShopBot
                         }
                     }
                 }
-                catch (Exception e) { Logger.LogWarning($"[Kartenablage] {set.Name}: {e.Message}"); }
+                catch (Exception e) { Logger.LogWarning($"[Card storage] {set.Name}: {e.Message}"); }
                 yield return null; // nächstes Set im nächsten Bild
             }
 
@@ -1037,7 +1037,7 @@ namespace ShopBot
                 target.SetCompactCardDataAmountList(list);
                 S<InteractionPlayerController>()?.m_CollectionBinderFlipAnimCtrl?.SetCanUpdateSort(true);
                 _statBulk += moved;
-                Note($"Kartenablage: {moved} doppelte Karten (Wert ~{GameInstance.GetPriceString(value)}) eingelegt");
+                NoteF($"Card storage: {moved} duplicate cards (value ~{GameInstance.GetPriceString(value)}) put in");
             }
             _bulkRunning = false;
         }
@@ -1144,22 +1144,22 @@ namespace ShopBot
 
         private void BindWorkerPlanConfig()
         {
-            _planCashiers = Config.Bind("9. Arbeiter", "Anzahl Kassierer (0 bedeutet so viele wie Kassen)", 0, "Haupt- UND Nebenrolle Kasse. Die mit der besten Kassen-Geschwindigkeit (inkl. Level).");
-            _planDisplays = Config.Bind("9. Arbeiter", "Vitrinen-Befüller (Bot füllt selbst)", 0, "Arbeiter für Vitrinen. 0 = der Bot füllt die Vitrinen selbst.");
-            _planShelves = Config.Bind("9. Arbeiter", "Regal-Einräumer (Bot räumt selbst ein)", 0, "Arbeiter für Regale. 0 = der Bot räumt selbst ein. Alle übrigen Arbeiter befüllen die Pack-Opener (Haupt- UND Nebenrolle).");
-            _cashTurbo = Config.Bind("5. Kasse", "Kassen-Turbo (Scan-Tempo x)", 2f, "Kassierer scannen so viel schneller (1 = normal). Wirkt wie eine zweite Person an jeder Kasse.");
+            _planCashiers = Config.Bind("9. Workers", "Number of cashiers (0 means as many as registers)", 0, "Main AND side task checkout. Those with the best checkout speed (incl. level).");
+            _planDisplays = Config.Bind("9. Workers", "Display fillers (bot fills them itself)", 0, "Workers for display cases. 0 = the bot fills the display cases itself.");
+            _planShelves = Config.Bind("9. Workers", "Shelf stockers (bot stocks itself)", 0, "Workers for shelves. 0 = the bot stocks itself. All other workers fill the pack openers (main AND side task).");
+            _cashTurbo = Config.Bind("5. Checkout", "Checkout turbo (scan speed x)", 2f, "Cashiers scan this much faster (1 = normal). Works like a second person at every register.");
         }
 
         private static string TaskName(EWorkerTask t)
         {
             switch (t)
             {
-                case EWorkerTask.ManCounter: return "Kasse";
-                case EWorkerTask.RefillCardOpener: return "Opener";
-                case EWorkerTask.RestockShelf: return "Regale";
-                case EWorkerTask.RestockCardDisplay: return "Vitrinen";
-                case EWorkerTask.SetPrice: return "Preise";
-                case EWorkerTask.RefillCleanser: return "Reiniger";
+                case EWorkerTask.ManCounter: return "Cashier";  // i18n
+                case EWorkerTask.RefillCardOpener: return "Opener";  // i18n
+                case EWorkerTask.RestockShelf: return "Shelves";  // i18n
+                case EWorkerTask.RestockCardDisplay: return "Displays";  // i18n
+                case EWorkerTask.SetPrice: return "Prices";  // i18n
+                case EWorkerTask.RefillCleanser: return "Cleaner";  // i18n
                 default: return t.ToString();
             }
         }
@@ -1220,7 +1220,7 @@ namespace ShopBot
                 plan[w] = (EWorkerTask.RestockShelf, hasOpeners ? EWorkerTask.RefillCardOpener : EWorkerTask.RestockCardDisplay);
 
             // Anwenden (nur wo nötig) + speichern, damit es auch am nächsten Tag gilt
-            var lines = new List<string>();
+            var lines = new List<FormattableString>();
             foreach (var kv in plan.OrderBy(k => k.Value.main))
             {
                 var w = kv.Key; var (main, side) = kv.Value;
@@ -1228,11 +1228,11 @@ namespace ShopBot
                 if (w.m_PrimaryTask != main) w.SetTask(main);
                 if (w.m_SecondaryTask != side) w.SetSecondaryTask(side);
                 try { w.SetLastTask(main); } catch { }
-                lines.Add($"{WorkerName(w)}: {TaskName(main)} / {TaskName(side)}{(changed ? " *" : "")}");
+                lines.Add($"{WorkerName(w)}: {L(TaskName(main))} / {L(TaskName(side))}{(changed ? " *" : "")}");
             }
             _dashPlan = plan.OrderBy(k => k.Value.main).Select(k => (WorkerName(k.Key), TaskName(k.Value.main), TaskName(k.Value.side))).ToList();
-            Note($"Einsatzplan Tag {CPlayerData.m_CurrentDay + 1}: " + string.Join(" | ", lines));
-            Logger.LogInfo("[Arbeiter] Einsatzplan (Haupt / Neben, * = geändert):\n  " + string.Join("\n  ", lines));
+            NoteF($"Work plan day {CPlayerData.m_CurrentDay + 1}: {new LList(lines, " | ")}");
+            Logger.LogInfo("[Workers] Work plan (main / side, * = changed):\n  " + string.Join("\n  ", lines.Select(Lang.Source)));
         }
 
         // ================= Produkte nachbestellen =================
@@ -1277,7 +1277,7 @@ namespace ShopBot
                     orders++; boxes++;
                     _statSpent += cost;
                     AddDaySpent(cost);
-                    Note($"Nachbestellt: {InventoryBase.GetItemData(type)?.GetName() ?? type.ToString()} (1 Karton, ~{GameInstance.GetPriceString(cost)})");
+                    NoteF($"Reordered: {InventoryBase.GetItemData(type)?.GetName() ?? type.ToString()} (1 box, ~{GameInstance.GetPriceString(cost)})");
                 }
             }
         }

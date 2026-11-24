@@ -23,19 +23,19 @@ namespace ShopBot
 
         private void BindSortConfig()
         {
-            _sortEnabled = Config.Bind("17. Einsortieren", "Herumliegende Kartons ins Lagerregal", true, "Volle Kartons, die im Laden auf dem Boden liegen, kommen ins Lagerregal (erst Fächer mit passendem Etikett, dann freie).");
-            _sortKeepOpenerPacks = Config.Bind("17. Einsortieren", "Packs für Opener am Boden lassen", true, "Packs unfertiger Sets bleiben liegen, bis eine Opener-Füllung erreicht ist – daraus befüllt der Bot die Opener selbst. Der Rest kommt ins Regal.");
-            _sortTrashEmpty = Config.Bind("17. Einsortieren", "Leere Kartons wegwerfen", true, "Leere Kartons kommen in den Mülleimer (nur wenn einer im Laden steht).");
-            _sortPerSecond = Config.Bind("17. Einsortieren", "Kartons pro Sekunde", 4, "Wie schnell der Bot einsortiert.");
-            _pullFromStorage = Config.Bind("17. Einsortieren", "Kartons aus dem Lagerregal holen", true, "Fehlen Packs für freie Opener oder Ware für halb leere Regalfächer, holt der Bot Kartons selbst aus dem Lagerregal (wie ein Klick aufs Lagerfach).");
-            _pullPerTick = Config.Bind("17. Einsortieren", "Kartons aus dem Lager pro Runde (Opener)", 6, "Höchstens so viele Kartons alle 2 Sekunden für die Opener.");
+            _sortEnabled = Config.Bind("17. Sorting", "Put loose boxes on the storage shelf", true, "Full boxes lying on the shop floor go onto the storage shelf (first slots with a matching label, then free ones).");
+            _sortKeepOpenerPacks = Config.Bind("17. Sorting", "Leave packs for openers on the floor", true, "Packs of unfinished sets stay on the floor until one opener fill is reached – the bot fills the openers from them. The rest goes on the shelf.");
+            _sortTrashEmpty = Config.Bind("17. Sorting", "Throw away empty boxes", true, "Empty boxes go into the trash bin (only if there is one in the shop).");
+            _sortPerSecond = Config.Bind("17. Sorting", "Boxes per second", 4, "How fast the bot sorts.");
+            _pullFromStorage = Config.Bind("17. Sorting", "Take boxes from the storage shelf", true, "If packs are missing for free openers or goods for half-empty shelf slots, the bot takes boxes from the storage shelf itself (like clicking a storage slot).");
+            _pullPerTick = Config.Bind("17. Sorting", "Boxes from storage per round (openers)", 6, "At most this many boxes every 2 seconds for the openers.");
         }
 
         private void HandleSorting()
         {
             if (!_sortEnabled.Value && !_sortTrashEmpty.Value) return;
             _sortAcc = Mathf.Min(_sortAcc + Mathf.Max(1, _sortPerSecond.Value), Mathf.Max(1, _sortPerSecond.Value) * 2f);
-            SafeRun("Einsortieren", SortTick);
+            SafeRun("Sorting", SortTick);
         }
 
         private static bool BoxBusy(InteractablePackagingBox_Item b)
@@ -130,7 +130,7 @@ namespace ShopBot
                         noRoom++;
                         string nm = null;
                         try { nm = InventoryBase.GetItemData(type)?.GetName(); } catch { }
-                        nm = (nm ?? type.ToString()) + (b.m_IsBigBox ? " (groß)" : " (klein)");
+                        nm = (nm ?? type.ToString()) + (b.m_IsBigBox ? T(" (large)") : T(" (small)"));
                         noRoomTypes[nm] = (noRoomTypes.TryGetValue(nm, out var nc) ? nc : 0) + 1;
                         continue;
                     }
@@ -139,19 +139,18 @@ namespace ShopBot
                         b.DispenseItem(isPlayer: false, comp);
                         if (b.m_IsStored) { done++; _statSorted++; }
                     }
-                    catch (Exception e) { Logger.LogWarning("[Einsortieren] " + e.Message); }
+                    catch (Exception e) { Logger.LogWarning("[Sorting]" + e.Message); }
                 }
                 if (noRoom > 0 && Time.unscaledTime >= _sortFullLogAt)
                 {
                     _sortFullLogAt = Time.unscaledTime + 600f;
-                    Note($"Einsortieren: {noRoom} Kartons passen nicht mehr ins Lagerregal – mehr Lagerregale aufstellen? " +
-                         string.Join(", ", noRoomTypes.OrderByDescending(kv => kv.Value).Take(5).Select(kv => $"{kv.Value}× {kv.Key}")));
+                    NoteF($"Sorting: {noRoom} boxes no longer fit on the storage shelf – place more storage shelves? {string.Join(", ", noRoomTypes.OrderByDescending(kv => kv.Value).Take(5).Select(kv => $"{kv.Value}× {kv.Key}"))}");
                 }
             }
 
             _sortAcc -= done;
             if (done > 0 && (_statSorted + _statTrashed) % 25 < done)
-                Note($"Einsortiert: {_statSorted} Kartons ins Lager, {_statTrashed} leere weggeworfen");
+                NoteF($"Sorted: {_statSorted} boxes into storage, {_statTrashed} empty ones thrown away");
         }
 
         // ================= Kartons aus dem Lagerregal holen =================
@@ -191,9 +190,9 @@ namespace ShopBot
                     var box = RestockManager.SpawnPackageBoxItemAtTransform(rec.itemType, rec.amount, rec.isBigBox, p, Quaternion.identity);
                     if (box != null) { pulled++; _statPulled++; }
                 }
-                catch (Exception e) { Logger.LogWarning("[Lager holen] " + e.Message); break; }
+                catch (Exception e) { Logger.LogWarning("[Take from storage]" + e.Message); break; }
             }
-            if (pulled > 0 && _statPulled % 20 < pulled) Note($"Aus dem Lager geholt: {_statPulled} Kartons insgesamt");
+            if (pulled > 0 && _statPulled % 20 < pulled) NoteF($"Taken from storage: {_statPulled} boxes in total");
             return pulled;
         }
 

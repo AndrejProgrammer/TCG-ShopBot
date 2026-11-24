@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace ShopBot
 {
-    [BepInPlugin("ratta.shopbot", "ShopBot", "0.5.4")]
+    [BepInPlugin("ratta.shopbot", "ShopBot", "0.6.0")]
     public partial class Plugin : BaseUnityPlugin
     {
         // ---- Konfiguration ----
@@ -76,50 +76,50 @@ namespace ShopBot
 
         private void Awake()
         {
-            _enabled = Config.Bind("1. Allgemein", "Bot aktiv", true, "Bot ein-/ausschalten.");
-            _toggleKey = Config.Bind("1. Allgemein", "Hotkey An/Aus", new KeyboardShortcut(KeyCode.F8), "Taste zum Ein-/Ausschalten.");
-            _showOverlay = Config.Bind("1. Allgemein", "Status anzeigen", true, "Kleine Statuszeile oben links.");
-            _startDelay = Config.Bind("1. Allgemein", "Startpause nach dem Laden (Sekunden)", 10f, "So lange wartet der Bot nach dem Laden des Spielstands, bevor er loslegt.");
-            _idleSeconds = Config.Bind("1. Allgemein", "Fenster nur wenn ich X Sek. nichts drücke", 8f,
-                "Kunden-Angebote, Opener-Ergebnis und Tagesende öffnen Fenster und sperren kurz die Steuerung. Das passiert nur, wenn du so lange keine Taste/Maus benutzt hast.");
+            _enabled = Config.Bind("1. General", "Bot active", true, "Turn the bot on/off.");
+            _toggleKey = Config.Bind("1. General", "Hotkey on/off", new KeyboardShortcut(KeyCode.F8), "Key to turn the bot on/off.");
+            _showOverlay = Config.Bind("1. General", "Show status", true, "Small status line at the top left.");
+            _startDelay = Config.Bind("1. General", "Start delay after loading (seconds)", 10f, "The bot waits this long after loading the save before it starts.");
+            _idleSeconds = Config.Bind("1. General", "Windows only if I press nothing for X sec", 8f,
+                "Customer offers, opener results and end of day open windows and briefly lock the controls. This only happens if you have not used a key/mouse for this long.");
 
-            _openerCollect = Config.Bind("2. Pack-Opener", "Fertige Opener einsammeln", true, "Holt die Karten aus fertigen Pack-Openern.");
-            _openerShowSeconds = Config.Bind("2. Pack-Opener", "Ergebnis anzeigen (Sekunden)", 2.5f, "Wie lange die Karten-Übersicht offen bleibt.");
-            _openerStartPartial = Config.Bind("2. Pack-Opener", "Halbvolle Opener starten", true, "Startet Opener, die Packs haben, aber eine Weile nicht weiter befüllt wurden.");
-            _gradedBoxOpen = Config.Bind("2. Pack-Opener", "Grading-Pakete automatisch öffnen", true, "Fertig gegradete Karten (Pakete) öffnen – Karten kommen ins Album und werden danach verkauft (PSA 10 nur Duplikate).");
-            _openerPartialIdleSeconds = Config.Bind("2. Pack-Opener", "Wartezeit halbvoll (Sekunden)", 45f, "So lange darf sich die Pack-Anzahl nicht ändern, bevor gestartet wird.");
+            _openerCollect = Config.Bind("2. Pack opener", "Collect finished openers", true, "Takes the cards out of finished pack openers.");
+            _openerShowSeconds = Config.Bind("2. Pack opener", "Show result (seconds)", 2.5f, "How long the card overview stays open.");
+            _openerStartPartial = Config.Bind("2. Pack opener", "Start half-full openers", true, "Starts openers that have packs but have not been filled further for a while.");
+            _gradedBoxOpen = Config.Bind("2. Pack opener", "Open grading packages automatically", true, "Opens graded card packages – the cards go into the album and are sold afterwards (PSA 10 only duplicates).");
+            _openerPartialIdleSeconds = Config.Bind("2. Pack opener", "Wait time half-full (seconds)", 45f, "The pack count must not change for this long before the opener is started.");
 
-            _tradeEnabled = Config.Bind("3. Kunden-Angebote", "Angebote bearbeiten", true, "Kunden, die Karten verkaufen/tauschen wollen, automatisch bedienen.");
-            _buyStartPercent = Config.Bind("3. Kunden-Angebote", "Ankauf Startgebot (% Marktpreis)", 50f, "Erstes Gebot beim Verhandeln.");
-            _buyMaxPercent = Config.Bind("3. Kunden-Angebote", "Ankauf Maximum (% Marktpreis)", 70f, "Mehr zahlt der Bot nie.");
-            _buyStepPercent = Config.Bind("3. Kunden-Angebote", "Ankauf Schritt (% Marktpreis)", 5f, "Um so viel wird pro Runde erhöht.");
-            _swapEnabled = Config.Bind("3. Kunden-Angebote", "Tausch bearbeiten", true, "Tauschangebote annehmen, wenn wir gewinnen.");
-            _swapMinGainPercent = Config.Bind("3. Kunden-Angebote", "Tausch Mindestgewinn (%)", 0f, "Erhaltene Karte muss so viel % mehr wert sein als die abgegebene.");
-            _stepDelay = Config.Bind("3. Kunden-Angebote", "Pause zwischen Schritten (Sekunden)", 0.8f, "Damit man sieht, was passiert.");
-            _buyMaxPercent2 = Config.Bind("3. Kunden-Angebote", "Ankauf Limit normale Karten (% Marktpreis)", 95f, "Höchstens so viel zahlt der Bot. Weiterverkauf mit +20 % bleibt Gewinn.");
-            _buyMaxNewPercent = Config.Bind("3. Kunden-Angebote", "Neue Karte: bis X Prozent Marktpreis (Set mit Packs)", 200f, "Fehlt die Karte in der Sammlung und gibt es für ihr Set noch kaufbare Packs: Wunschpreis zahlen bis zu so viel Prozent vom Marktpreis.");
-            _buyNewHardPercent = Config.Bind("3. Kunden-Angebote", "Neue Karte: bis X Prozent Marktpreis (Set pausiert oder ohne Packs)", 500f, "Fehlt die Karte und ihr Set ist fast fertig (pausiert) oder hat keine kaufbaren Packs: der Kunde ist die einzige realistische Quelle – bis zu so viel Prozent vom Marktpreis.");
-            _buyNewMaxMoneyPct = Config.Bind("3. Kunden-Angebote", "Neue Karte: höchstens X Prozent vom Geld", 10f, "Sicherheitsgrenze pro Karte.");
-            _buyNewAlwaysAsk = Config.Bind("3. Kunden-Angebote", "Neue Karte: immer den Wunschpreis zahlen", true, "Fehlt die Karte in der Sammlung, zahlt der Bot genau den Wunschpreis des Kunden (nie mehr) – unabhängig vom Marktpreis. Es gilt nur die Grenze in Prozent vom Geld. Aus: Grenzen in Prozent vom Marktpreis.");
-            _dupStartPct = Config.Bind("3. Kunden-Angebote", "Doppelte: Startgebot (Prozent Marktpreis)", 60f, "Erstes Gebot für Karten, die wir schon haben. Danach steigt der Bot in Schritten bis zum Ankauf-Limit (so viele Schritte, wie der Kunde Ablehnungen übrig hat).");
-            _dupStartCheapPct = Config.Bind("3. Kunden-Angebote", "Doppelte: Startgebot billige Karten (Prozent Marktpreis)", 50f, "Startgebot für billige Doppelte (unter dem Wert unten).");
-            _dupCheapBelow = Config.Bind("3. Kunden-Angebote", "Doppelte: billig heißt unter ($)", 10f, "Ab diesem Marktpreis gilt das normale Startgebot.");
-            _buyAlwaysBelow = Config.Bind("3. Kunden-Angebote", "Karten unter diesem Wert immer kaufen ($)", 2f, "Kleinkram: einfach den Wunschpreis zahlen, kein Verhandeln.");
-            _swapTolerance = Config.Bind("3. Kunden-Angebote", "Tausch: kleiner Verlust erlaubt ($)", 1f, "Tausch auch annehmen, wenn wir höchstens so viel weniger bekommen (spart Ablehnungen bei Kleinkram).");
+            _tradeEnabled = Config.Bind("3. Customer offers", "Handle offers", true, "Serve customers who want to sell/swap cards automatically.");
+            _buyStartPercent = Config.Bind("3. Customer offers", "Buy start offer (% market price)", 50f, "First offer when haggling.");
+            _buyMaxPercent = Config.Bind("3. Customer offers", "Buy maximum (% market price)", 70f, "The bot never pays more.");
+            _buyStepPercent = Config.Bind("3. Customer offers", "Buy step (% market price)", 5f, "Raised by this much per round.");
+            _swapEnabled = Config.Bind("3. Customer offers", "Handle swaps", true, "Accept swap offers when we gain.");
+            _swapMinGainPercent = Config.Bind("3. Customer offers", "Swap minimum gain (%)", 0f, "The card we get must be worth this many % more than the one we give.");
+            _stepDelay = Config.Bind("3. Customer offers", "Pause between steps (seconds)", 0.8f, "So you can see what happens.");
+            _buyMaxPercent2 = Config.Bind("3. Customer offers", "Buy limit normal cards (% market price)", 95f, "The bot pays at most this much. Reselling at +20 % stays profitable.");
+            _buyMaxNewPercent = Config.Bind("3. Customer offers", "New card: up to X percent market price (set with packs)", 200f, "If the card is missing from the collection and its set still has buyable packs: pay the asking price up to this percent of the market price.");
+            _buyNewHardPercent = Config.Bind("3. Customer offers", "New card: up to X percent market price (set paused or without packs)", 500f, "If the card is missing and its set is nearly finished (paused) or has no buyable packs: the customer is the only realistic source – up to this percent of the market price.");
+            _buyNewMaxMoneyPct = Config.Bind("3. Customer offers", "New card: at most X percent of money", 10f, "Safety limit per card.");
+            _buyNewAlwaysAsk = Config.Bind("3. Customer offers", "New card: always pay the asking price", true, "If the card is missing from the collection, the bot pays exactly the customer's asking price (never more) – regardless of the market price. Only the percent-of-money limit applies. Off: limits in percent of market price.");
+            _dupStartPct = Config.Bind("3. Customer offers", "Duplicates: start offer (percent market price)", 60f, "First offer for cards we already have. Then the bot raises in steps up to the buy limit (as many steps as the customer has refusals left).");
+            _dupStartCheapPct = Config.Bind("3. Customer offers", "Duplicates: start offer cheap cards (percent market price)", 50f, "Start offer for cheap duplicates (below the value below).");
+            _dupCheapBelow = Config.Bind("3. Customer offers", "Duplicates: cheap means below ($)", 10f, "From this market price on the normal start offer applies.");
+            _buyAlwaysBelow = Config.Bind("3. Customer offers", "Always buy cards below this value ($)", 2f, "Small stuff: just pay the asking price, no haggling.");
+            _swapTolerance = Config.Bind("3. Customer offers", "Swap: small loss allowed ($)", 1f, "Also accept a swap if we get at most this much less (saves refusals on small stuff).");
 
-            _dayEndEnabled = Config.Bind("4. Tagesende", "Tag automatisch beenden", true, "Um 21 Uhr, wenn kein Kunde mehr im Laden ist, den nächsten Tag starten.");
-            _dayEndDelay = Config.Bind("4. Tagesende", "Wartezeit vor Tagesende (Sekunden)", 8f, "Kurze Pause, damit Opener noch geleert werden.");
+            _dayEndEnabled = Config.Bind("4. End of day", "End day automatically", true, "At 9 PM, when no customer is left in the shop, start the next day.");
+            _dayEndDelay = Config.Bind("4. End of day", "Wait before end of day (seconds)", 8f, "Short pause so openers are still emptied.");
 
-            _cashierHelp = Config.Bind("5. Kasse", "Arbeiter an Kasse holen", true, "Wenn Kunden an einer unbesetzten Kasse warten, wird ein Arbeiter zusätzlich auf Kasse gesetzt.");
-            _cashierQueueThreshold = Config.Bind("5. Kasse", "Ab so vielen wartenden Kunden", 2, "Schwelle für die Kassen-Hilfe.");
-            _cashierReleaseSeconds = Config.Bind("5. Kasse", "Arbeiter zurückgeben nach (Sekunden)", 30f, "So lange muss die Kasse leer sein, bevor der Arbeiter seine alte Aufgabe zurückbekommt.");
+            _cashierHelp = Config.Bind("5. Checkout", "Call a worker to the register", true, "When customers wait at an unstaffed register, an extra worker is set to checkout.");
+            _cashierQueueThreshold = Config.Bind("5. Checkout", "From this many waiting customers", 2, "Threshold for checkout help.");
+            _cashierReleaseSeconds = Config.Bind("5. Checkout", "Return worker after (seconds)", 30f, "The register must be empty this long before the worker gets the old task back.");
 
-            _priceEnabled = Config.Bind("6. Preise", "Preise automatisch setzen", true, "Produkte und Karten im Laden auf Marktpreis + Aufschlag setzen.");
-            _priceItemPercent = Config.Bind("6. Preise", "Aufschlag Produkte (%)", 20f, "Packs, Boxen und andere Produkte.");
-            _priceCardPercent = Config.Bind("6. Preise", "Aufschlag Einzelkarten + gegradete (%)", 20f, "Karten in den Karten-Vitrinen.");
-            _priceInterval = Config.Bind("6. Preise", "Prüfintervall (Sekunden)", 20f, "Wie oft Preise geprüft werden.");
-            _priceRound = Config.Bind("6. Preise", "Preise runden", true, "Ab $1 auf ganze Dollar runden (schnelles Wechselgeld an der Kasse), darunter auf 10 Cent.");
-            _cashierStayLate = Config.Bind("5. Kasse", "Kassierer bleiben bis zum letzten Kunden", true, "Arbeiter an der Kasse gehen abends erst, wenn alle Kunden bezahlt haben.");
+            _priceEnabled = Config.Bind("6. Prices", "Set prices automatically", true, "Set products and cards in the shop to market price + markup.");
+            _priceItemPercent = Config.Bind("6. Prices", "Markup products (%)", 20f, "Packs, boxes and other products.");
+            _priceCardPercent = Config.Bind("6. Prices", "Markup single cards + graded (%)", 20f, "Cards in the card display cases.");
+            _priceInterval = Config.Bind("6. Prices", "Check interval (seconds)", 20f, "How often prices are checked.");
+            _priceRound = Config.Bind("6. Prices", "Round prices", true, "Round to whole dollars from $1 (quick change at the register), below that to 10 cents.");
+            _cashierStayLate = Config.Bind("5. Checkout", "Cashiers stay until the last customer", true, "Workers at the register only leave in the evening when all customers have paid.");
 
             BindCollectionConfig();
             BindUpgradeConfig();
@@ -128,7 +128,10 @@ namespace ShopBot
             BindSortConfig();
             BindCheckoutConfig();
             BindEmergencyConfig();
-            Logger.LogInfo("ShopBot geladen. F8 = An/Aus.");
+            BindDashboardConfig();
+            MigrateConfig();
+            InitLanguage();
+            Logger.LogInfo($"ShopBot {Info.Metadata.Version} loaded. F8 = on/off, F9 = dashboard. Language: {Lang.Names[Lang.Current]}");
         }
 
         private void Update()
@@ -137,7 +140,7 @@ namespace ShopBot
             if (_toggleKey.Value.IsDown())
             {
                 _enabled.Value = !_enabled.Value;
-                _lastAction = _enabled.Value ? "Bot eingeschaltet" : "Bot ausgeschaltet";
+                _lastAction = _enabled.Value ? T("Bot turned on") : T("Bot turned off");
                 Logger.LogInfo(_lastAction);
             }
             // Spieler-Eingaben merken: Fenster-Aktionen nur, wenn du gerade nichts machst
@@ -147,7 +150,7 @@ namespace ShopBot
             // Auto-Kasse läuft jedes Bild an allen freien Kassen (auch während Fenster offen sind oder du spielst)
             if (_enabled.Value && _readyFlag && !LoadingNextDay())
             {
-                try { HandleAutoCheckout(); } catch (Exception e) { Logger.LogWarning("[Kasse] " + e.Message); }
+                try { HandleAutoCheckout(); } catch (Exception e) { Logger.LogWarning("[Checkout]" + e.Message); }
             }
 
             if (!_enabled.Value || _busy) return;
@@ -193,7 +196,7 @@ namespace ShopBot
             }
             catch (Exception e)
             {
-                Logger.LogError("Fehler im Bot-Takt: " + e);
+                Logger.LogError("Error in bot tick:" + e);
             }
         }
 
@@ -222,10 +225,10 @@ namespace ShopBot
 
             if (!inLevel)
             {
-                if (_readySince >= 0f) { _readySince = -1f; _lastAction = "Warte auf geladenen Laden..."; }
+                if (_readySince >= 0f) { _readySince = -1f; _lastAction = T("Waiting for a loaded shop..."); }
                 return false;
             }
-            if (_readySince < 0f) { _readySince = Time.unscaledTime; _lastAction = $"Laden geladen – Bot startet in {StartDelay:0} Sek."; }
+            if (_readySince < 0f) { _readySince = Time.unscaledTime; _lastAction = F($"Shop loaded – bot starts in {StartDelay:0} s"); }
             return Time.unscaledTime - _readySince >= StartDelay;
         }
 
@@ -298,7 +301,7 @@ namespace ShopBot
                         o.OnMouseButtonUp(); // spieleigener "Einschalten"-Klick
                         _openerIdle.Remove(o);
                         _statStarted++;
-                        Note($"Opener gestartet ({stored} Packs)");
+                        NoteF($"Opener started ({stored} packs)");
                         return true;
                     }
                 }
@@ -343,7 +346,7 @@ namespace ShopBot
                 if (Time.unscaledTime >= _dayEndLogAt)
                 {
                     _dayEndLogAt = Time.unscaledTime + 20f;
-                    Note($"Tagesende: warte {waited:0}s" + (customers ? " – noch Kunden im Laden" : "") + (!idle ? " – du bist aktiv" : ""));
+                    NoteF($"End of day: waiting {waited:0}s{(customers ? L(" – customers still in the shop") : L(""))}{(!idle ? L(" – you are active") : L(""))}");
                 }
                 return;
             }
@@ -357,7 +360,7 @@ namespace ShopBot
         private IEnumerator DoDayEnd()
         {
             _busy = true;
-            Note($"Tag {CPlayerData.m_CurrentDay + 1} beendet – starte nächsten Tag");
+            NoteF($"Day {CPlayerData.m_CurrentDay + 1} ended – starting next day");
             S<InteractionPlayerController>().ShowGoNextDayScreen(); // wie Enter drücken
             yield return new WaitForSecondsRealtime(4f);                         // Bericht kurz zeigen
             var report = S<EndOfDayReportScreen>();
@@ -413,7 +416,7 @@ namespace ShopBot
                 {
                     w.SetSecondaryTask(b.OldSecondary);
                     _borrowed.Remove(w);
-                    Note($"Arbeiter {WorkerName(w)} zurück an alte Aufgabe");
+                    NoteF($"Worker {WorkerName(w)} back to the old task");
                 }
             }
 
@@ -432,7 +435,7 @@ namespace ShopBot
                 if (helper == null) return;
                 _borrowed[helper] = new Borrowed { OldSecondary = helper.m_SecondaryTask, Counter = counter };
                 helper.SetSecondaryTask(EWorkerTask.ManCounter);
-                Note($"{counter.GetCustomerInQueueCount()} Kunden warten – {WorkerName(helper)} hilft an der Kasse");
+                NoteF($"{counter.GetCustomerInQueueCount()} customers waiting – {WorkerName(helper)} helps at the register");
                 return;
             }
         }
@@ -533,7 +536,7 @@ namespace ShopBot
             }
 
             if (changedItems + changedCards > 0)
-                Note($"Preise angepasst: {changedItems} Produkte, {changedCards} Karten (+{_priceItemPercent.Value:0}% / +{_priceCardPercent.Value:0}%)");
+                NoteF($"Prices adjusted: {changedItems} products, {changedCards} cards (+{_priceItemPercent.Value:0}% / +{_priceCardPercent.Value:0}%)");
         }
 
         // Runden: ab 1 auf ganze Beträge (schnelles Wechselgeld), darunter auf 10 Cent (sonst wären Billigkarten 10x zu teuer)
@@ -562,13 +565,13 @@ namespace ShopBot
             if (boxes == null || boxes.Count == 0) return false;
             var ipc = S<InteractionPlayerController>();
             var seq = FindGradedSequence();
-            if (ipc == null || seq == null) { GradedWhy($"{boxes.Count} Pakete, aber Spielteile fehlen (ipc {ipc != null}, seq {seq != null})"); return false; }
+            if (ipc == null || seq == null) { GradedWhy($"{boxes.Count} packages, but game parts missing (ipc {ipc != null}, seq {seq != null})"); return false; }
             // Das Spiel holt sich das Fenster beim Öffnen per CSingleton.Instance – das klappt nur, wenn es aktiv in der Szene ist
-            if (!seq.gameObject.activeInHierarchy && !CSingleton<GradedCardOpeningSequence>.IsSet) { GradedWhy("Öffnungsfenster ist inaktiv"); return false; }
+            if (!seq.gameObject.activeInHierarchy && !CSingleton<GradedCardOpeningSequence>.IsSet) { GradedWhy("opening window is inactive"); return false; }
             var ti = Traverse.Create(ipc);
-            if (ti.Field("m_IsHoldBoxMode").GetValue<bool>() || ti.Field("m_IsHoldCardMode").GetValue<bool>()) { GradedWhy("du hältst gerade etwas in der Hand"); return false; }
+            if (ti.Field("m_IsHoldBoxMode").GetValue<bool>() || ti.Field("m_IsHoldCardMode").GetValue<bool>()) { GradedWhy("you are holding something"); return false; }
             // Das Spiel setzt m_IsScreenActive nach dem Öffnen nie zurück -> echte Sichtbarkeit des Fensters prüfen
-            if (seq.m_ScreenGrp != null && seq.m_ScreenGrp.activeSelf) { GradedWhy("Öffnungsfenster ist noch offen"); return false; }
+            if (seq.m_ScreenGrp != null && seq.m_ScreenGrp.activeSelf) { GradedWhy("opening window is still open"); return false; }
 
             int active = 0, opening = 0, held = 0, emptyList = 0;
             InteractablePackagingBox_Card box = null;
@@ -584,7 +587,7 @@ namespace ShopBot
             }
             if (box == null)
             {
-                if (active > 0) GradedWhy($"{active} Pakete da, keins passend (öffnet gerade {opening}, getragen {held}, ohne Karten {emptyList})");
+                if (active > 0) GradedWhy($"{active} packages here, none suitable (opening {opening}, carried {held}, without cards {emptyList})");
                 return false;
             }
             StartCoroutine(OpenGradedBox(box, seq));
@@ -611,7 +614,7 @@ namespace ShopBot
                 }
                 catch { }
             }
-            if (s != null) Logger.LogInfo("[Grading-Paket] Öffnungsfenster gefunden: " + s.gameObject.name);
+            if (s != null) Logger.LogInfo("[Grading package] Opening window found:" + s.gameObject.name);
             _gradedSeq = s;
             return s;
         }
@@ -621,7 +624,7 @@ namespace ShopBot
         {
             if (Time.unscaledTime < _gradedWhyAt) return;
             _gradedWhyAt = Time.unscaledTime + 60f;
-            Logger.LogInfo("[Grading-Paket] nicht geöffnet: " + why);
+            Logger.LogInfo("[Grading package] not opened:" + why);
         }
 
         private float _gradedBoxSeenAt = -1f;
@@ -656,7 +659,7 @@ namespace ShopBot
                 ts.Field("m_HoldCardAtEnd").SetValue(false);   // Karten ins Album, nicht in die Hand
                 box.OnPressOpenBox();                            // spieleigenes Öffnen (fügt die Karten hinzu)
             }
-            catch (Exception e) { Logger.LogError("Grading-Paket öffnen: " + e); ts.Field("m_HoldCardAtEnd").SetValue(oldHold); _busy = false; yield break; }
+            catch (Exception e) { Logger.LogError("Open grading package:" + e); ts.Field("m_HoldCardAtEnd").SetValue(oldHold); _busy = false; yield break; }
 
             yield return new WaitForSecondsRealtime(1.2f);
             try
@@ -674,7 +677,7 @@ namespace ShopBot
                     if (ts.Method("CardRevealEnd").GetValue() is IEnumerator end) seq.StartCoroutine(end);
                 }
             }
-            catch (Exception e) { Logger.LogError("Grading-Paket beenden: " + e); }
+            catch (Exception e) { Logger.LogError("Finish grading package:" + e); }
 
             yield return new WaitForSecondsRealtime(0.6f);
             // Hängt das Fenster noch (z. B. nächste Runde der Mod gestartet)? Noch einmal schließen.
@@ -687,12 +690,12 @@ namespace ShopBot
                     if (ts.Method("CardRevealEnd").GetValue() is IEnumerator end2) seq.StartCoroutine(end2);
                 }
             }
-            catch (Exception e) { Logger.LogWarning("Grading-Paket nachschließen: " + e.Message); }
+            catch (Exception e) { Logger.LogWarning("Close grading package again:" + e.Message); }
             yield return new WaitForSecondsRealtime(0.4f);
             ts.Field("m_HoldCardAtEnd").SetValue(oldHold);
             _statGradedOpened += count;
             _gradedBoxSeenAt = -1f;
-            Note($"Grading-Paket geöffnet: {count} gegradete Karten ins Album");
+            NoteF($"Grading package opened: {count} graded cards to the album");
             _bulkTimer = 290f; // gleich danach in die Kartenablage (Verkauf)
             yield return new WaitForSecondsRealtime(0.5f);
             _busy = false;
@@ -708,7 +711,7 @@ namespace ShopBot
             var page = ipc.m_ShowCardObtainedPage;
             if (page != null && page.IsScreenOpened()) page.CloseScreen();
             _statCollected++;
-            Note($"Opener eingesammelt ({packs} Packs)");
+            NoteF($"Opener collected ({packs} packs)");
         }
 
         private IEnumerator CollectOpener(InteractableAutoPackOpener o)
@@ -717,7 +720,7 @@ namespace ShopBot
             int packs = o.GetPackOpenedCount();
             o.OnMouseButtonUp(); // spieleigener "Einsammeln"-Klick -> Karten ins Album
             _statCollected++;
-            Note($"Opener eingesammelt ({packs} Packs)");
+            NoteF($"Opener collected ({packs} packs)");
 
             yield return new WaitForSecondsRealtime(Mathf.Max(0.3f, _openerShowSeconds.Value));
             var page = S<InteractionPlayerController>()?.m_ShowCardObtainedPage;
@@ -750,7 +753,7 @@ namespace ShopBot
             var s = cm.m_CustomerTradeCardScreen;
             bool opened = false;
             try { c.OnMousePress(); opened = true; }
-            catch (Exception e) { Logger.LogError("Konnte Angebot nicht öffnen: " + e); }
+            catch (Exception e) { Logger.LogError("Could not open offer:" + e); }
 
             if (opened)
             {
@@ -794,7 +797,7 @@ namespace ShopBot
             {
                 s.OnPressAccept();
                 _statSwapped++;
-                Note($"Tausch angenommen: bekommen {Price(pGet)} / abgegeben {Price(pGive)}" + (isNewForUs ? " (neue Karte für die Sammlung!)" : ""));
+                NoteF($"Swap accepted: got {Price(pGet)} / gave {Price(pGive)}{(isNewForUs ? L(" (new card for the collection!)") : L(""))}");
                 yield return new WaitForSecondsRealtime(_stepDelay.Value);
                 if (s.IsScreenOpened() && t.Field("m_HasAccepted").GetValue<bool>()) s.OnPressAccept(); // "Fertig"
             }
@@ -802,7 +805,7 @@ namespace ShopBot
             {
                 s.OnPressDecline();
                 _statDeclined++;
-                Note($"Tausch abgelehnt: bekommen {Price(pGet)} / abgegeben {Price(pGive)}" + (own ? "" : " (wäre unsere letzte Karte)"));
+                NoteF($"Swap declined: got {Price(pGet)} / gave {Price(pGive)}{(own ? L("") : L(" (would be our last copy)"))}");
             }
         }
 
@@ -822,7 +825,7 @@ namespace ShopBot
             float lastOffer = -1f;
             for (int round = 0; round < 7; round++)
             {
-                if (!s.IsScreenOpened()) { _statDeclined++; Note($"Kunde ist gegangen (letztes Gebot {Price(lastOffer)})"); yield break; }
+                if (!s.IsScreenOpened()) { _statDeclined++; NoteF($"Customer left (last offer {Price(lastOffer)})"); yield break; }
 
                 float ask = t.Field("m_SellCardAskPrice").GetValue<float>();
                 float market = t.Field("m_SellCardMarketPrice").GetValue<float>();
@@ -838,7 +841,7 @@ namespace ShopBot
                     if (askPay > moneyCap)
                     {
                         s.OnPressDecline(); _statDeclined++;
-                        Note($"Ankauf abgelehnt: neue Karte, aber {Price(ask)} ist mehr als {_buyNewMaxMoneyPct.Value:0} % vom Geld");
+                        NoteF($"Purchase declined: new card, but {Price(ask)} is more than {_buyNewMaxMoneyPct.Value:0} % of the money");
                         yield break;
                     }
                     offer = askPay;                                               // neue Karte -> Wunschpreis
@@ -856,7 +859,7 @@ namespace ShopBot
                     else if (cap < ask * 0.5f)
                     {
                         s.OnPressDecline(); _statDeclined++;                      // aussichtslos: Wunschpreis mehr als doppelt so hoch wie unser Maximum
-                        Note($"Ankauf abgelehnt: will {Price(ask)}, Markt {Price(market)}, uns höchstens {Price(cap)} wert");
+                        NoteF($"Purchase declined: wants {Price(ask)}, market {Price(market)}, worth at most {Price(cap)} to us");
                         yield break;
                     }
                     else offer = planned;
@@ -865,13 +868,13 @@ namespace ShopBot
                 if (lastOffer >= 0f && offer <= lastOffer + 0.005f)
                 {
                     s.OnPressDecline(); _statDeclined++;
-                    Note($"Ankauf abgelehnt: will {Price(ask)}, Markt {Price(market)}, unser Maximum {Price(cap)} erreicht");
+                    NoteF($"Purchase declined: wants {Price(ask)}, market {Price(market)}, our maximum {Price(cap)} reached");
                     yield break;
                 }
                 if (CPlayerData.m_CoinAmountDouble < offer)
                 {
                     s.OnPressDecline(); _statDeclined++;
-                    Note("Ankauf abgebrochen: nicht genug Geld");
+                    Note("Purchase cancelled: not enough money");
                     yield break;
                 }
 
@@ -885,12 +888,12 @@ namespace ShopBot
                 {
                     _statBought++;
                     _statSpent += offer;
-                    Note($"Gekauft für {Price(offer)} (Markt {Price(market)}, {offer / Mathf.Max(0.01f, market) * 100f:0}%, Runde {round + 1})" + (isNew ? " – neue Karte für die Sammlung!" : ""));
+                    NoteF($"Bought for {Price(offer)} (market {Price(market)}, {offer / Mathf.Max(0.01f, market) * 100f:0}%, round {round + 1}){(isNew ? L(" – new card for the collection!") : L(""))}");
                     if (s.IsScreenOpened()) s.OnPressAccept(); // "Fertig"
                     yield break;
                 }
             }
-            if (s.IsScreenOpened()) { s.OnPressDecline(); _statDeclined++; Note("Ankauf abgelehnt (Kunde zu teuer)"); }
+            if (s.IsScreenOpened()) { s.OnPressDecline(); _statDeclined++; Note("Purchase declined (customer too expensive)"); }
         }
 
         // Startgebot für Doppelte: 60 % Marktpreis, billige Karten 50 %
@@ -910,11 +913,32 @@ namespace ShopBot
         private static string Price(float p) =>
             p == float.MaxValue ? "?" : GameInstance.GetPriceString(p);
 
-        private void Note(string msg)
+        // ================= Messages (history + log) =================
+        // UI texts: T("English") / F($"English {x}"). Messages: Note("...") / NoteF($"... {x}").
+        // The log file always gets English, the dashboard shows the chosen language (also for old entries).
+        private static string T(string s) => Lang.T(s);
+        private static string F(FormattableString fs) => Lang.F(fs);
+        private static LStr L(string s) => new LStr(s);
+
+        private string _lastTpl = "-"; private object[] _lastArgs;
+
+        private void Note(string msg) => NoteRaw(msg, null);
+        private void NoteF(FormattableString fs) => NoteRaw(fs.Format, fs.GetArguments());
+
+        private void NoteRaw(string tpl, object[] args)
         {
-            _lastAction = msg;
-            Logger.LogInfo(msg);
-            RecordHistory(msg);
+            _lastTpl = tpl; _lastArgs = args; _lastAction = null;
+            Logger.LogInfo(Lang.Source(tpl, args));
+            RecordHistory(tpl, args);
+        }
+
+        // Message in the current language
+        private static string MsgText(string tpl, object[] args)
+        {
+            string t = Lang.T(tpl);
+            if (args == null) return t;
+            try { return string.Format(t, args); }
+            catch (FormatException) { try { return string.Format(tpl, args); } catch { return tpl; } }
         }
 
         // ================= Anzeige =================
@@ -929,9 +953,9 @@ namespace ShopBot
                 _style = new GUIStyle(GUI.skin.label) { fontSize = 14, richText = true };
                 _style.normal.textColor = Color.white;
             }
-            // Kompakte Zeile – Details im Dashboard (F9)
-            string state = _enabled.Value ? "<color=#5f5>AN</color>" : "<color=#f55>AUS</color>";
-            string text = $"<b>ShopBot</b> {state}  <color=#aaa>F8 An/Aus · F9 Dashboard</color>\n{_lastAction}";
+            // Compact line – details in the dashboard (F9)
+            string state = _enabled.Value ? "<color=#5f5>" + T("ON") + "</color>" : "<color=#f55>" + T("OFF") + "</color>";
+            string text = $"<b>ShopBot</b> {state}  <color=#aaa>{T("F8 on/off · F9 dashboard")}</color>\n{_lastAction ?? MsgText(_lastTpl, _lastArgs)}";
             GUI.Label(new Rect(10, 40, 1400, 50), text, _style);
         }
     }
