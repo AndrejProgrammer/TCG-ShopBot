@@ -106,6 +106,7 @@ namespace ShopBot
 
             // ---- next investments the bot considers ----
             _advInvest.Clear();
+            float investNeed = 0f;
             try
             {
                 int idx = CPlayerData.m_UnlockRoomCount;
@@ -113,6 +114,7 @@ namespace ShopBot
                 {
                     float cost = CPlayerData.GetUnlockShopRoomCost(idx);
                     bool space = _advBottlenecks.Any(b => b.Key == "shelfSpace");
+                    if (space) investNeed += cost;
                     _advInvest.Add(($"Shop expansion {idx + 1}", cost, space ? (FormattableString)$"worth it: shelf space is a bottleneck" : $"wait: space is not the bottleneck (more rent)"));   // i18n-fs
                 }
             }
@@ -120,9 +122,33 @@ namespace ShopBot
             if (_licPending.Count > 0)
             {
                 var l = _licPending[0];
+                if (l.needed) investNeed += l.price;
                 _advInvest.Add(($"License: {l.name}", l.price, l.needed ? (FormattableString)$"worth it: packs for a set without buyable packs" : $"nice to have"));   // i18n-fs
             }
             if (_gradeTierText.Length > 0) _advInvest.Add(($"Grading tier", 0f, $"{L(_gradeTierText)}"));   // i18n-fs
+
+            ComputePots(investNeed);
+        }
+
+        // ================= Step 4: budget pots =================
+        // The profit per day is split: reserve (always kept) -> worthwhile investments -> packs.
+        // Collect/Endgame: ~85 % of the profit goes to packs, Build-up 40 % (investments first), Start 10 %.
+        // Idle money on the account above reserve + investments + one day of profit: a quarter of it goes to packs on top.
+        // Only once a full day was measured – before that the old limits apply.
+        internal float _potReserve, _potInvest, _potPacks, _potEmergency;
+        internal bool PotsActive => PhaseAuto && IncomeDays >= 1 && _advProfit > 0f;
+
+        private void ComputePots(float investNeed)
+        {
+            _potReserve = Mathf.Max(_advReserveTarget, Reserve);
+            if (!PotsActive) { _potInvest = _potPacks = _potEmergency = 0f; return; }
+            float share = _phase == GamePhase.Collect || _phase == GamePhase.Endgame ? 0.85f : _phase == GamePhase.Buildup ? 0.4f : 0.1f;
+            _potInvest = Mathf.Min(investNeed, _advProfit * (1f - share));
+            float packs = _advProfit * share;
+            double idle = CPlayerData.m_CoinAmountDouble - _potReserve - investNeed - _advProfit;
+            if (idle > 0 && share >= 0.4f) packs += (float)(idle * 0.25);
+            _potPacks = Mathf.Max(5000f, packs);
+            _potEmergency = _advProfit * 0.3f;
         }
 
         // ---------- Grading tier by profit ----------

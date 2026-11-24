@@ -479,3 +479,12 @@ full days are averaged from tomorrow on = ab morgen zählt der Schnitt voller Ta
 after the first full day = nach dem ersten vollen Tag
 All 8 grading slots are busy = Alle 8 Grading-Plätze belegt
 Nothing to invest in right now – all expansions bought, no license pending. = Gerade nichts zu investieren – alle Erweiterungen gekauft, keine Lizenz offen.
+Budget plan for today = Budget-Plan für heute
+profit is split: reserve → investments → packs = Gewinn wird verteilt: Rücklage → Investitionen → Packs
+active after the first full day (with "Adapt settings to the game phase") = aktiv nach dem ersten vollen Tag (mit „Einstellungen an die Spielphase anpassen“)
+always kept = bleibt immer
+Investments = Investitionen
+worthwhile licenses / expansions first = lohnende Lizenzen / Erweiterungen zuerst
+daily limit for the collection · emergency +{0} = Tageslimit für die Sammlung · Notfall +{0}
+
+Packs = Packs

@@ -665,7 +665,8 @@ namespace ShopBot
         {
             RestoreDayState();
             if (_emergencyDay != CPlayerData.m_CurrentDay) { _emergencyDay = CPlayerData.m_CurrentDay; _emergencySpent = 0f; }
-            return Mathf.Max(0f, _emergencyExtraLimit.Value - _emergencySpent);
+            float extra = PotsActive ? _potEmergency : _emergencyExtraLimit.Value;   // pots: 30 % of the profit instead of a fixed amount
+            return Mathf.Max(0f, extra - _emergencySpent);
         }
 
         // Wie viel darf jetzt ausgegeben werden: Tageslimit, im Notfall zusätzlich das Notfall-Limit

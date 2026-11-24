@@ -2,6 +2,10 @@
 
 Ausführliche Entwickler-Notizen: [docs/ENTWICKLUNG.md](docs/ENTWICKLUNG.md)
 
+## 0.7.2 – 25.11.2026 – budget pots
+- **Budget pots:** once a full day is measured (and "Adapt settings to the game phase" is on), the profit per day (income − rent, electricity, wages) is split: **reserve** (3 days of fixed costs, always kept) → **worthwhile investments** (licenses for sets without packs, expansions when shelf space is the bottleneck) → **packs**. Collect/Endgame: ~85 % of the profit goes to packs (instead of a fixed daily limit), Build-up 40 %, Start 10 %. A quarter of idle money on the account goes to packs on top. The emergency restock may add 30 % of the profit (instead of a fixed $100,000). Shown on the Advisor page as "Budget plan for today".
+- Advisor: "Income so far today" until a full day is measured, "calculating …" right after loading, fixed costs kept across restarts, clearer texts.
+
 ## 0.7.1 – 25.11.2026 – the advisor
 - **New dashboard page "Advisor":** the bot thinks like a good player. It shows income, fixed costs (rent, electricity, wages) and profit per day, the reserve, **what holds the shop back** (packs short, openers idle, empty shelf slots, shelf space, display cases full, grading slots busy, card storage full – biggest first), **tips for what only you can do** (more display cases, more shelves, more/fewer openers, fewer workers) and the **next investments** with a verdict.
 - **Grading tier by profit:** for every PSA tier the bot reads price per card, cards per submission and days, and picks the fastest tier whose cost (all 8 slots) stays within ~15 % of the profit per day and that it can fill. Small shop = cheapest tier as before; big shop = faster tiers, more cards per day.

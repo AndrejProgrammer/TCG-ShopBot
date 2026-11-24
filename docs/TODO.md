@@ -22,7 +22,7 @@ Jede Ausgabe = Investition mit Kosten (einmalig + laufend, z. B. Miete/Lohn) und
 - [x] (0.7.1) **Schritt 1 – Messen & Berater-Seite:** Einnahmen/Fixkosten/Gewinn pro Tag, Rücklage, Engpässe, Tipps für den Spieler, nächste Investitionen. Im Spiel prüfen, ob die Zahlen stimmen (Fixkosten = gemessene Rechnungen).
 - [x] (0.7.1) **Schritt 2 – Grading-Stufe nach Gewinn** (schnellste Stufe ≤ 15 % Gewinn/Tag, die sich füllen lässt). Prüfen: welche Stufe wählt er, wie viele Tage?
 - [ ] **Schritt 3 – Erweiterungen und Arbeiter nach Amortisation** statt „Budget ≥ 5× Preis“: Erweiterung nur bei Engpass „Regalfläche“ und Mietplus ≤ ~10 % Gewinn/Tag (Mietplus nach einer Erweiterung messen); Arbeiter einstellen nur, wenn über Tage Arbeit übrig bleibt.
-- [ ] **Schritt 4 – Budget-Töpfe** statt Tageslimit/Faktoren: Gewinn → Rücklage → Investitionen (Engpass, beste Amortisation) → Packs.
+- [x] (0.7.2, noch nicht im Spiel getestet) **Schritt 4 – Budget-Töpfe** statt Tageslimit/Faktoren: Gewinn → Rücklage → Investitionen (Engpass, beste Amortisation) → Packs.
 - [ ] **Schritt 5 – Packs selbst öffnen am Anfang** (ohne Opener) – prüfen, ob das Spiel das per Code zulässt.
 
 ## Bot passt sich dem Spielverlauf an (ersetzt den starren Assistenten)

@@ -60,6 +60,7 @@ namespace ShopBot
         {
             get
             {
+                if (PotsActive && _potPacks > 0f) return _potPacks;          // budget pots (Advisor.cs)
                 if (!PhaseAuto || IncomeDays < 1 || _phAvgIncome <= 0f) return null;
                 float share = _phase == GamePhase.Collect ? 0.7f : _phase == GamePhase.Start ? 0.1f : 0.3f;
                 return Mathf.Max(5000f, _phAvgIncome * share);

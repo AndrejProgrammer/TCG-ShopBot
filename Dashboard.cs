@@ -1181,6 +1181,16 @@ namespace ShopBot
             Stat(T("Reserve"), Money(_advReserveTarget), T("3 days of fixed costs"));
             GUILayout.EndHorizontal();
 
+            Section(T("Budget plan for today"), PotsActive ? T("profit is split: reserve → investments → packs") : T("active after the first full day (with \"Adapt settings to the game phase\")"));
+            if (PotsActive)
+            {
+                GUILayout.BeginHorizontal();
+                Stat(T("Reserve"), Money(_potReserve), T("always kept"));
+                Stat(T("Investments"), Money(_potInvest), T("worthwhile licenses / expansions first"), CYellow);
+                Stat(T("Packs"), Money(_potPacks), F($"daily limit for the collection · emergency +{Money(_potEmergency)}"), CAccent);
+                GUILayout.EndHorizontal();
+            }
+
             Section(T("What holds the shop back"), T("biggest first"));
             if (_advBottlenecks.Count == 0) GUILayout.Label(T("No bottleneck right now – everything runs."), _sDim);
             foreach (var b in _advBottlenecks)
