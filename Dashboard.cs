@@ -1196,7 +1196,7 @@ namespace ShopBot
             foreach (var t in _advTips) GUILayout.Label("→ " + Lang.F(t), _sTxt);
 
             Section(T("Next investments"), T("what the bot considers"));
-            if (_advInvest.Count == 0) GUILayout.Label(T("Calculated after the first minute."), _sDim);
+            if (_advInvest.Count == 0) GUILayout.Label(T("Nothing to invest in right now – all expansions bought, no license pending."), _sDim);
             foreach (var (what, cost, verdict) in _advInvest)
             {
                 GUILayout.BeginHorizontal(_sCardFlat);

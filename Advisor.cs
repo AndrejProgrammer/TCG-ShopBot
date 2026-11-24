@@ -82,7 +82,7 @@ namespace ShopBot
                 B("workers", 0.5f, $"Work is left over that the bot and the workers do not manage");   // i18n-fs
             // grading
             if (_cGrading >= 8 && GradeActive)
-                B("grading", 0.3f, $"All 8 grading slots are busy – {L(_gradeTierText)}");   // i18n-fs
+                B("grading", 0.3f, _gradeTierText.Length > 0 ? (FormattableString)$"All 8 grading slots are busy – {L(_gradeTierText)}" : $"All 8 grading slots are busy");   // i18n-fs   // i18n-fs
             // card storage full
             if (_cStorageMax > 0 && _cStorageCards >= _cStorageMax)
                 B("storage", 0.4f, $"Card storage is full");   // i18n-fs
