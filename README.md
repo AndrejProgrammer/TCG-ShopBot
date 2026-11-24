@@ -59,7 +59,7 @@ The log file (`BepInEx\LogOutput.log`) always stays English, so bug reports are 
 
 | | Version |
 |---|---|
-| TCG Card Shop Simulator | Steam default branch, November 2026 (Unity 6) |
+| TCG Card Shop Simulator | 1.07 (Steam default branch, Unity 6) |
 | BepInEx | 5.4.x (x64) |
 | Real TCG Overhaul Mod Manager | 2.1.1 (35 mods) |
 | Enhanced Prefab Loader | 6.9.0 |

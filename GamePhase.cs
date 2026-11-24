@@ -101,11 +101,13 @@ namespace ShopBot
 
             GamePhase cand;
             if (_phCollection >= 0.9f) cand = GamePhase.Endgame;
-            else if (_phOpeners >= 8 && (_phAvgIncome >= 50000f || money >= 200000)) cand = GamePhase.Collect;
+            // income not measured yet (no finished day with shop income): decide by the build-out – 8+ openers = collecting
+            // (seen: "Build-up" with 27 openers and $0 income/day right after a new day started)
+            else if (_phOpeners >= 8 && (IncomeDays < 1 || _phAvgIncome >= 50000f || money >= 200000)) cand = GamePhase.Collect;
             else if (_phOpeners >= 1 || _phLevel >= 15 || money >= 20000 || _phAvgIncome >= 10000f) cand = GamePhase.Buildup;
             else cand = GamePhase.Start;
 
-            _phaseReason = F($"Level {_phLevel} · {_phExpansions} expansions · {_phOpeners} openers · ~{Money(_phAvgIncome)} income/day · collection {(_phCollection >= 0 ? (_phCollection * 100f).ToString("0") + " %" : "?")}");
+            _phaseReason = F($"Level {_phLevel} · {_phExpansions} expansions · {_phOpeners} openers · {(IncomeDays < 1 ? L("income not measured yet") : L(Money(_phAvgIncome) + " / day"))} · collection {(_phCollection >= 0 ? (_phCollection * 100f).ToString("0") + " %" : "?")}");
 
             float now = Time.unscaledTime;
             if (cand != _phaseCandidate) { _phaseCandidate = cand; _phaseCandidateSince = now; }
@@ -121,6 +123,6 @@ namespace ShopBot
 
         // English version of the reason for the log
         private FormattableString _phaseReasonFs() =>
-            $"Level {_phLevel} · {_phExpansions} expansions · {_phOpeners} openers · ~{Money(_phAvgIncome)} income/day · collection {(_phCollection >= 0 ? (_phCollection * 100f).ToString("0") + " %" : "?")}";
+            $"Level {_phLevel} · {_phExpansions} expansions · {_phOpeners} openers · {(IncomeDays < 1 ? L("income not measured yet") : L(Money(_phAvgIncome) + " / day"))} · collection {(_phCollection >= 0 ? (_phCollection * 100f).ToString("0") + " %" : "?")}";
     }
 }

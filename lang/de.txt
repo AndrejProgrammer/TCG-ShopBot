@@ -403,7 +403,6 @@ Focus: prices, checkout, restocking and bills – no collection packs, no gradin
 Focus: money first into expansions and licenses, packs in moderation = Schwerpunkt: Geld zuerst in Erweiterungen und Lizenzen, Packs maßvoll
 Focus: packs first, emergency restock, licenses for missing sets = Schwerpunkt: Packs zuerst, Notfall-Nachkauf, Lizenzen für fehlende Sets
 Focus: missing cards from customers, PSA 10 hunt, full grading = Schwerpunkt: fehlende Karten von Kunden, PSA-10-Jagd, Graden voll
-Level {0} · {1} expansions · {2} openers · ~{3} income/day · collection {4} = Level {0} · {1} Erweiterungen · {2} Opener · ~{3} Einnahmen/Tag · Sammlung {4}
 New game phase: {0} (before: {1}) = Neue Spielphase: {0} (vorher: {1})
 {0} switched off – does not work with this game version ({1}) = {0} abgeschaltet – funktioniert mit dieser Spielversion nicht ({1})
 {0} is switched off – does not work with this game version. Please report it on GitHub (with the log file). = {0} ist abgeschaltet – funktioniert mit dieser Spielversion nicht. Bitte auf GitHub melden (mit der Log-Datei).
@@ -432,3 +431,5 @@ detected – auto is off = erkannt – Auto ist aus
 Adapt settings to the game phase = Einstellungen an die Spielphase anpassen
 collection, grading, emergency restock, packs first, daily limit – off \= your own values = Sammlung, Graden, Notfall-Nachkauf, Packs zuerst, Tageslimit – aus = deine eigenen Werte
 daily limit is set by the game phase (see Overview) = Tageslimit stellt die Spielphase ein (siehe Übersicht)
+Level {0} · {1} expansions · {2} openers · {3} · collection {4} = Level {0} · {1} Erweiterungen · {2} Opener · {3} · Sammlung {4}
+income not measured yet = Einnahmen noch nicht gemessen

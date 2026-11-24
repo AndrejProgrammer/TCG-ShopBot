@@ -13,6 +13,7 @@ Ausführliche Entwickler-Notizen: [docs/ENTWICKLUNG.md](docs/ENTWICKLUNG.md)
 - **Installer:** `Install-ShopBot.bat` in the release ZIP – finds the game via Steam (all libraries), checks BepInEx 5, copies the mod, unblocks it, lists missing recommended mods. German or English depending on Windows.
 - **First start:** on a fresh install the dashboard is German if Windows is German, otherwise English.
 - README: "Tested with" (game and mod versions).
+- Fix (found in the test): while the shop income is not measured yet, the phase is decided by the build-out (8+ openers = Collect) – before, a big shop was detected as "Build-up" with $0 income at the start of a day.
 
 ## 0.6.4 – 25.11.2026
 - **Game phase detection (step 1 – shown only):** the bot measures shop level, expansions, pack openers, money, collection progress and the average shop income per day, and detects the phase: **Start**, **Build-up**, **Collect** or **Endgame**. Shown on the overview with the reason and what the bot will focus on in that phase. A phase change only counts after 5 minutes (no flickering) and is noted in the history. The behaviour does not change yet – that comes in step 2.
