@@ -3,6 +3,7 @@
 #   BepInEx\plugins\ShopBot\ShopBot.dll
 #   BepInEx\plugins\ShopBot\lang\en.txt       (template for translators; the DLL already contains en + de)
 #   BepInEx\plugins\ShopBot\README.md, README.de.md, LICENSE, CHANGELOG.md
+#   Install-ShopBot.bat + install.ps1          (installer: finds the game, checks BepInEx, copies, unblocks)
 # Usage: powershell -NoProfile -ExecutionPolicy Bypass -File tools\release.ps1
 $ErrorActionPreference = "Stop"
 $root = Split-Path $PSScriptRoot -Parent
@@ -29,6 +30,8 @@ New-Item -ItemType Directory -Force "$plug\lang" | Out-Null
 Copy-Item $dll $plug
 Copy-Item "$root\lang\en.txt" "$plug\lang\en.txt.template"
 Copy-Item "$root\README.md", "$root\README.de.md", "$root\LICENSE", "$root\CHANGELOG.md" $plug
+# Installer next to the BepInEx folder: extract the ZIP anywhere and double-click Install-ShopBot.bat
+Copy-Item "$root\tools\Install-ShopBot.bat", "$root\tools\install.ps1" $stage
 
 $zip = "$root\dist\ShopBot-$version.zip"
 if (Test-Path $zip) { Remove-Item $zip -Force }

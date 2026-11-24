@@ -36,7 +36,7 @@ namespace ShopBot
 
         private void HandleGrading()
         {
-            if (!_gradeEnabled.Value || (_gradeTimer += 1f) < 60f) return;
+            if (!GradeActive || (_gradeTimer += 1f) < 60f) return;
             _gradeTimer = 0f;
             SafeRun("Grading", GradingTick);
         }
@@ -77,7 +77,7 @@ namespace ShopBot
 
             // PSA-10-Sammlung: Karten, von denen es noch keine 10 gibt
             var haveTen = new HashSet<string>();
-            if (_gradePsa10Hunt.Value && CPlayerData.m_GradedCardInventoryList != null)
+            if (Psa10Active && CPlayerData.m_GradedCardInventoryList != null)
                 foreach (var g in CPlayerData.m_GradedCardInventoryList)
                     if (g != null && g.amount >= 10) haveTen.Add($"{(int)g.expansionType}|{g.cardSaveIndex}|{g.isDestiny}");
 
@@ -89,7 +89,7 @@ namespace ShopBot
                 if (value < _gradeMinValue.Value)
                 {
                     // billige Karte: nur für die PSA-10-Sammlung und nur, solange es davon noch keine 10 gibt (wertvolle zuerst, da nach Wert sortiert)
-                    if (!_gradePsa10Hunt.Value) continue;
+                    if (!Psa10Active) continue;
                     string k10 = $"{(int)t.Field("Exp").GetValue<ECardExpansionType>()}|{t.Field("Index").GetValue<int>()}|{t.Field("Dim").GetValue<bool>()}";
                     if (haveTen.Contains(k10)) continue;
                 }

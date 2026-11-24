@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace ShopBot
 {
-    [BepInPlugin("ratta.shopbot", "ShopBot", "0.6.4")]
+    [BepInPlugin("ratta.shopbot", "ShopBot", "0.7.0")]
     public partial class Plugin : BaseUnityPlugin
     {
         // ---- Konfiguration ----
@@ -129,6 +129,7 @@ namespace ShopBot
             BindCheckoutConfig();
             BindEmergencyConfig();
             BindDayStateConfig();
+            BindPhaseConfig();
             BindDashboardConfig();
             MigrateConfig();
             InitLanguage();
@@ -151,7 +152,7 @@ namespace ShopBot
             // Auto-Kasse läuft jedes Bild an allen freien Kassen (auch während Fenster offen sind oder du spielst)
             if (_enabled.Value && _readyFlag && !LoadingNextDay())
             {
-                try { HandleAutoCheckout(); } catch (Exception e) { Logger.LogWarning("[Checkout]" + e.Message); }
+                Guard("Checkout", HandleAutoCheckout);
             }
 
             if (!_enabled.Value || _busy) return;
@@ -163,12 +164,13 @@ namespace ShopBot
             // Erst arbeiten, wenn der Laden fertig geladen ist (nie im Hauptmenü / Ladebildschirm)
             _readyFlag = GameReady();
             if (!_readyFlag) return;
+            CompatCheck();
 
             try
             {
                 // Hintergrund-Aufgaben (brauchen keine freie Spielersteuerung)
-                if (_priceEnabled.Value) HandlePrices();
-                if (_cashierHelp.Value && !_autoCheckout.Value) HandleCashiers();   // Bot-Kasse ersetzt die Kassen-Hilfe
+                if (_priceEnabled.Value) Guard("Prices", HandlePrices);
+                if (_cashierHelp.Value && !_autoCheckout.Value) Guard("Cashier help", HandleCashiers);   // bot checkout replaces the cashier help
                 HandleEconomy();
 
                 if (!CanAct()) return;
@@ -178,22 +180,22 @@ namespace ShopBot
                 // Tagesende hat Vorrang (sonst halten Tausch-Kunden/Opener den Tag ewig offen)
                 if (_dayEndEnabled.Value)
                 {
-                    HandleDayEnd(idle);
+                    Guard("Day end", () => HandleDayEnd(idle));
                     if (_busy) return;
                 }
 
                 if (!idle)
                 {
                     // Während du spielst: fertige Opener blitzschnell leeren (Fenster nur 1 Frame), damit Arbeiter nachfüllen können
-                    if (_openerCollect.Value || _openerStartPartial.Value) HandleOpeners(collect: _openerCollect.Value, quick: true);
+                    if (_openerCollect.Value || _openerStartPartial.Value) Guard("Openers", () => HandleOpeners(collect: _openerCollect.Value, quick: true));
                     // Grading-Pakete nicht ewig liegen lassen, nur weil du gerade spielst
-                    if (_gradedBoxOpen.Value && GradedBoxWaitingLong()) TryOpenGradedBox();
+                    if (_gradedBoxOpen.Value && GradedBoxWaitingLong()) GuardB("Grading packages", TryOpenGradedBox);
                     return;
                 }
                 // Ab hier öffnen sich Fenster -> nur wenn du gerade nichts drückst
-                if (_tradeEnabled.Value && TryStartTrade()) return;
-                if (_gradedBoxOpen.Value && TryOpenGradedBox()) return;
-                if (_openerCollect.Value || _openerStartPartial.Value) HandleOpeners(collect: _openerCollect.Value);
+                if (_tradeEnabled.Value && GuardB("Customer offers", TryStartTrade)) return;
+                if (_gradedBoxOpen.Value && GuardB("Grading packages", TryOpenGradedBox)) return;
+                if (_openerCollect.Value || _openerStartPartial.Value) Guard("Openers", () => HandleOpeners(collect: _openerCollect.Value));
             }
             catch (Exception e)
             {

@@ -3,7 +3,7 @@
 **ShopBot** ist ein BepInEx-Plugin für **TCG Card Shop Simulator**, das deinen Laden weitgehend automatisch führt – optimiert für das **Real TCG Overhaul**-Modpack (Pokémon).
 Ziel: **alle Pokémon-Karten im Collection Tracker besitzen** (später alle als PSA 10) – während der Laden Geld verdient.
 
-> Version **0.6.4** · Spiel: Steam-Standard-Branch (Unity 6) · BepInEx 5.4.x · Dashboard auf **Englisch** und **Deutsch**
+> Version **0.7.0** · Spiel: Steam-Standard-Branch (Unity 6) · BepInEx 5.4.x · Dashboard auf **Englisch** und **Deutsch**
 > 📖 **Neu hier? → [Schritt-für-Schritt-Anleitung](docs/ANLEITUNG.md)** · 🇬🇧 [English version](README.md)
 
 ---
@@ -20,6 +20,7 @@ Ziel: **alle Pokémon-Karten im Collection Tracker besitzen** (später alle als 
 | 🛒 **Regale & Vitrinen** | Räumt Ware selbst ein, legt Karten in leere Vitrinen-Plätze (gegradete zuerst) |
 | 🗑️ **Ordnung** | Volle Kartons ins Lagerregal, leere Kartons in den Mülleimer |
 | 🏅 **Graden** | Schickt Karten zu PSA (Standard, volle 52er-Einsendungen, teuerste zuerst), **öffnet zurückgekommene Pakete** und verkauft gegradete Karten (eine PSA 10 jeder Karte bleibt) |
+| 🧭 **Spielphase** | Erkennt, wo du stehst (Start, Aufbau, Sammeln, Endspiel), und passt Sammlungs-Einkauf, Graden, Notfall-Nachkauf und Tageslimit daran an – oder nutzt deine eigenen Werte |
 | 🔓 **Freischalten** | Lizenzen (Packs fehlender Sets zuerst), Laden-/Lager-Erweiterungen, Upgrades – aber **Packs zuerst**, wenn den Openern Packs fehlen |
 | 🤝 **Kunden-Angebote** | Ankauf & Tausch: **neue Karten immer zum Wunschpreis**, Doppelte nur unter Marktpreis mit klugem Feilschen, nie mehr als verlangt, nie die letzte Karte abgeben |
 | 📅 **Tagesablauf** | Rechnungen sofort bezahlen, Tag um 21 Uhr beenden, wenn der Laden leer ist |
@@ -32,8 +33,9 @@ Alles ist einzeln abschaltbar und einstellbar – im **Dashboard (F9)** oder im 
 ## Schnellstart
 
 1. **BepInEx 5** im Spiel installieren (ist beim Real-TCG-Overhaul-Modpack schon dabei).
-2. Unter [**Releases**](../../releases) die neueste `ShopBot-x.y.z.zip` herunterladen.
-3. Den Inhalt in den **Spielordner** entpacken → es entsteht `BepInEx\plugins\ShopBot\ShopBot.dll`.
+2. Unter [**Releases**](../../releases) die neueste `ShopBot-x.y.z.zip` herunterladen und irgendwo entpacken.
+3. **`Install-ShopBot.bat`** doppelklicken – findet das Spiel über Steam, prüft BepInEx, kopiert den Mod, entsperrt ihn und zeigt fehlende empfohlene Mods.
+   *(Von Hand: den Ordner `BepInEx` aus der ZIP in den Spielordner kopieren.)*
 4. Spiel starten, Spielstand laden – nach 10 Sekunden legt der Bot los. **F9** öffnet das Dashboard.
 5. Sprache umstellen: im Dashboard oben rechts auf **EN ▼** klicken → **Deutsch**.
 
@@ -53,6 +55,19 @@ Das Dashboard gibt es auf **Englisch** (Standard) und **Deutsch** – umschalten
 Die Log-Datei (`BepInEx\LogOutput.log`) bleibt immer Englisch, damit Fehlerberichte für alle lesbar sind. Auch die Einträge in der Config-Datei sind jetzt englisch – deine alten Einstellungen werden beim ersten Start automatisch übernommen.
 
 **Eigene Sprache:** [`lang/en.txt`](lang/en.txt) kopieren, rechts von jedem `=` übersetzen und als `<Kürzel>.txt` (z. B. `fr.txt`) nach `BepInEx\plugins\ShopBot\lang\` legen. Platzhalter wie `{0}` oder `{1:N0}` beibehalten.
+
+## Getestet mit
+
+| | Version |
+|---|---|
+| TCG Card Shop Simulator | Steam-Standard-Branch, November 2026 (Unity 6) |
+| BepInEx | 5.4.x (x64) |
+| Real TCG Overhaul Mod Manager | 2.1.1 (35 Mods) |
+| Enhanced Prefab Loader | 6.9.0 |
+| Collection Tracker | 3.1.4 |
+| CardGrade Overhaul | 1.2.7 |
+
+Nach einem Spiel- oder Mod-Update prüft sich der Bot beim Start selbst: Fehlt etwas, das er braucht, wird nur diese Funktion abgeschaltet und im Dashboard angezeigt – der Rest läuft weiter. Im Log steht `[Compat] …`.
 
 ## Voraussetzungen
 

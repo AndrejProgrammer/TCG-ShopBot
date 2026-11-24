@@ -59,6 +59,9 @@ The easiest way is the **Real TCG Overhaul Mod Manager** – it brings everythin
 
 ## 5. Install ShopBot
 
+**Easiest:** download the latest **`ShopBot-x.y.z.zip`** from **Releases**, extract it anywhere (e.g. Downloads) and double-click **`Install-ShopBot.bat`**. It finds the game via Steam (also on other drives), checks BepInEx, copies the mod, unblocks it and shows which recommended mods are missing. Done – continue with step 6.
+
+**By hand:**
 1. On the repo page click **Releases** on the right and download the latest **`ShopBot-x.y.z.zip`**.
 2. Open the ZIP. It contains the folder `BepInEx\plugins\ShopBot\ShopBot.dll`.
 3. **Drag the `BepInEx` folder from the ZIP into the game folder** and confirm "replace/merge files".
@@ -76,8 +79,8 @@ The easiest way is the **Real TCG Overhaul Mod Manager** – it brings everythin
 
 **Did it work?** Open `BepInEx\LogOutput.log` (in the game folder) with Notepad. It must contain:
 ```
-[Info   :   BepInEx] Loading [ShopBot 0.6.4]
-[Info   :   ShopBot] ShopBot 0.6.4 loaded. F8 = on/off, F9 = dashboard. Language: English
+[Info   :   BepInEx] Loading [ShopBot 0.7.0]
+[Info   :   ShopBot] ShopBot 0.7.0 loaded. F8 = on/off, F9 = dashboard. Language: English
 ```
 
 ## 7. The dashboard (F9)

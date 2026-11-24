@@ -71,8 +71,12 @@ namespace ShopBot
         {
             _dashKey = Config.Bind("1. General", "Dashboard hotkey", new KeyboardShortcut(KeyCode.F9), "Opens/closes the ShopBot dashboard.");
             _dashScale = Config.Bind("1. General", "Dashboard size", 0f, "0 = automatic to fit the screen height, otherwise e.g. 1.0 / 1.25 / 1.5.");
+            // fresh install (no language saved yet): German Windows -> German dashboard, otherwise English
+            bool hadLanguage = false;
+            try { hadLanguage = File.Exists(Config.ConfigFilePath) && File.ReadAllText(Config.ConfigFilePath).Contains("Language = "); } catch { }
             _language = Config.Bind("1. General", "Language", "en",
                 "Dashboard language: en = English, de = Deutsch. More: put a file <code>.txt into BepInEx/plugins/ShopBot/lang/. The log file always stays English.");
+            if (!hadLanguage && Application.systemLanguage == SystemLanguage.German) _language.Value = "de";
         }
 
         private void InitLanguage()
@@ -778,13 +782,16 @@ namespace ShopBot
             GUILayout.BeginHorizontal();
             GUILayout.Label(T("GAME PHASE"), Txt(11, CDim, FontStyle.Bold, false));
             GUILayout.FlexibleSpace();
-            GUILayout.Label(_phase == GamePhase.Unknown ? T("detected after 1 min") : T("detected – no effect yet"), _sDim);
+            GUILayout.Label(_phase == GamePhase.Unknown ? T("detected after 1 min") : PhaseAuto ? T("detected – settings follow the phase") : T("detected – auto is off"), _sDim);
             GUILayout.EndHorizontal();
             Color pc = _phase == GamePhase.Start ? CBlue : _phase == GamePhase.Buildup ? CYellow : _phase == GamePhase.Collect ? CAccent : _phase == GamePhase.Endgame ? CGreen : CDim;
             GUILayout.Label(T(PhaseName(_phase)), Txt(22, pc, FontStyle.Bold, false));
             if (_phaseReason.Length > 0) GUILayout.Label(_phaseReason, _sDim);
             if (_phase != GamePhase.Unknown) GUILayout.Label(T(PhasePlan(_phase)), _sTxt);
+            string autoText = PhaseAutoText();
+            if (autoText.Length > 0) GUILayout.Label(autoText, Txt(12, PhaseAuto ? CGreen : CDim));
             GUILayout.EndVertical();
+            Switch(_phaseAuto, T("Adapt settings to the game phase"), T("collection, grading, emergency restock, packs first, daily limit – off = your own values"));
             GUILayout.BeginHorizontal();
             Stat(T("Money"), Money(CPlayerData.m_CoinAmountDouble), F($"held back {Money(Reserve)}"));
             Stat(T("Revenue today"), Money(income), F($"{rep.itemAmountSold} items · {rep.cardAmountSold} cards"), CGreen);
@@ -809,9 +816,10 @@ namespace ShopBot
             GUILayout.EndHorizontal();
 
             // Warnings: missing mods, full display cases
-            if (_modWarnings.Count > 0 || _dashVitrinesFull > 0)
+            if (_modWarnings.Count > 0 || _dashVitrinesFull > 0 || _featOff.Count > 0)
             {
                 Section(T("Notes"));
+                foreach (var kv in _featOff) GUILayout.Label("⚠ " + F($"{L(kv.Key)} is switched off – does not work with this game version. Please report it on GitHub (with the log file)."), Txt(13, CRed, FontStyle.Bold, false));
                 foreach (var w in _modWarnings) GUILayout.Label("⚠ " + ModWarningText(w), Txt(13, CRed, FontStyle.Bold, false));
                 if (_dashVitrinesFull > 0) GUILayout.Label("⚠ " + F($"Display cases full – {_dashVitrinesFull:N0} cards are waiting in the card storage. Place more card display cases."), Txt(13, CRed, FontStyle.Bold, false));
             }
@@ -915,7 +923,7 @@ namespace ShopBot
                 Slider(_emergencyExtraLimit, T("Emergency extra limit per day"), 0f, 500000f, 10000f, v => Off(v, Usd));
             });
 
-            Section(T("Limits"), T("so not too much is ordered"));
+            Section(T("Limits"), PhaseAuto ? T("daily limit is set by the game phase (see Overview)") : T("so not too much is ordered"));
             Two(() =>
             {
                 Slider(_dayBuyLimit, T("Purchase limit per day"), 0f, 300000f, 5000f, v => v <= 0 ? T("no limit") : Usd(v), F($"spent today: {Usd(_daySpentDay == CPlayerData.m_CurrentDay ? _daySpent : 0f)}"));

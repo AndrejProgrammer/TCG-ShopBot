@@ -40,6 +40,8 @@ namespace ShopBot
         {
             get
             {
+                var auto = AutoDayLimit;
+                if (auto.HasValue) return auto.Value;                 // set by the game phase
                 if (_dayBuyLimit.Value <= 0f) return 0f;
                 float pct = _dayBuyLimitPercent.Value > 0f ? _dayBuyLimitPercent.Value : (_useAllMoney != null && _useAllMoney.Value ? 15f : 0f);
                 return Mathf.Max(_dayBuyLimit.Value, pct > 0f ? (float)(Math.Max(0.0, Budget) * pct / 100.0) : 0f);
@@ -152,7 +154,7 @@ namespace ShopBot
             DayReportTick();
             HandleGamePhase();
 
-            if (_colEnabled.Value && (_colTimer += 1f) >= 60f) { _colTimer = 0f; SafeRun("Collection", CollectionTick); }
+            if (ColActive && (_colTimer += 1f) >= 60f) { _colTimer = 0f; SafeRun("Collection", CollectionTick); }
             if (_bulkEnabled.Value && (_bulkTimer += 1f) >= 120f) { _bulkTimer = 0f; SafeRun("Card storage", BulkTick); }
             if (_workersAuto.Value && (_workerTimer += 1f) >= 60f) { _workerTimer = 0f; SafeRun("Workers", WorkerTick); }
             if (_restockEnabled.Value && (_restockTimer += 1f) >= 60f) { _restockTimer = 0f; SafeRun("Restocking", RestockTick); }
@@ -319,7 +321,7 @@ namespace ShopBot
                 return;
             }
             int level = CPlayerData.m_ShopLevel + 1;
-            float factor = Mathf.Max(1f, _expMoneyFactor.Value);
+            float factor = ExpFactor;
 
             // 1) Laden-Erweiterung
             int idx = CPlayerData.m_UnlockRoomCount;
@@ -468,11 +470,8 @@ namespace ShopBot
             });
         }
 
-        private void SafeRun(string what, Action a)
-        {
-            try { a(); }
-            catch (Exception e) { Logger.LogError($"[{what}] {e}"); }
-        }
+        // Runs one feature safely: errors are counted, after 10 in a row the feature is switched off (see Compat.cs)
+        private void SafeRun(string what, Action a) => Guard(what, a);
 
         private static bool LoadingNextDay()
         {
@@ -686,7 +685,7 @@ namespace ShopBot
         private float _packPrevAt, _packRatePerMin;
         private float _starveLogLic, _starveLogExp;
 
-        private bool PacksFirstBlocks => _packsFirst != null && _packsFirst.Value && _packStarving;
+        private bool PacksFirstBlocks => PacksFirstActive && _packStarving;
 
         private void UpdatePackSupply(int have, int need)
         {
@@ -715,7 +714,7 @@ namespace ShopBot
 
         private void HandlePackEmergency()
         {
-            if (!_emergencyEnabled.Value || !_colEnabled.Value || (_emergencyTimer += 1f) < 10f) return;
+            if (!EmergencyOn || !ColActive || (_emergencyTimer += 1f) < 10f) return;
             _emergencyTimer = 0f;
             if (_openerPackTypes.Count == 0 || LightManager.GetHasDayEnded()) return;
             SafeRun("Emergency restock", () =>
@@ -999,7 +998,7 @@ namespace ShopBot
             int moved = 0, total = 0, usedShelves = 0; float value = 0f;
             List<SetInfo> sets;
             try { sets = GetSets(); } catch { _bulkRunning = false; yield break; }
-            float bulkLimit = _gradeEnabled.Value ? Mathf.Min(_bulkMaxValue.Value, _gradeMinValue.Value) : _bulkMaxValue.Value;
+            float bulkLimit = GradeActive ? Mathf.Min(_bulkMaxValue.Value, _gradeMinValue.Value) : _bulkMaxValue.Value;
 
             int ti = 0;
             var target = targets[0].shelf; var list = targets[0].list; int budget = targets[0].budget;

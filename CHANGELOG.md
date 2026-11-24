@@ -2,6 +2,18 @@
 
 Ausführliche Entwickler-Notizen: [docs/ENTWICKLUNG.md](docs/ENTWICKLUNG.md)
 
+## 0.7.0 – 25.11.2026 – adapts to your game
+- **Settings follow the game phase (step 2):** with "Adapt settings to the game phase" (on by default) the bot sets collection buying, grading, emergency restock, "packs first", the PSA 10 hunt, the daily purchase limit and the license/expansion safety factor to fit the phase:
+  - Start: no collection packs, no grading, no emergency restock
+  - Build-up: expansions and licenses first (from 2× the price), daily limit 30 % of the average shop income
+  - Collect: packs first, emergency restock, daily limit 70 % of the average shop income
+  - Endgame: packs first, PSA 10 hunt, daily limit 30 %
+  The daily limit only follows once a whole day was measured (before that your own limit applies). The overview shows what auto sets right now; off = your own values.
+- **Protection against game/mod updates:** at start the bot checks the game parts each feature needs; if one is missing, only that feature is switched off (log `[Compat]`, note on the dashboard). A feature that fails 10 times in a row is switched off for the session instead of flooding the log.
+- **Installer:** `Install-ShopBot.bat` in the release ZIP – finds the game via Steam (all libraries), checks BepInEx 5, copies the mod, unblocks it, lists missing recommended mods. German or English depending on Windows.
+- **First start:** on a fresh install the dashboard is German if Windows is German, otherwise English.
+- README: "Tested with" (game and mod versions).
+
 ## 0.6.4 – 25.11.2026
 - **Game phase detection (step 1 – shown only):** the bot measures shop level, expansions, pack openers, money, collection progress and the average shop income per day, and detects the phase: **Start**, **Build-up**, **Collect** or **Endgame**. Shown on the overview with the reason and what the bot will focus on in that phase. A phase change only counts after 5 minutes (no flickering) and is noted in the history. The behaviour does not change yet – that comes in step 2.
 - The daily report now also keeps the total shop income per day (needed for the phase).

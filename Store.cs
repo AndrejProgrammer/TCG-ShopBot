@@ -142,7 +142,7 @@ namespace ShopBot
             {
                 // Packs zuerst: bei knappem Vorrat nur Lizenzen für Sets, die noch gar keine kaufbaren Packs haben
                 if (PacksFirstBlocks && Prio(c) != 0) { waiting++; continue; }
-                if (Budget < c.rd.licensePrice * Mathf.Max(1f, _licMoneyFactor.Value)) continue;
+                if (Budget < c.rd.licensePrice * LicFactor) continue;
                 BuyLicense(c.idx, c.rd);
                 bought++;
                 if (bought >= 25) break;                                    // pro Minute höchstens 25

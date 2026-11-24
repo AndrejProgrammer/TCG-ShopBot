@@ -32,6 +32,49 @@ namespace ShopBot
             p == GamePhase.Collect ? "Focus: packs first, emergency restock, licenses for missing sets" :                       // i18n
             p == GamePhase.Endgame ? "Focus: missing cards from customers, PSA 10 hunt, full grading" : "";                     // i18n
 
+        // ================= Step 2: settings follow the phase =================
+        private BepInEx.Configuration.ConfigEntry<bool> _phaseAuto;
+
+        private void BindPhaseConfig()
+        {
+            _phaseAuto = Config.Bind("7. Collection", "Adapt settings to the game phase", true,
+                "On: the bot sets collection buying, grading, emergency restock, \"packs first\", the daily purchase limit and the license/expansion safety factor to fit the detected game phase (Start, Build-up, Collect, Endgame). Off: your own values below are used.");
+        }
+
+        // auto is active once a phase is detected
+        internal bool PhaseAuto => _phaseAuto != null && _phaseAuto.Value && _phase != GamePhase.Unknown;
+
+        // finished days with a known shop income (the daily limit needs at least one – before that: learning, your own limit applies)
+        private int IncomeDays => _dayHistory.Count(d => d.ShopIncome > 0f);
+
+        internal bool ColActive => PhaseAuto && _phase == GamePhase.Start ? false : _colEnabled.Value;
+        internal bool GradeActive => PhaseAuto && _phase == GamePhase.Start ? false : _gradeEnabled.Value;
+        internal bool Psa10Active => (PhaseAuto && _phase == GamePhase.Endgame) || _gradePsa10Hunt.Value;
+        internal bool PacksFirstActive => PhaseAuto ? (_phase == GamePhase.Collect || _phase == GamePhase.Endgame) : (_packsFirst != null && _packsFirst.Value);
+        internal bool EmergencyOn => PhaseAuto ? (_phase == GamePhase.Collect || _phase == GamePhase.Endgame) : _emergencyEnabled.Value;
+        internal float ExpFactor => PhaseAuto && _phase == GamePhase.Buildup ? 2f : PhaseAuto && _phase == GamePhase.Start ? 3f : Mathf.Max(1f, _expMoneyFactor.Value);
+        internal float LicFactor => PhaseAuto && _phase == GamePhase.Buildup ? Mathf.Min(2f, Mathf.Max(1f, _licMoneyFactor.Value)) : Mathf.Max(1f, _licMoneyFactor.Value);
+
+        // Daily purchase limit from the average shop income (share depends on the phase); null = use your own limit
+        internal float? AutoDayLimit
+        {
+            get
+            {
+                if (!PhaseAuto || IncomeDays < 1 || _phAvgIncome <= 0f) return null;
+                float share = _phase == GamePhase.Collect ? 0.7f : _phase == GamePhase.Start ? 0.1f : 0.3f;
+                return Mathf.Max(5000f, _phAvgIncome * share);
+            }
+        }
+
+        // Short summary for the dashboard: what auto sets right now
+        internal string PhaseAutoText()
+        {
+            if (!PhaseAuto) return _phaseAuto != null && !_phaseAuto.Value ? T("Auto is off – your own settings apply") : "";
+            var lim = AutoDayLimit;
+            return F($"Auto: collection {OnOff(ColActive)} · grading {OnOff(GradeActive)} · emergency {OnOff(EmergencyOn)} · packs first {OnOff(PacksFirstActive)} · daily limit {(lim.HasValue ? Money(lim.Value) : T("your own (learning first day)"))}");
+        }
+        private static string OnOff(bool b) => b ? T("on") : T("off");
+
         private void HandleGamePhase()
         {
             if ((_phaseTimer += 1f) < 60f) return;
