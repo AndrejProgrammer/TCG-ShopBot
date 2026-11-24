@@ -190,6 +190,7 @@ namespace ShopBot
         private void RefreshDashCache()
         {
             if (!DashGameReady) return;
+            RestoreDayState();
             float now = Time.unscaledTime;
             if (now - _dashCacheAt >= 1f)
             {
@@ -727,6 +728,10 @@ namespace ShopBot
             return clicked;
         }
 
+        // Pack stock is known after the first collection round (about 1 min after loading)
+        private string StockValue() => _dashStockTarget > 0 ? $"{_dashStockHave:N0} / {_dashStockTarget:N0}" : "…";
+        private string StockSub() => _dashStockTarget > 0 ? PackSupplyText() : T("calculated after the first round (1 min)");
+
         private static string Pct(float v) => $"{v:0}%";
         // Game values: smaller = faster (seconds per action)
         private static string SpeedText(float v) => v <= 0f ? "?" : v < 1f ? $"<color=#45D17A>{T("very fast")}</color>" : v < 1.75f ? $"<color=#8BD17A>{T("fast")}</color>" : v < 2.5f ? T("normal") : v < 3f ? $"<color=#E0A070>{T("slow")}</color>" : $"<color=#E07070>{T("very slow")}</color>";
@@ -788,7 +793,7 @@ namespace ShopBot
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
             ProgressCard(T("Pack openers"), F($"{_cInside:N0} / {_cCap:N0} packs"), _cCap > 0 ? (float)_cInside / _cCap : 0f, CAccent, F($"{_cOpeners} machines · {_cRunning} opening · {_cDone} done"));
-            ProgressCard(T("Pack stock target sets"), $"{_dashStockHave:N0} / {_dashStockTarget:N0}", _dashStockTarget > 0 ? (float)_dashStockHave / _dashStockTarget : 0f, CBlue, PackSupplyText());
+            ProgressCard(T("Pack stock target sets"), StockValue(), _dashStockTarget > 0 ? (float)_dashStockHave / _dashStockTarget : 0f, CBlue, StockSub());
             GUILayout.EndHorizontal();
 
             // Warnings: missing mods, full display cases
@@ -859,7 +864,7 @@ namespace ShopBot
 
             GUILayout.BeginHorizontal();
             ProgressCard(T("Pokémon sets done"), $"{_cSetsDone} / {_cSetsTotal}", _cSetsTotal > 0 ? (float)_cSetsDone / _cSetsTotal : 0f, CGreen);
-            ProgressCard(T("Pack stock"), $"{_dashStockHave:N0} / {_dashStockTarget:N0}", _dashStockTarget > 0 ? (float)_dashStockHave / _dashStockTarget : 0f, CBlue, PackSupplyText());
+            ProgressCard(T("Pack stock"), StockValue(), _dashStockTarget > 0 ? (float)_dashStockHave / _dashStockTarget : 0f, CBlue, StockSub());
             GUILayout.EndHorizontal();
 
             Section(F($"Current target sets ({_dashFocus.Count})"), T("recalculated every minute"));

@@ -145,6 +145,14 @@ namespace ShopBot
                     if (Config.ContainsKey(newDef)) { Config[newDef].SetSerializedValue(value); moved++; }
                     orphans.Remove(oldDef);
                 }
+                // leftovers from very old versions in the old German sections: unused, remove them
+                var oldSections = new HashSet<string>();
+                for (int i = 0; i < ConfigRenames.GetLength(0); i++) oldSections.Add(ConfigRenames[i, 0]);
+                int removed = 0;
+                foreach (var def in new List<ConfigDefinition>(orphans.Keys))
+                    if (oldSections.Contains(def.Section)) { orphans.Remove(def); removed++; }
+                if (removed > 0 && moved == 0) { Config.Save(); Logger.LogInfo($"Config: {removed} unused old entries removed"); }
+
                 if (moved > 0)
                 {
                     // whoever used the German versions before gets the German dashboard

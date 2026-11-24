@@ -2,6 +2,12 @@
 
 Ausführliche Entwickler-Notizen: [docs/ENTWICKLUNG.md](docs/ENTWICKLUNG.md)
 
+## 0.6.1 – 25.11.2026
+- **Fix – daily limit after a restart:** "spent today" is now kept when you restart the game on the same game day (saved by the bot, with the game's own day report as fallback). Before, the bot could spend the daily limit twice. The emergency limit is kept too.
+- **Daily report survives a restart:** today's numbers and the last 7 days are saved – the pace ("new cards per day") no longer starts from zero.
+- Dashboard: pack stock shows "calculated after the first round" instead of "0 / 0" right after loading; sidebar footer no longer cut off.
+- Old unused German config entries from very old versions are removed automatically; internal entries are hidden in the Configuration Manager.
+
 ## 0.6.0 – 24.11.2026 – first public version
 - **English & German:** the dashboard, status line and history are available in English (default) and German – switch with the language button at the top right or on the new **Settings** page. More languages: drop a translated `lang/<code>.txt` into `BepInEx/plugins/ShopBot/lang/`. Old history entries switch language too.
 - **New dashboard design:** smooth open/close and page animations, gliding bars and switches, hover effects, smooth scrolling, sliding sidebar marker, cards with a subtle edge, gradient header.

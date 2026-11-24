@@ -28,6 +28,7 @@ namespace ShopBot
                 _today.Spent = _statSpent - _todaySpentStart;
                 _today.Packs = (_statPackCases - _todayPacksStart) * 64;
                 if (_today.HaveStart < 0 && _goalHave >= 0) _today.HaveStart = _goalHave;
+                SaveDayReport();
                 return;
             }
             if (_today != null)
@@ -36,12 +37,15 @@ namespace ShopBot
                 if (_dayHistory.Count > 7) _dayHistory.RemoveAt(0);
                 Logger.LogInfo($"[Daily report] Day {_today.Day + 1}: bot checkout {GameInstance.GetPriceString(_today.Income)} ({_today.Customers} customers), bot spending {GameInstance.GetPriceString(_today.Spent)}");
             }
+            // after a restart on the same day: continue with the saved numbers
+            if (_today == null && RestoreDayReport(day)) return;
             _today = new DayRecord { Day = day, HaveStart = _goalHave };
             _todaySpentStart = _statSpent;
             _todayPacksStart = _statPackCases;
+            SaveDayReport(true);
         }
 
-        // Neue Karten pro Tag (aus den Tagen dieser Sitzung) -> geschätzte Tage bis alle Karten da sind; -1 = noch unbekannt
+        // Neue Karten pro Tag (aus den gespeicherten Tagen) -> geschätzte Tage bis alle Karten da sind; -1 = noch unbekannt
         private float CardsPerDay()
         {
             if (_goalHave < 0) return -1f;

@@ -51,10 +51,11 @@ namespace ShopBot
         // Einkaufs-Tageslimit (Packs, Nachbestellungen, Bewertungen). Rechnungen, Löhne, Bonus und Grading zählen nicht.
         private float DayLeft()
         {
+            RestoreDayState();
             if (_daySpentDay != CPlayerData.m_CurrentDay) { _daySpentDay = CPlayerData.m_CurrentDay; _daySpent = 0f; }
             return DayLimit <= 0f ? float.MaxValue : Mathf.Max(0f, DayLimit - _daySpent);
         }
-        private void AddDaySpent(float v) { DayLeft(); _daySpent += v; }
+        private void AddDaySpent(float v) { DayLeft(); _daySpent += v; SaveDayState(); }
         private ConfigEntry<bool> _billsEnabled;
         private ConfigEntry<bool> _bonusEnabled;
         private ConfigEntry<bool> _expEnabled, _expWarehouse;
@@ -661,6 +662,7 @@ namespace ShopBot
 
         private float EmergencyLeft()
         {
+            RestoreDayState();
             if (_emergencyDay != CPlayerData.m_CurrentDay) { _emergencyDay = CPlayerData.m_CurrentDay; _emergencySpent = 0f; }
             return Mathf.Max(0f, _emergencyExtraLimit.Value - _emergencySpent);
         }
@@ -672,7 +674,7 @@ namespace ShopBot
         {
             float normal = Mathf.Min(v, DayLeft());
             AddDaySpent(v);
-            if (EmergencyActive && v > normal) { EmergencyLeft(); _emergencySpent += v - normal; }
+            if (EmergencyActive && v > normal) { EmergencyLeft(); _emergencySpent += v - normal; SaveDayState(); }
         }
 
         // ================= Pack-Vorrat: Knappheit, Verbrauch, Reichweite =================

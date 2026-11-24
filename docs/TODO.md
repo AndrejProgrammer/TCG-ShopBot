@@ -4,11 +4,13 @@ Reihenfolge = Empfehlung. ⭐ = wichtig vor dem Public-Schalten.
 
 ## Vor dem Veröffentlichen
 - [x] **v0.6.0 im Spiel getestet (24.11.):** Dashboard auf Deutsch ✓, 115 Einstellungen 1:1 übernommen ✓, alle Seiten sehen gut aus ✓, Feilschen bis Runde 5 ✓, Lizenz gekauft ✓, keine Fehler im Log ✓. Sidebar-Fußzeile war links abgeschnitten → behoben (Abstand).
-- [ ] ⭐ **Fehler: Tageslimit-Zähler wird beim Neustart zurückgesetzt** (`_daySpent` nur im Speicher). Neustart am selben Spieltag → Bot darf nochmal das volle Limit ausgeben (gesehen: „Einkauf heute $0 / $60.502“ bei „Kosten heute $177.118“). Lösung: `_daySpent`, `_daySpentDay`, `_emergencySpent`, `_emergencyDay` in der Config (intern) speichern oder beim Start aus `CPlayerData.m_GameReportDataCollect.supplyCost` des Tages ableiten.
-- [ ] **Tagesbericht** zählt erst ab Spielstart statt ab Tagesbeginn (Einnahmen „$0“ nach Neustart) – Tageswerte speichern oder aus dem Spiel-Tagesbericht nehmen.
-- [ ] **Übersicht direkt nach dem Start:** „Pack-Vorrat Ziel-Sets 0 / 0“ bis zur ersten Runde → „wird berechnet …“ anzeigen.
-- [ ] 8 verwaiste deutsche Einträge aus uralten Versionen in der Config aufräumen (z. B. „Anzahl Kassierer“, „Gleichzeitige Ziel-Sets“) – stören nicht.
+- [x] (0.6.1) **Fehler: Tageslimit-Zähler wird beim Neustart zurückgesetzt** (`_daySpent` nur im Speicher). Neustart am selben Spieltag → Bot darf nochmal das volle Limit ausgeben (gesehen: „Einkauf heute $0 / $60.502“ bei „Kosten heute $177.118“). Lösung: `_daySpent`, `_daySpentDay`, `_emergencySpent`, `_emergencyDay` in der Config (intern) speichern oder beim Start aus `CPlayerData.m_GameReportDataCollect.supplyCost` des Tages ableiten.
+- [x] (0.6.1) **Tagesbericht** zählt erst ab Spielstart statt ab Tagesbeginn (Einnahmen „$0“ nach Neustart) – Tageswerte speichern oder aus dem Spiel-Tagesbericht nehmen.
+- [x] (0.6.1) **Übersicht direkt nach dem Start:** „Pack-Vorrat Ziel-Sets 0 / 0“ bis zur ersten Runde → „wird berechnet …“ anzeigen.
+- [x] (0.6.1) 8 verwaiste deutsche Einträge aus uralten Versionen in der Config aufräumen (z. B. „Anzahl Kassierer“, „Gleichzeitige Ziel-Sets“) – stören nicht.
 - [ ] ⭐ **Testinstallation auf frischem Spielstand ohne alte Config** – wie erlebt ein neuer Nutzer den Bot? (Standardwerte sind auf späten Spielstand abgestimmt.)
+
+- [ ] **0.6.1 im Spiel prüfen:** Neustart am selben Tag → Log „already spent today (restored after restart)“, Dashboard „Einkauf heute“ nicht $0; Tagesbericht/Tempo nach Neustart weiter da; Log „unused old entries removed“.
 
 ## Bot passt sich dem Spielverlauf an (ersetzt den starren Assistenten)
 - [ ] ⭐ **Schritt 1 – Messen & anzeigen:** Ø Einnahmen/Kosten pro Tag (letzte 3 Tage), Level, Erweiterungen, Opener/Kassen/Vitrinen/Arbeiter, Lizenzen, Sammlungsfortschritt. Daraus **Spielphase** erkennen und im Dashboard zeigen („Phase: Sammeln (erkannt)“) – noch ohne Verhalten zu ändern, ein paar Spieltage beobachten.

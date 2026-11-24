@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace ShopBot
 {
-    [BepInPlugin("ratta.shopbot", "ShopBot", "0.6.0")]
+    [BepInPlugin("ratta.shopbot", "ShopBot", "0.6.1")]
     public partial class Plugin : BaseUnityPlugin
     {
         // ---- Konfiguration ----
@@ -128,6 +128,7 @@ namespace ShopBot
             BindSortConfig();
             BindCheckoutConfig();
             BindEmergencyConfig();
+            BindDayStateConfig();
             BindDashboardConfig();
             MigrateConfig();
             InitLanguage();
@@ -225,7 +226,7 @@ namespace ShopBot
 
             if (!inLevel)
             {
-                if (_readySince >= 0f) { _readySince = -1f; _lastAction = T("Waiting for a loaded shop..."); }
+                if (_readySince >= 0f) { _readySince = -1f; _lastAction = T("Waiting for a loaded shop..."); ResetDayStateRestore(); }
                 return false;
             }
             if (_readySince < 0f) { _readySince = Time.unscaledTime; _lastAction = F($"Shop loaded – bot starts in {StartDelay:0} s"); }
