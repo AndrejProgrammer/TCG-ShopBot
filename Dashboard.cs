@@ -555,7 +555,7 @@ namespace ShopBot
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
             ProgressCard("Pack-Opener", $"{_cInside:N0} / {_cCap:N0} Packs", _cCap > 0 ? (float)_cInside / _cCap : 0f, CAccent, $"{_cOpeners} Automaten · {_cRunning} öffnen · {_cDone} fertig");
-            ProgressCard("Pack-Vorrat Ziel-Sets", $"{_dashStockHave:N0} / {_dashStockTarget:N0}", _dashStockTarget > 0 ? (float)_dashStockHave / _dashStockTarget : 0f, CBlue, "Lager + unterwegs");
+            ProgressCard("Pack-Vorrat Ziel-Sets", $"{_dashStockHave:N0} / {_dashStockTarget:N0}", _dashStockTarget > 0 ? (float)_dashStockHave / _dashStockTarget : 0f, CBlue, PackSupplyText());
             GUILayout.EndHorizontal();
 
             // Warnungen: fehlende Mods, volle Vitrinen
@@ -626,7 +626,7 @@ namespace ShopBot
 
             GUILayout.BeginHorizontal();
             ProgressCard("Pokémon-Sets fertig", $"{_cSetsDone} / {_cSetsTotal}", _cSetsTotal > 0 ? (float)_cSetsDone / _cSetsTotal : 0f, CGreen);
-            ProgressCard("Pack-Vorrat", $"{_dashStockHave:N0} / {_dashStockTarget:N0}", _dashStockTarget > 0 ? (float)_dashStockHave / _dashStockTarget : 0f, CBlue);
+            ProgressCard("Pack-Vorrat", $"{_dashStockHave:N0} / {_dashStockTarget:N0}", _dashStockTarget > 0 ? (float)_dashStockHave / _dashStockTarget : 0f, CBlue, PackSupplyText());
             GUILayout.EndHorizontal();
 
             Section($"Aktuelle Ziel-Sets ({_dashFocus.Count})", "wird jede Minute neu berechnet");

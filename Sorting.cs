@@ -116,6 +116,7 @@ namespace ShopBot
                     }
 
                 int noRoom = 0;
+                var noRoomTypes = new Dictionary<string, int>();
                 foreach (var b in full)
                 {
                     if (done >= budget) break;
@@ -124,7 +125,15 @@ namespace ShopBot
                     if (type == EItemType.None) continue;
                     if (_stockSelf.Value && shelfTypes.Contains(type)) continue;
                     var comp = FindStoreCompartment(type, b.m_IsBigBox);
-                    if (comp == null) { noRoom++; continue; }
+                    if (comp == null)
+                    {
+                        noRoom++;
+                        string nm = null;
+                        try { nm = InventoryBase.GetItemData(type)?.GetName(); } catch { }
+                        nm = (nm ?? type.ToString()) + (b.m_IsBigBox ? " (groß)" : " (klein)");
+                        noRoomTypes[nm] = (noRoomTypes.TryGetValue(nm, out var nc) ? nc : 0) + 1;
+                        continue;
+                    }
                     try
                     {
                         b.DispenseItem(isPlayer: false, comp);
@@ -135,7 +144,8 @@ namespace ShopBot
                 if (noRoom > 0 && Time.unscaledTime >= _sortFullLogAt)
                 {
                     _sortFullLogAt = Time.unscaledTime + 600f;
-                    Note($"Einsortieren: {noRoom} Kartons passen nicht mehr ins Lagerregal – mehr Lagerregale aufstellen?");
+                    Note($"Einsortieren: {noRoom} Kartons passen nicht mehr ins Lagerregal – mehr Lagerregale aufstellen? " +
+                         string.Join(", ", noRoomTypes.OrderByDescending(kv => kv.Value).Take(5).Select(kv => $"{kv.Value}× {kv.Key}")));
                 }
             }
 

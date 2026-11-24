@@ -46,7 +46,18 @@ $checks = @(
   @{ n="Kartenablage";                      p="Kartenablage:";                                     test="alt" },
   @{ n="Opener einsammeln/starten";         p="Opener eingesammelt|Opener gestartet";              test="alt" },
   @{ n="Upgrades (Sammelpunkte)";           p="Upgrade gekauft";                                   test="alt" },
-  @{ n="Tagesende";                         p="Tag \d+ beendet";                                   test="alt" }
+  @{ n="Tagesende";                         p="Tag \d+ beendet";                                   test="alt" },
+  @{ n="Notfall-Nachkauf (v0.4.2)";         p="Notfall-Nachkauf";                                  test="alt" },
+  @{ n="Lager-Kartons holen (v0.5.0)";      p="Aus dem Lager geholt";                              test="neu" },
+  @{ n="Fast fertige Sets pausiert (v0.5.0)"; p="fast fertige Sets pausiert";                      test="neu" },
+  @{ n="Hinweis Vitrinen voll (v0.5.0)";    p="Vitrinen voll:";                                    test="neu" },
+  @{ n="Ankauf neue Karte (v0.5.2)";        p="Gekauft für.*neue Karte";                           test="neu" },
+  @{ n="Feilschen Doppelte (v0.5.3)";       p="Gekauft für.*Runde [2-9]";                          test="neu" },
+  @{ n="Ankauf abgelehnt (v0.5.1)";         p="Ankauf abgelehnt";                                  test="neu" },
+  @{ n="Kunde gegangen beim Feilschen";     p="Kunde ist gegangen";                                test="neu" },
+  @{ n="Tausch abgelehnt (v0.5.1)";         p="Tausch abgelehnt";                                  test="neu" },
+  @{ n="Packs zuerst: Lizenzen warten (v0.5.4)"; p="\[Lizenzen\] \d+ warten";                      test="neu" },
+  @{ n="Packs zuerst: Erweiterungen warten (v0.5.4)"; p="\[Erweiterungen\] warten";                test="neu" }
 )
 
 function Write-Report($final) {
@@ -92,6 +103,8 @@ function Write-Report($final) {
   $lines += "- Dashboard (F9): runde Balken, Rollen-Pillen, Seite Laden & Preise → Abschnitte 'Erweiterungen' und 'Selbst einräumen'."
   $lines += "- Fliegen beim Selbst-Einräumen Artikel sichtbar korrekt ins Regal? Werden 'Kunden vermissen …' seltener?"
   $lines += "- Kartenablage-Füllstand (war 16.583/10.000) – sinkt er?"
+  $lines += "- Dashboard (F9) → Sammlung: Ziel-Übersicht (fehlende Karten, neue pro Tag, Tage bis fertig) und Tagesbericht plausibel?"
+  $lines += "- Feilschen: steigen die Gebote pro Runde, wird nie über dem Wunschpreis gezahlt?"
   $lines += ""
   $lines += "## Letzte 25 Bot-Meldungen"
   foreach ($b in ($bot | Select-Object -Last 25)) { $lines += "- " + ($b -replace '^\[Info\s*:\s*ShopBot\]\s*','') }

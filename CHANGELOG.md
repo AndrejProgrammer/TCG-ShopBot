@@ -2,6 +2,13 @@
 
 Ausführliche Entwickler-Notizen: [docs/ENTWICKLUNG.md](docs/ENTWICKLUNG.md)
 
+## 0.5.4 – 24.11.2026
+- **Opener ständig befüllt:** Ist der Pack-Vorrat knapp (weniger als eine Opener-Füllung), verteilt der Bot die vorhandenen Packs gleichmäßig auf alle freien Opener und startet sie sofort – alle laufen, statt dass wenige voll und der Rest leer ist (abschaltbar, Mindestportion 64 Packs).
+- **Packs zuerst:** Bei knappem Vorrat wartet der Bot mit Erweiterungen und Lizenzen, die nur „nice to have“ sind (z. B. Booster Boxes). Lizenzen für Sets ganz ohne kaufbare Packs gibt es weiter. Abschaltbar.
+- **Dashboard:** Pack-Vorrat zeigt Verbrauch pro Minute und wie lange der Vorrat noch reicht.
+- Meldung „Kartons passen nicht ins Lagerregal“ nennt jetzt die Artikel.
+- Testbericht prüft die Funktionen ab 0.5.
+
 ## 0.5.3 – 23.11.2026
 - **Feilschen bei doppelten Karten:** Start bei 60 % Marktpreis (Karten unter $10: 50 %), dann in gleichmäßigen Schritten bis 95 % – so viele Schritte, wie der Kunde noch Ablehnungen übrig hat (liest das Spiel aus). Jedes Gebot ist höher als das letzte (sonst sinkt die Annahme-Chance stark). Hat der Kunde keine Ablehnung mehr übrig, bietet der Bot gleich sein Maximum. Senkt der Kunde seinen Wunschpreis unter das nächste Gebot, zahlt der Bot den Wunschpreis. Aussichtslose Angebote (Wunschpreis mehr als doppelt so hoch wie unser Maximum) lehnt er sofort ab.
 

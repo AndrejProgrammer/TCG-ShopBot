@@ -204,3 +204,18 @@ Live-Test mit Log-Mitlesen: Bot-Kasse 125 Kunden / $82.757 an einem Tag ohne Kas
 - Gebot > Marktpreis +5–15, < Marktpreis −5–15. Je bisheriger Ablehnung −5–15; Gebot ≤ letztes Gebot zusätzlich −10–25 je Ablehnung. Gebot ≥ Wunsch − 0,01 → 100 %.
 - Bei Ablehnung: mit Chance `Chance·rand(1..2)` (Wunsch > Markt: 1..10) **feilscht** der Kunde → Wunschpreis sinkt Richtung Gebot; sonst zählt `m_MaxDeclineCount` runter (Start 0–4), bei 0 geht er.
 - Bot (v0.5.3): neue Karten = Wunschpreis; Doppelte = Leiter 60 % (billig 50 %) → 95 %, Schritte = verbleibende Ablehnungen + 1.
+
+## v0.5.4 (24.11.) – Opener ständig befüllt
+
+Testsitzung Tag 103/104: 0 Fehler. Lizenzen, Grading-Pakete (2× 52), Graden, Feilschen (Runde 2/3), Upgrades, Lager-Erweiterung, Tagesende erstmals im Log bestätigt.
+Problem: Pack-Vorrat lag fast durchgehend unter 1 Opener-Füllung (25 Opener, 30.016 Kapazität, Vorrat 5–13k). Ursachen:
+- ~$176k Lizenzen + $31,6k Lager-Erweiterung in einer Sitzung, während die Opener hungerten (Faktor-3-Prüfung beachtet den Pack-Bedarf nicht).
+- `StockOpeners` füllte einen Opener ganz (bis ~1.200 Packs), bevor der nächste drankam; Teilfüllungen starteten erst nach 45 s.
+- Einkommen ≈ Verbrauch: Packs kosten ~$9–15 (Space-Time Smackdown $8,83, Wisdom of Sea and Sky $14,54); Bot-Kasse ~$217k/Tag.
+
+Änderungen:
+- `UpdatePackSupply` (alle 10 s in `HandlePackEmergency`): Vorrat, Bedarf, Verbrauch/Min (geglättet, gekaufte Packs eingerechnet), `_packStarving` = Vorrat < Notfall-Schwelle.
+- **Packs zuerst** (Config „7. Sammlung“): bei Knappheit keine Erweiterungen, Lizenzen nur Prio 0 (Packs für Sets ohne kaufbare Packs). Log `[Lizenzen] N warten` / `[Erweiterungen] warten` alle 10 Min.
+- **Gleichmäßig verteilen** (Config „2. Pack-Opener“): reichen die Packs am Boden nicht für den freien Platz, bekommt jeder freie Opener `max(Mindestportion 64, Packs/freie Opener)` und wird sofort gestartet (`OnMouseButtonUp`).
+- Dashboard: Pack-Vorrat zeigt Verbrauch/Min und Reichweite in Minuten.
+- Einsortieren: „passen nicht mehr“ nennt jetzt die Artikel (+ groß/klein).

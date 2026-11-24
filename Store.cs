@@ -20,8 +20,8 @@ namespace ShopBot
         private List<string> _setsWithoutPacks = new List<string>();
 
         // Opener selbst befüllen / Arbeiter einstellen / Opener-Turbo
-        private ConfigEntry<bool> _openerSelf, _hireEnabled;
-        private ConfigEntry<int> _openerPerSecond, _hireMax;
+        private ConfigEntry<bool> _openerSelf, _hireEnabled, _openerSpread;
+        private ConfigEntry<int> _openerPerSecond, _hireMax, _openerMinBatch;
         private ConfigEntry<float> _hireMoneyFactor, _openerTurbo;
         private float _openerAcc, _hireTimer = 40f;
         private int _statSelfOpener, _statHired;
@@ -42,6 +42,10 @@ namespace ShopBot
             }
             _openerSelf = Config.Bind("2. Pack-Opener", "Bot befüllt Opener selbst", true, "Legt Packs unfertiger Pokémon-Sets aus Kartons direkt in freie Pack-Opener (Ziel-Sets zuerst). Opener stehen so nie leer.");
             _openerPerSecond = Config.Bind("2. Pack-Opener", "Packs pro Sekunde in Opener", 40, "Wie schnell der Bot die Opener befüllt.");
+            _openerSpread = Config.Bind("2. Pack-Opener", "Bei knappem Vorrat gleichmäßig verteilen", true,
+                "Reichen die Packs am Boden nicht für alle freien Opener, bekommt jeder eine gleich große Portion und startet sofort – so laufen alle Opener statt weniger voller.");
+            _openerMinBatch = Config.Bind("2. Pack-Opener", "Mindestportion pro Opener (Packs)", 64,
+                "Kleinste Portion beim gleichmäßigen Verteilen.");
             _openerTurbo = Config.Bind("2. Pack-Opener", "Opener-Turbo (Tempo x)", 1f, "Opener öffnen Packs so viel schneller (1 = normal, Spielwert).");
             _hireEnabled = Config.Bind("9. Arbeiter", "Neue Arbeiter automatisch einstellen", true, "Stellt freie Arbeiter ein, sobald Level und Geld reichen (Einsatzplan teilt sie danach ein).");
             _hireMax = Config.Bind("9. Arbeiter", "Max. Arbeiter (0 bedeutet alle)", 0, "Höchstens so viele Arbeiter insgesamt.");
@@ -129,13 +133,20 @@ namespace ShopBot
             var order = cands.OrderBy(Prio).ThenByDescending(c => LicenseMargin(c.rd.itemType)).ThenBy(c => c.rd.licensePrice).ToList();
 
             // Alle kaufen, die das Budget hergibt (Schutzfaktor gilt für jede einzelne)
-            int bought = 0;
+            int bought = 0, waiting = 0;
             foreach (var c in order)
             {
+                // Packs zuerst: bei knappem Vorrat nur Lizenzen für Sets, die noch gar keine kaufbaren Packs haben
+                if (PacksFirstBlocks && Prio(c) != 0) { waiting++; continue; }
                 if (Budget < c.rd.licensePrice * Mathf.Max(1f, _licMoneyFactor.Value)) continue;
                 BuyLicense(c.idx, c.rd);
                 bought++;
                 if (bought >= 25) break;                                    // pro Minute höchstens 25
+            }
+            if (waiting > 0 && Time.unscaledTime >= _starveLogLic)
+            {
+                _starveLogLic = Time.unscaledTime + 600f;
+                Logger.LogInfo($"[Lizenzen] {waiting} warten: Pack-Vorrat knapp ({_packHave}/{_packNeed}) – Geld geht zuerst in Packs");
             }
         }
         private readonly HashSet<string> _licRebuyWarned = new HashSet<string>();
@@ -306,10 +317,22 @@ namespace ShopBot
             boxes = boxes.OrderBy(b => _focusPackTypes.Contains(b.m_ItemCompartment.GetItemType()) ? 0 : 1)
                          .ThenBy(b => RealItemCount(b)).ToList();
 
+            // Knapper Vorrat: Packs am Boden reichen nicht, um alle freien Opener zu füllen ->
+            // jeder Opener bekommt eine gleich große Portion und startet gleich (alle laufen, keiner wartet leer)
+            int share = int.MaxValue;
+            if (_openerSpread.Value)
+            {
+                int avail = boxes.Sum(b => RealItemCount(b));
+                int freeRoom = free.Sum(o => Mathf.Max(0, o.m_MaxPackCount - o.GetStoredItemList().Count));
+                if (avail < freeRoom)
+                    share = Mathf.Max(Mathf.Max(1, _openerMinBatch.Value), Mathf.CeilToInt(avail / (float)free.Count));
+            }
+
             int moved = 0, bi = 0;
+            var toStart = new List<InteractableAutoPackOpener>();
             foreach (var o in free)
             {
-                while (budget > 0 && bi < boxes.Count && !o.GetIsProcessing() && o.HasEnoughSlot())
+                while (budget > 0 && bi < boxes.Count && o.GetStoredItemList().Count < share && !o.GetIsProcessing() && o.HasEnoughSlot())
                 {
                     var box = boxes[bi];
                     if (box == null || RealItemCount(box) <= 0) { bi++; continue; }
@@ -318,7 +341,16 @@ namespace ShopBot
                     if (o.GetStoredItemList().Count <= before) { bi++; continue; }   // Karton passt nicht (z. B. kein Pack) -> nächster
                     budget--; moved++;
                 }
+                // Portion voll (oder keine Packs mehr, aber mind. Mindestportion drin) -> sofort starten statt 45 s auf "halbvoll" zu warten
+                int inside = o.GetStoredItemList().Count;
+                if (share != int.MaxValue && !o.GetIsProcessing() && inside > 0 &&
+                    (inside >= share || !o.HasEnoughSlot() || (bi >= boxes.Count && inside >= _openerMinBatch.Value)))
+                    toStart.Add(o);
                 if (budget <= 0 || bi >= boxes.Count) break;
+            }
+            foreach (var o in toStart)
+            {
+                try { if (!o.GetIsProcessing()) { o.OnMouseButtonUp(); _openerIdle.Remove(o); _statStarted++; } } catch { }
             }
             _openerAcc -= moved;
             if (moved > 0)

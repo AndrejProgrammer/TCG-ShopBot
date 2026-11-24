@@ -308,6 +308,15 @@ namespace ShopBot
         {
             var urm = S<UnlockRoomManager>();
             if (urm == null || LightManager.GetHasDayEnded()) return;
+            if (PacksFirstBlocks)
+            {
+                if (Time.unscaledTime >= _starveLogExp)
+                {
+                    _starveLogExp = Time.unscaledTime + 600f;
+                    Logger.LogInfo($"[Erweiterungen] warten: Pack-Vorrat knapp ({_packHave}/{_packNeed}) – Geld geht zuerst in Packs");
+                }
+                return;
+            }
             int level = CPlayerData.m_ShopLevel + 1;
             float factor = Mathf.Max(1f, _expMoneyFactor.Value);
 
@@ -646,6 +655,8 @@ namespace ShopBot
                 "1 = sobald weniger Packs da sind, als alle Opener zusammen fassen.");
             _emergencyExtraLimit = Config.Bind("7. Sammlung", "Notfall zusätzliches Limit pro Tag ($)", 100000f,
                 "So viel darf der Notfall-Nachkauf pro Tag zusätzlich zum normalen Tageslimit ausgeben.");
+            _packsFirst = Config.Bind("7. Sammlung", "Packs zuerst (Lizenzen/Erweiterungen warten bei knappem Vorrat)", true,
+                "Solange weniger Packs da sind als eine Opener-Füllung, kauft der Bot keine Erweiterungen und nur Lizenzen für Sets ganz ohne kaufbare Packs – das Geld geht in Packs.");
         }
 
         private float EmergencyLeft()
@@ -664,11 +675,47 @@ namespace ShopBot
             if (EmergencyActive && v > normal) { EmergencyLeft(); _emergencySpent += v - normal; }
         }
 
+        // ================= Pack-Vorrat: Knappheit, Verbrauch, Reichweite =================
+        // Vorrat = Packs unfertiger Sets am Boden + im Lager + unterwegs. Knapp = weniger als eine volle Opener-Füllung.
+        // Verbrauch pro Minute = (Vorrat vorher + seitdem gekauft − Vorrat jetzt), geglättet.
+        private ConfigEntry<bool> _packsFirst;
+        private bool _packStarving;
+        private int _packHave, _packNeed, _packPrevHave = -1, _packsBoughtSince;
+        private float _packPrevAt, _packRatePerMin;
+        private float _starveLogLic, _starveLogExp;
+
+        private bool PacksFirstBlocks => _packsFirst != null && _packsFirst.Value && _packStarving;
+
+        private void UpdatePackSupply(int have, int need)
+        {
+            float now = Time.unscaledTime;
+            if (_packPrevHave >= 0 && now > _packPrevAt + 1f)
+            {
+                float used = _packPrevHave + _packsBoughtSince - have;
+                float perMin = Mathf.Max(0f, used) / ((now - _packPrevAt) / 60f);
+                _packRatePerMin = _packRatePerMin <= 0f ? perMin : _packRatePerMin * 0.8f + perMin * 0.2f;
+            }
+            _packPrevHave = have; _packPrevAt = now; _packsBoughtSince = 0;
+            _packHave = have; _packNeed = need;
+            _packStarving = have < need;
+        }
+
+        // Minuten, die der Vorrat beim aktuellen Verbrauch noch reicht (-1 = unbekannt)
+        private float PackMinutesLeft => _packRatePerMin > 1f ? _packHave / _packRatePerMin : -1f;
+
+        private string PackSupplyText()
+        {
+            string s = _packRatePerMin > 1f
+                ? $"Verbrauch ~{_packRatePerMin:N0}/Min · reicht ~{PackMinutesLeft:N0} Min"
+                : "Lager + unterwegs";
+            return PacksFirstBlocks ? s + " · knapp: Packs zuerst" : s;
+        }
+
         private void HandlePackEmergency()
         {
             if (!_emergencyEnabled.Value || !_colEnabled.Value || (_emergencyTimer += 1f) < 10f) return;
             _emergencyTimer = 0f;
-            if (EmergencyActive || _openerPackTypes.Count == 0 || LightManager.GetHasDayEnded()) return;
+            if (_openerPackTypes.Count == 0 || LightManager.GetHasDayEnded()) return;
             SafeRun("Notfall-Nachkauf", () =>
             {
                 int cap = 0;
@@ -679,7 +726,8 @@ namespace ShopBot
                 var coming = CountItemsInDelivery();
                 int have = _openerPackTypes.Sum(t => (stock.TryGetValue(t, out var a) ? a : 0) + (coming.TryGetValue(t, out var b) ? b : 0));
                 int need = Mathf.RoundToInt(cap * Mathf.Max(0.1f, _emergencyFills.Value));
-                if (have >= need) return;
+                UpdatePackSupply(have, need);
+                if (EmergencyActive || have >= need) return;
                 _emergencyUntil = Time.unscaledTime + 30f;
                 Note($"Notfall-Nachkauf: nur noch {have} Packs für die Opener (Ziel mind. {need}) – bestelle sofort");
                 _colTimer = 60f;                                       // Sammlung gleich im nächsten Takt
@@ -865,6 +913,7 @@ namespace ShopBot
                     _statSpent += cost * cases;
                     AddBuySpent(cost * cases);
                     _statPackCases += cases;
+                    _packsBoughtSince += cases * perCase;
                     CountSetPacks(f.Key.Name, cases * perCase);
                     Note($"Gekauft: {cases} Kartons {f.Key.Name} ({cases * perCase} Packs, ~{GameInstance.GetPriceString(cost * cases)}) – Set {f.Key.Have}/{f.Key.Total}");
                 }
