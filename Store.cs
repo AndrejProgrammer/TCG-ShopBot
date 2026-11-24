@@ -450,6 +450,19 @@ namespace ShopBot
         }
 
         private float _emptySlotPullAt;
+        private readonly Dictionary<EItemType, bool> _isBoxGoods = new Dictionary<EItemType, bool>();
+
+        // Booster box / display (several packs in one product) – recognised by its name
+        private bool IsBoxGoods(EItemType t)
+        {
+            if (_isBoxGoods.TryGetValue(t, out var b)) return b;
+            string n = t.ToString();
+            try { n += " " + (InventoryBase.GetItemData(t)?.GetName() ?? ""); } catch { }
+            n = n.ToLowerInvariant();
+            b = n.Contains("box") || n.Contains("display");
+            _isBoxGoods[t] = b;
+            return b;
+        }
 
         // Empty shelf slots without a label: choose goods and put them in (the game assigns the slot to the goods)
         private int FillEmptySlots(List<Shelf> shelves, Dictionary<EItemType, List<InteractablePackagingBox_Item>> boxes, ref int budget)
@@ -476,8 +489,10 @@ namespace ShopBot
             {
                 if (budget <= 0) break;
                 // goods on the floor with the fewest shelf slots
+                // booster boxes / displays first (they sell best), then packs; among them the goods with the fewest shelf slots
                 var pick = boxes.Where(kv => ShelfGoods(kv.Key) && kv.Value.Count > 0)
-                                .OrderBy(kv => slots.TryGetValue(kv.Key, out var n) ? n : 0).Select(kv => (EItemType?)kv.Key).FirstOrDefault();
+                                .OrderBy(kv => IsBoxGoods(kv.Key) ? 0 : 1)
+                                .ThenBy(kv => slots.TryGetValue(kv.Key, out var n) ? n : 0).Select(kv => (EItemType?)kv.Key).FirstOrDefault();
                 // nullable: the first enum value is a real item (BasicCardPack), not "none"
                 if (pick == null)
                 {
@@ -485,7 +500,7 @@ namespace ShopBot
                     if (_pullFromStorage.Value && Time.unscaledTime >= _emptySlotPullAt)
                     {
                         _emptySlotPullAt = Time.unscaledTime + 3f;
-                        PullFromStorage(x => ShelfGoods(x) && !slots.ContainsKey(x) ? 0 : -1, 1, shelf.transform.position);
+                        PullFromStorage(x => ShelfGoods(x) && !slots.ContainsKey(x) ? (IsBoxGoods(x) ? 0 : 1) : -1, 1, shelf.transform.position);
                     }
                     break;
                 }
