@@ -439,8 +439,10 @@ namespace ShopBot
                         // so empty labeled slots were never filled. First item the game's own way (it checks the fit), the rest below.
                         if (comp.GetItemCount() == 0)
                         {
-                            try { box.DispenseItem(false, comp); } catch { }
+                            _dispTry++;
+                            try { box.DispenseItem(false, comp); } catch (Exception e) { DispWhy(e.Message); }
                             if (comp.GetItemCount() == 0) break;            // does not fit / did not work
+                            _dispOk++;
                             budget--; moved++;
                             continue;
                         }
@@ -463,13 +465,35 @@ namespace ShopBot
         }
 
         private float _emptySlotPullAt, _shelfStatAt = 30f;
-        private int _shelfStatMoved, _shelfStatEmpty, _shelfPullTries, _shelfPulled;
+        private int _shelfStatMoved, _shelfStatEmpty, _shelfPullTries, _shelfPulled, _dispTry, _dispOk;
         internal string _dashShelfStatus = "";
+        private string _dispWhy = "";
+        private void DispWhy(string m) { if (_dispWhy.Length == 0) _dispWhy = m; }
 
         // Once a minute: how the shelves look (so you can see in the log whether stocking works)
         private void LogShelfStatus(List<Shelf> shelves, Dictionary<EItemType, List<InteractablePackagingBox_Item>> boxes)
         {
             int slots = 0, emptyLabeled = 0, emptyUnlabeled = 0, onFloor = 0, onlyStorage = 0;
+            // independent survey of all loose boxes (the boxes list above is changed while stocking)
+            var survey = new Dictionary<EItemType, (int total, int closed, int noItems, int busy, int usable)>();
+            var rmS = S<RestockManager>();
+            if (rmS != null)
+                foreach (var b in rmS.m_ItemPackagingBoxList)
+                {
+                    if (b == null || !b.gameObject.activeInHierarchy || b.m_ItemCompartment == null || b.m_IsStored) continue;
+                    if (b.m_ItemCompartment.GetItemCount() <= 0) continue;
+                    var tb = Traverse.Create(b);
+                    var bt = b.m_ItemCompartment.GetItemType();
+                    survey.TryGetValue(bt, out var v);
+                    v.total++;
+                    bool closed = !tb.Field("m_IsBoxOpened").GetValue<bool>();
+                    bool busy = tb.Field("m_IsBeingHold").GetValue<bool>() || tb.Field("m_IsLerpingToPos").GetValue<bool>() || tb.Field("m_IsTogglingOpenClose").GetValue<bool>();
+                    bool noItems = RealItemCount(b) <= 0;
+                    if (closed) v.closed++; if (noItems) v.noItems++; if (busy) v.busy++;
+                    if (!busy && !noItems) v.usable++;
+                    survey[bt] = v;
+                }
+            int fTotal = 0, fClosed = 0, fNoItems = 0, fBusy = 0, fUsable = 0;
             var missing = new Dictionary<string, int>();
             var stock = CountItemsInBoxes(out _);
             foreach (var shelf in shelves)
@@ -483,7 +507,11 @@ namespace ShopBot
                     var t = comp.GetItemType();
                     if (t == EItemType.None) { emptyUnlabeled++; continue; }
                     emptyLabeled++;
-                    if (boxes.TryGetValue(t, out var fl) && fl.Count > 0) onFloor++;
+                    if (survey.TryGetValue(t, out var sv) && sv.total > 0)
+                    {
+                        onFloor++;
+                        fTotal += sv.total; fClosed += sv.closed; fNoItems += sv.noItems; fBusy += sv.busy; fUsable += sv.usable;
+                    }
                     else if (stock.TryGetValue(t, out var st) && st > 0) onlyStorage++;
                     if (!stock.TryGetValue(t, out var have) || have <= 0)
                     {
@@ -494,9 +522,9 @@ namespace ShopBot
                 }
             }
             string miss = missing.Count == 0 ? "-" : string.Join(", ", missing.OrderByDescending(k => k.Value).Take(6).Select(k => $"{k.Key} ({k.Value})"));
-            Logger.LogInfo($"[Shelves] {slots} slots, empty: {emptyLabeled} labeled + {emptyUnlabeled} without label | last minute: {_shelfStatMoved} items stocked, {_shelfStatEmpty} into slots without label | empty labeled: {onFloor} with a usable box on the floor, {onlyStorage} only in storage | storage pulls: {_shelfPulled}/{_shelfPullTries} | no box for: {miss}");
+            Logger.LogInfo($"[Shelves] {slots} slots, empty: {emptyLabeled} labeled + {emptyUnlabeled} without label | last minute: {_shelfStatMoved} items stocked, {_shelfStatEmpty} into slots without label | empty labeled: {onFloor} have boxes on the floor, {onlyStorage} only in storage | those floor boxes: {fTotal} (closed {fClosed}, no items {fNoItems}, busy {fBusy}, usable {fUsable}) | first item into empty slot: {_dispOk}/{_dispTry}{(_dispWhy.Length > 0 ? " (" + _dispWhy + ")" : "")} | storage pulls: {_shelfPulled}/{_shelfPullTries} | no box for: {miss}");
             _dashShelfStatus = F($"{slots} slots · empty: {emptyLabeled} labeled, {emptyUnlabeled} without label");
-            _shelfStatMoved = 0; _shelfStatEmpty = 0; _shelfPullTries = 0; _shelfPulled = 0;
+            _shelfStatMoved = 0; _shelfStatEmpty = 0; _shelfPullTries = 0; _shelfPulled = 0; _dispTry = 0; _dispOk = 0; _dispWhy = "";
         }
         private readonly Dictionary<EItemType, bool> _isBoxGoods = new Dictionary<EItemType, bool>();
 
