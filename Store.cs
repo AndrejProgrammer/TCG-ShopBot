@@ -477,8 +477,9 @@ namespace ShopBot
                 if (budget <= 0) break;
                 // goods on the floor with the fewest shelf slots
                 var pick = boxes.Where(kv => ShelfGoods(kv.Key) && kv.Value.Count > 0)
-                                .OrderBy(kv => slots.TryGetValue(kv.Key, out var n) ? n : 0).Select(kv => kv.Key).FirstOrDefault();
-                if (pick == EItemType.None)
+                                .OrderBy(kv => slots.TryGetValue(kv.Key, out var n) ? n : 0).Select(kv => (EItemType?)kv.Key).FirstOrDefault();
+                // nullable: the first enum value is a real item (BasicCardPack), not "none"
+                if (pick == null)
                 {
                     // nothing suitable on the floor: fetch goods from the storage shelf that are on no shelf yet (one box every 3 s)
                     if (_pullFromStorage.Value && Time.unscaledTime >= _emptySlotPullAt)
@@ -488,19 +489,20 @@ namespace ShopBot
                     }
                     break;
                 }
-                var list = boxes[pick];
+                var goods = pick.Value;
+                var list = boxes[goods];
                 int before = moved;
                 // first item the way the game does it (like the player placing it): the game checks the fit and labels the slot
                 var first = list.FirstOrDefault(x => x != null && x.m_ItemCompartment.GetItemCount() > 0 && RealItemCount(x) > 0);
-                if (first == null) { boxes.Remove(pick); continue; }
+                if (first == null) { boxes.Remove(goods); continue; }
                 try { first.DispenseItem(false, comp); } catch { }
-                if (comp.GetItemType() != pick || comp.GetItemCount() == 0) { boxes.Remove(pick); continue; }   // does not fit here -> try other goods next time
+                if (comp.GetItemType() != goods || comp.GetItemCount() == 0) { boxes.Remove(goods); continue; }   // does not fit here -> try other goods next time
                 budget--; moved++;
                 while (budget > 0 && comp.HasEnoughSlot() && list.Count > 0)
                 {
                     var box = list[0];
                     if (box.m_ItemCompartment.GetItemCount() <= 0 || RealItemCount(box) <= 0) { list.RemoveAt(0); continue; }
-                    if (comp.CheckItemType(pick) != pick) break;          // this slot does not take these goods
+                    if (comp.CheckItemType(goods) != goods) break;          // this slot does not take these goods
                     var item = box.m_ItemCompartment.GetFirstItem();
                     if (item == null) { list.RemoveAt(0); continue; }
                     item.LerpToTransform(comp.GetEmptySlotTransform(), comp.GetEmptySlotParent());
@@ -508,7 +510,7 @@ namespace ShopBot
                     box.m_ItemCompartment.RemoveItem(item);
                     budget--; moved++;
                 }
-                if (moved > before) slots[pick] = (slots.TryGetValue(pick, out var c) ? c : 0) + 1;
+                if (moved > before) slots[goods] = (slots.TryGetValue(goods, out var c) ? c : 0) + 1;
             }
             return moved;
         }
