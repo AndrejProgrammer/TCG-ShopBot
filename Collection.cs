@@ -153,6 +153,7 @@ namespace ShopBot
             HandlePackEmergency();
             DayReportTick();
             HandleGamePhase();
+            HandleAdvisor();
 
             if (ColActive && (_colTimer += 1f) >= 60f) { _colTimer = 0f; SafeRun("Collection", CollectionTick); }
             if (_bulkEnabled.Value && (_bulkTimer += 1f) >= 120f) { _bulkTimer = 0f; SafeRun("Card storage", BulkTick); }

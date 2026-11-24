@@ -17,6 +17,14 @@ Reihenfolge = Empfehlung. ⭐ = wichtig vor dem Public-Schalten.
 - [ ] **Beobachten:** „Regale vor Openern“ – lässt sich ein beschriftetes Fach nie befüllen, bekommen die Opener diese Pack-Sorte nicht mehr (keine Absicherung eingebaut). In der Regal-Übersicht prüfen.
 - [ ] **Beobachten:** Nachbestellen für große Regallücken kostet anfangs einige 10.000 $ – ggf. Menge pro Bestellung/Tag begrenzen (User gefragt, noch offen).
 
+## Berater – wirtschaften wie ein guter Spieler (Konzept 24.11.)
+Jede Ausgabe = Investition mit Kosten (einmalig + laufend, z. B. Miete/Lohn) und Nutzen/Tag aus Messwerten → Amortisation → Bestes zuerst. Engpässe statt starrer Phasen.
+- [x] (0.7.1) **Schritt 1 – Messen & Berater-Seite:** Einnahmen/Fixkosten/Gewinn pro Tag, Rücklage, Engpässe, Tipps für den Spieler, nächste Investitionen. Im Spiel prüfen, ob die Zahlen stimmen (Fixkosten = gemessene Rechnungen).
+- [x] (0.7.1) **Schritt 2 – Grading-Stufe nach Gewinn** (schnellste Stufe ≤ 15 % Gewinn/Tag, die sich füllen lässt). Prüfen: welche Stufe wählt er, wie viele Tage?
+- [ ] **Schritt 3 – Erweiterungen und Arbeiter nach Amortisation** statt „Budget ≥ 5× Preis“: Erweiterung nur bei Engpass „Regalfläche“ und Mietplus ≤ ~10 % Gewinn/Tag (Mietplus nach einer Erweiterung messen); Arbeiter einstellen nur, wenn über Tage Arbeit übrig bleibt.
+- [ ] **Schritt 4 – Budget-Töpfe** statt Tageslimit/Faktoren: Gewinn → Rücklage → Investitionen (Engpass, beste Amortisation) → Packs.
+- [ ] **Schritt 5 – Packs selbst öffnen am Anfang** (ohne Opener) – prüfen, ob das Spiel das per Code zulässt.
+
 ## Bot passt sich dem Spielverlauf an (ersetzt den starren Assistenten)
 - [x] (0.6.4, noch nicht im Spiel getestet) ⭐ **Schritt 1 – Messen & anzeigen:** Ø Einnahmen/Kosten pro Tag (letzte 3 Tage), Level, Erweiterungen, Opener/Kassen/Vitrinen/Arbeiter, Lizenzen, Sammlungsfortschritt. Daraus **Spielphase** erkennen und im Dashboard zeigen („Phase: Sammeln (erkannt)“) – noch ohne Verhalten zu ändern, ein paar Spieltage beobachten.
   - 🌱 Start (Level < 10, wenig Geld, keine Opener): Preise, Kasse, Nachbestellen, Rechnungen – keine Sammlungs-Packs, kein Graden.

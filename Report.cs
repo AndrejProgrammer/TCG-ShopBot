@@ -15,7 +15,7 @@ namespace ShopBot
         private string ModWarningText((string mod, string feature) w) => F($"{w.mod} not found – {L(w.feature)} is off");
 
         // ---------------- Tagesbericht ----------------
-        private class DayRecord { public int Day; public float Income, Spent, ShopIncome; public int Customers, Packs, HaveStart = -1; }
+        private class DayRecord { public int Day; public float Income, Spent, ShopIncome; public int Customers, Packs, HaveStart = -1, ItemsSold; }
         private readonly List<DayRecord> _dayHistory = new List<DayRecord>();
         private DayRecord _today;
         private float _todaySpentStart; private int _todayPacksStart;
@@ -33,6 +33,7 @@ namespace ShopBot
                 {
                     var rep = CPlayerData.m_GameReportDataCollect;
                     _today.ShopIncome = Mathf.Max(_today.ShopIncome, rep.totalItemEarning + rep.totalCardEarning + rep.totalPlayTableEarning);
+                    _today.ItemsSold = Mathf.Max(_today.ItemsSold, rep.itemAmountSold);
                 }
                 catch { }
                 SaveDayReport();

@@ -44,7 +44,7 @@ namespace ShopBot
         private int _cSetsDone, _cSetsTotal;
         private List<SetInfo> _cAllSets = new List<SetInfo>();
 
-        private static readonly string[] Pages = { "Overview", "Collection", "Shop & prices", "Customers", "Cards", "Workers", "History", "Settings" };  // i18n
+        private static readonly string[] Pages = { "Overview", "Collection", "Shop & prices", "Customers", "Cards", "Workers", "History", "Settings", "Advisor" };  // i18n
         private static readonly string[] HistCats = { "All", "Purchases", "Customers", "Cards", "Workers", "Shop" };  // i18n
 
         // ---------- Colors ----------
@@ -64,7 +64,7 @@ namespace ShopBot
         private static readonly Color CYellow = new Color(1f, 0.82f, 0.3f);
         private static readonly Color CTrack = new Color(0.17f, 0.19f, 0.25f, 1f);
         private static readonly Color[] CatColors = { new Color(0.6f, 0.62f, 0.7f), CBlue, CGreen, CPurple, CAccent, new Color(0.6f, 0.62f, 0.7f) };
-        private static readonly Color[] PageColors = { CAccent, CGreen, CBlue, CYellow, CPurple, CAccent2, new Color(0.6f, 0.65f, 0.75f), new Color(0.45f, 0.8f, 0.85f) };
+        private static readonly Color[] PageColors = { CAccent, CGreen, CBlue, CYellow, CPurple, CAccent2, new Color(0.6f, 0.65f, 0.75f), new Color(0.45f, 0.8f, 0.85f), new Color(0.95f, 0.75f, 0.35f) };
 
         // ================= Config + language =================
         private void BindDashboardConfig()
@@ -433,6 +433,7 @@ namespace ShopBot
                         case 5: PageWorkers(); break;
                         case 6: PageHistory(); break;
                         case 7: PageSettings(); break;
+                        case 8: PageAdvisor(); break;
                     }
                     GUILayout.Space(10);
                     GUILayout.EndVertical();
@@ -1159,6 +1160,42 @@ namespace ShopBot
             if (c >= 0) _histFilter = c;
             GUILayout.Space(6);
             HistoryRows(200, _histFilter);
+        }
+
+        private void PageAdvisor()
+        {
+            PageTitle(T("Advisor"), T("The bot thinks like a good player: what holds the shop back, what pays off next, what only you can do."));
+            GUILayout.BeginHorizontal();
+            Stat(T("Income / day"), _advIncome > 0f ? Money(_advIncome) : "…", IncomeDays < 1 ? T("measured from the first full day") : T("average of the last days"), CGreen);
+            Stat(T("Fixed costs / day"), Money(_advFixed), T("rent, electricity, wages"), CRed);
+            Stat(T("Profit / day"), _advIncome > 0f ? Money(_advProfit) : "…", T("before packs and investments"), _advProfit >= 0f ? CGreen : CRed);
+            Stat(T("Reserve"), Money(_advReserveTarget), T("3 days of fixed costs"));
+            GUILayout.EndHorizontal();
+
+            Section(T("What holds the shop back"), T("biggest first"));
+            if (_advBottlenecks.Count == 0) GUILayout.Label(T("No bottleneck right now – everything runs."), _sDim);
+            foreach (var b in _advBottlenecks)
+            {
+                GUILayout.BeginVertical(_sCardFlat);
+                GUILayout.Label(Lang.F(b.Text), _sTxt);
+                Bar(b.Severity, b.Severity > 0.6f ? CRed : b.Severity > 0.3f ? CAccent : CYellow, 6f);
+                GUILayout.EndVertical();
+            }
+
+            Section(T("Tips – only you can do this"));
+            if (_advTips.Count == 0) GUILayout.Label(T("Nothing to do – the shop is set up well."), _sDim);
+            foreach (var t in _advTips) GUILayout.Label("→ " + Lang.F(t), _sTxt);
+
+            Section(T("Next investments"), T("what the bot considers"));
+            if (_advInvest.Count == 0) GUILayout.Label(T("Calculated after the first minute."), _sDim);
+            foreach (var (what, cost, verdict) in _advInvest)
+            {
+                GUILayout.BeginHorizontal(_sCardFlat);
+                GUILayout.Label(Lang.F(what), _sTxt, GUILayout.Width(300));
+                GUILayout.Label(cost > 0f ? Money(cost) : "", _sSmallBold, GUILayout.Width(120));
+                GUILayout.Label(Lang.F(verdict), _sDim);
+                GUILayout.EndHorizontal();
+            }
         }
 
         private void PageSettings()

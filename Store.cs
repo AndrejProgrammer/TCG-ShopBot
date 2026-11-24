@@ -135,6 +135,7 @@ namespace ShopBot
                 return needed && pack ? 0 : needed ? 1 : pack ? 2 : 3;
             }
             var order = cands.OrderBy(Prio).ThenByDescending(c => LicenseMargin(c.rd.itemType)).ThenBy(c => c.rd.licensePrice).ToList();
+            _licPending = order.Select(c => (LicName(c.rd.itemType), c.rd.licensePrice, Prio(c) == 0)).ToList();
 
             // Alle kaufen, die das Budget hergibt (Schutzfaktor gilt für jede einzelne)
             int bought = 0, waiting = 0;
@@ -154,6 +155,7 @@ namespace ShopBot
             }
         }
         private readonly HashSet<string> _licRebuyWarned = new HashSet<string>();
+        internal List<(string name, float price, bool needed)> _licPending = new List<(string, float, bool)>();
 
         private void BuyLicense(int index, RestockData r)
         {
@@ -544,6 +546,12 @@ namespace ShopBot
             string miss = missing.Count == 0 ? "-" : string.Join(", ", missing.OrderByDescending(k => k.Value).Take(6).Select(k => $"{k.Key} ({k.Value})"));
             Logger.LogInfo($"[Shelves] {slots} slots, empty: {emptyLabeled} labeled + {emptyUnlabeled} without label | last minute: {_shelfStatMoved} items stocked, {_shelfStatEmpty} into slots without label | empty labeled: {onFloor} have boxes on the floor, {onlyStorage} only in storage | those floor boxes: {fTotal} (closed {fClosed}, no items {fNoItems}, busy {fBusy}, usable {fUsable}) | relabeled: {_relabelOk}/{_relabelTry} | first item into empty slot: {_dispOk}/{_dispTry}{(_dispWhy.Length > 0 ? " (" + _dispWhy + ")" : "")} | busy flags: held {_busyHold}, moving {_busyLerp}, opening {_busyToggle}, stuck->free {_busyStuck} | storage pulls: {_shelfPulled}/{_shelfPullTries} | no box for: {miss}");
             _dashShelfStatus = F($"{slots} slots · empty: {emptyLabeled} labeled, {emptyUnlabeled} without label");
+            _advShelfSlots = slots; _advShelfEmpty = emptyLabeled + emptyUnlabeled;
+            int cap = 0;
+            foreach (var shelf in shelves)
+                if (shelf != null && !shelf.m_ItemNotForSale && shelf.IsValidObject())
+                    foreach (var comp in shelf.GetItemCompartmentList()) if (comp != null && !comp.m_ItemNotForSale) cap += comp.GetMaxItemCount();
+            _advShelfCapacity = cap;
             _shelfStatMoved = 0; _shelfStatEmpty = 0; _shelfPullTries = 0; _shelfPulled = 0; _dispTry = 0; _dispOk = 0; _dispWhy = ""; _busyHold = _busyLerp = _busyToggle = _busyStuck = 0; _relabelTry = _relabelOk = 0;
         }
         private readonly Dictionary<EItemType, bool> _isBoxGoods = new Dictionary<EItemType, bool>();

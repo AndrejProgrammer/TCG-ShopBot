@@ -2,6 +2,11 @@
 
 Ausführliche Entwickler-Notizen: [docs/ENTWICKLUNG.md](docs/ENTWICKLUNG.md)
 
+## 0.7.1 – 25.11.2026 – the advisor
+- **New dashboard page "Advisor":** the bot thinks like a good player. It shows income, fixed costs (rent, electricity, wages) and profit per day, the reserve, **what holds the shop back** (packs short, openers idle, empty shelf slots, shelf space, display cases full, grading slots busy, card storage full – biggest first), **tips for what only you can do** (more display cases, more shelves, more/fewer openers, fewer workers) and the **next investments** with a verdict.
+- **Grading tier by profit:** for every PSA tier the bot reads price per card, cards per submission and days, and picks the fastest tier whose cost (all 8 slots) stays within ~15 % of the profit per day and that it can fill. Small shop = cheapest tier as before; big shop = faster tiers, more cards per day.
+- The daily report also keeps the items sold per day (for the shelf turnover).
+
 ## 0.7.0 – 25.11.2026 – adapts to your game
 - **Settings follow the game phase (step 2):** with "Adapt settings to the game phase" (on by default) the bot sets collection buying, grading, emergency restock, "packs first", the PSA 10 hunt, the daily purchase limit and the license/expansion safety factor to fit the phase:
   - Start: no collection packs, no grading, no emergency restock

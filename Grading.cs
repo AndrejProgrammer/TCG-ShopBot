@@ -58,17 +58,8 @@ namespace ShopBot
             int running = CPlayerData.m_GradeCardInProgressList?.Count ?? 0;
             if (running >= maxSets) return;
 
-            // PSA, günstigste Stufe
+            // PSA – the tier is chosen below by profit (Advisor.cs), once we know how many cards are waiting
             var psa = AccessTools.Method(tCompanies, "Get").Invoke(null, new[] { Enum.Parse(tCompany, "Psa") });
-            var tiers = Traverse.Create(psa).Field("Tiers").GetValue() as Array;
-            var perCardM = AccessTools.Method(tGrading, "PerCard");
-            int tier = 0; float perCard = float.MaxValue;
-            for (int i = 0; i < (tiers?.Length ?? 1); i++)
-            {
-                float c = (float)perCardM.Invoke(null, new object[] { psa, i });
-                if (c > 0f && c < perCard) { perCard = c; tier = i; }
-            }
-            int limit = (int)AccessTools.Method(tGrading, "Limit").Invoke(null, new object[] { tier });
 
             // Album einlesen (wie die Grading-Seite)
             AccessTools.Method(tGrading, "BuildCollection").Invoke(null, null);
@@ -101,6 +92,10 @@ namespace ShopBot
 
             // Teuerste zuerst
             entries.Sort((a, b) => b.value.CompareTo(a.value));
+            // cards that may be graded (one copy stays if set) -> choose the tier: fastest one that fits the profit
+            int waiting = entries.Sum(e => Mathf.Max(0, Mathf.Min(e.amount, _gradeKeepOne.Value ? e.total - 1 : e.total)));
+            int tier = ChooseGradeTier(psa, tGrading, waiting, out float perCard, out int limit);
+            if (limit <= 0) return;
             var takenPerKey = new Dictionary<long, int>();
             var wants = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(tWant));
             float sumValue = 0f;
@@ -144,7 +139,7 @@ namespace ShopBot
             {
                 _statSpent += fee;
                 _statGraded += sent;
-                NoteF($"Grading: {sent} cards sent to PSA (value ~{GameInstance.GetPriceString(sumValue)}, fee {GameInstance.GetPriceString(fee)}) – slot {running + 1}/{maxSets}");
+                NoteF($"Grading: {sent} cards sent to PSA (value ~{GameInstance.GetPriceString(sumValue)}, fee {GameInstance.GetPriceString(fee)}) – slot {running + 1}/{maxSets} – {L(_gradeTierText)}");
             }
             else Logger.LogInfo($"[Grading] Not sent: {args[3]}");
         }

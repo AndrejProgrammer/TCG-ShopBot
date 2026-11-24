@@ -74,6 +74,15 @@ for (const f of fs.readdirSync(root).filter(f => f.endsWith('.cs'))) {
   // lists marked with  // i18n  on the same line: every "..." literal on that line is a key
   for (const line of src.split('\n')) {
     if (!/\/\/\s*i18n/.test(line)) continue;
+    // i18n-fs: every interpolated $"..." on the line is a message template (FormattableString shown later with Lang.F)
+    if (/\/\/\s*i18n-fs/.test(line)) {
+      const codeFs = line.replace(/\/\/\s*i18n-fs.*$/, '');
+      for (let i = codeFs.indexOf('$"'); i >= 0; i = codeFs.indexOf('$"', i + 2)) {
+        const lit = readLit(codeFs, i);
+        if (lit) add(unescapeCs(templateOf(lit.body, true)), f);
+      }
+      continue;
+    }
     const code = line.replace(/\/\/.*$/, '');
     const lits = [...code.matchAll(/"([^"\\]*)"/g)].map(x => x[1]);
     if (/\/\/\s*i18n-last/.test(line)) { if (lits.length) add(lits[lits.length - 1], f); }   // tuple lines: only the last text
