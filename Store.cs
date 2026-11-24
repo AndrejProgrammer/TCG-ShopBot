@@ -413,7 +413,8 @@ namespace ShopBot
                         var t = comp.GetItemType();
                         if (t == EItemType.None || floorTypes.Contains(t) || !comp.HasEnoughSlot()) continue;
                         if (comp.GetItemCount() > comp.GetMaxItemCount() / 2) continue;      // erst wenn das Fach halb leer ist
-                        if (PullFromStorage(x => x == t ? 0 : -1, 1, shelf.transform.position) > 0) { floorTypes.Add(t); sorts++; }
+                        _shelfPullTries++;
+                        if (PullFromStorage(x => x == t ? 0 : -1, 1, shelf.transform.position) > 0) { floorTypes.Add(t); sorts++; _shelfPulled++; }
                         else floorTypes.Add(t);                                                // nichts im Lager -> nicht nochmal suchen
                     }
                 }
@@ -434,6 +435,15 @@ namespace ShopBot
                     {
                         var box = list[0];
                         if (box.m_ItemCompartment.GetItemCount() <= 0 || RealItemCount(box) <= 0) { list.RemoveAt(0); continue; }
+                        // Empty slot (only the label is set): CheckItemType looks at the items inside and finds none -> it used to stop here,
+                        // so empty labeled slots were never filled. First item the game's own way (it checks the fit), the rest below.
+                        if (comp.GetItemCount() == 0)
+                        {
+                            try { box.DispenseItem(false, comp); } catch { }
+                            if (comp.GetItemCount() == 0) break;            // does not fit / did not work
+                            budget--; moved++;
+                            continue;
+                        }
                         if (comp.CheckItemType(type) != type) break;
                         // wie InteractablePackagingBox_Item.DispenseItem: Artikel aus dem Karton ins Fach legen
                         var item = box.m_ItemCompartment.GetFirstItem();
@@ -453,13 +463,13 @@ namespace ShopBot
         }
 
         private float _emptySlotPullAt, _shelfStatAt = 30f;
-        private int _shelfStatMoved, _shelfStatEmpty;
+        private int _shelfStatMoved, _shelfStatEmpty, _shelfPullTries, _shelfPulled;
         internal string _dashShelfStatus = "";
 
         // Once a minute: how the shelves look (so you can see in the log whether stocking works)
         private void LogShelfStatus(List<Shelf> shelves, Dictionary<EItemType, List<InteractablePackagingBox_Item>> boxes)
         {
-            int slots = 0, emptyLabeled = 0, emptyUnlabeled = 0;
+            int slots = 0, emptyLabeled = 0, emptyUnlabeled = 0, onFloor = 0, onlyStorage = 0;
             var missing = new Dictionary<string, int>();
             var stock = CountItemsInBoxes(out _);
             foreach (var shelf in shelves)
@@ -473,6 +483,8 @@ namespace ShopBot
                     var t = comp.GetItemType();
                     if (t == EItemType.None) { emptyUnlabeled++; continue; }
                     emptyLabeled++;
+                    if (boxes.TryGetValue(t, out var fl) && fl.Count > 0) onFloor++;
+                    else if (stock.TryGetValue(t, out var st) && st > 0) onlyStorage++;
                     if (!stock.TryGetValue(t, out var have) || have <= 0)
                     {
                         string n = t.ToString();
@@ -482,9 +494,9 @@ namespace ShopBot
                 }
             }
             string miss = missing.Count == 0 ? "-" : string.Join(", ", missing.OrderByDescending(k => k.Value).Take(6).Select(k => $"{k.Key} ({k.Value})"));
-            Logger.LogInfo($"[Shelves] {slots} slots, empty: {emptyLabeled} labeled + {emptyUnlabeled} without label | last minute: {_shelfStatMoved} items stocked, {_shelfStatEmpty} into slots without label | no box for: {miss}");
+            Logger.LogInfo($"[Shelves] {slots} slots, empty: {emptyLabeled} labeled + {emptyUnlabeled} without label | last minute: {_shelfStatMoved} items stocked, {_shelfStatEmpty} into slots without label | empty labeled: {onFloor} with a usable box on the floor, {onlyStorage} only in storage | storage pulls: {_shelfPulled}/{_shelfPullTries} | no box for: {miss}");
             _dashShelfStatus = F($"{slots} slots · empty: {emptyLabeled} labeled, {emptyUnlabeled} without label");
-            _shelfStatMoved = 0; _shelfStatEmpty = 0;
+            _shelfStatMoved = 0; _shelfStatEmpty = 0; _shelfPullTries = 0; _shelfPulled = 0;
         }
         private readonly Dictionary<EItemType, bool> _isBoxGoods = new Dictionary<EItemType, bool>();
 
