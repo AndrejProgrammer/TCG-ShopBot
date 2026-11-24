@@ -21,6 +21,7 @@ namespace ShopBot
         internal string _gradeTierText = "";
         private float _advTimer = 55f;
         internal bool _advReady;
+        internal float _packPriceAvg;
         // shelf facts from the shelf status (Store.cs)
         internal int _advShelfSlots, _advShelfEmpty, _advShelfCapacity;
         private int _advOpenerSamples, _advOpenerIdleSum, _advOpenersTotal;
@@ -121,7 +122,17 @@ namespace ShopBot
             {
                 // packs per real minute x real minutes of one shop day (8:00-21:00 = 780 game minutes, clock speed measured)
                 float perDay = _packRatePerMin * RealMinutesPerShopDay;
-                _advTips.Add($"The openers use ~{perDay:N0} packs a day – more than the income buys. Fewer openers or a higher daily limit");   // i18n-fs
+                float budget = PotsActive ? _potPacks : DayLimit;
+                if (_packPriceAvg > 0f && _advOpenersTotal > 0 && perDay > 0f && budget > 0f)
+                {
+                    // how many openers the pack budget can keep busy
+                    float affordable = budget / _packPriceAvg;
+                    int enough = Mathf.Clamp(Mathf.CeilToInt(_advOpenersTotal * affordable / perDay), 1, _advOpenersTotal);
+                    if (enough < _advOpenersTotal)
+                        _advTips.Add($"Your pack budget ({Money(budget)}/day at ~{Money(_packPriceAvg)} per pack) buys ~{affordable:N0} packs a day, the {_advOpenersTotal} openers use ~{perDay:N0}. About {enough} openers are enough – the others stand empty and only cost space");   // i18n-fs
+                }
+                else
+                    _advTips.Add($"The openers use ~{perDay:N0} packs a day – more than the income buys. Fewer openers or a higher daily limit");   // i18n-fs
             }
             else if (!_packStarving && openerIdle < 0.05f && _advOpenersTotal > 0 && _advProfit > 20000f)
                 _advTips.Add($"All openers run all the time and packs are in stock – more pack openers would open more cards");   // i18n-fs

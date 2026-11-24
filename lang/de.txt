@@ -488,3 +488,4 @@ worthwhile licenses / expansions first = lohnende Lizenzen / Erweiterungen zuers
 daily limit for the collection · emergency +{0} = Tageslimit für die Sammlung · Notfall +{0}
 
 Packs = Packs
+Your pack budget ({0}/day at ~{1} per pack) buys ~{2:N0} packs a day, the {3} openers use ~{4:N0}. About {5} openers are enough – the others stand empty and only cost space = Dein Pack-Budget ({0}/Tag bei ~{1} pro Pack) kauft ~{2:N0} Packs am Tag, die {3} Opener verbrauchen ~{4:N0}. Etwa {5} Opener reichen – die übrigen stehen leer und kosten nur Platz

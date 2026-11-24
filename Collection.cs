@@ -918,6 +918,9 @@ namespace ShopBot
                     AddBuySpent(cost * cases);
                     _statPackCases += cases;
                     _packsBoughtSince += cases * perCase;
+                    // average price per pack (smoothed) – the advisor uses it to say how many openers the profit can feed
+                    float pp = cost / Mathf.Max(1, perCase);
+                    _packPriceAvg = _packPriceAvg <= 0f ? pp : _packPriceAvg * 0.9f + pp * 0.1f;
                     CountSetPacks(f.Key.Name, cases * perCase);
                     NoteF($"Bought: {cases} boxes {f.Key.Name} ({cases * perCase} packs, ~{GameInstance.GetPriceString(cost * cases)}) – set {f.Key.Have}/{f.Key.Total}");
                 }

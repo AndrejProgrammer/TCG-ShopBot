@@ -485,3 +485,4 @@ worth it: packs for a set without buyable packs = worth it: packs for a set with
 worth it: shelf space is a bottleneck = worth it: shelf space is a bottleneck
 worthwhile licenses / expansions first = worthwhile licenses / expansions first
 your own (learning first day) = your own (learning first day)
+Your pack budget ({0}/day at ~{1} per pack) buys ~{2:N0} packs a day, the {3} openers use ~{4:N0}. About {5} openers are enough – the others stand empty and only cost space = Your pack budget ({0}/day at ~{1} per pack) buys ~{2:N0} packs a day, the {3} openers use ~{4:N0}. About {5} openers are enough – the others stand empty and only cost space
