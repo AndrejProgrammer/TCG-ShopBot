@@ -983,7 +983,7 @@ namespace ShopBot
                 Switch(_stockSelf, T("Bot stocks shelves itself"), T("goods from boxes into matching shelf slots"));
                 Switch(_stockEmptySlots, T("Fill empty shelves without a label"), T("booster boxes first, then packs"));
                 Switch(_relabelEmpty, T("Relabel empty slots whose goods are gone"), T("gets goods that are here – boxes first, then packs of the new sets"));
-                SliderInt(_stockPerSecond, T("Items per second"), 1, 30, "");
+                SliderInt(_stockPerSecond, T("Items per second"), 1, 150, "");
                 Switch(_cardsSelf, T("Bot fills empty display slots"), T("cards from the card storage"));
                 SliderInt(_cardsPerSecond, T("Cards per second"), 1, 10, "");
             }, () =>
