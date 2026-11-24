@@ -6,8 +6,17 @@ Reihenfolge = Empfehlung. ⭐ = wichtig vor dem Public-Schalten.
 - [ ] ⭐ **v0.6.0 im Spiel testen:** Dashboard auf Deutsch? Alte Einstellungen übernommen (Log: „settings carried over“)? Animationen flüssig? Sprach-Menü öffnet/schließt? Testbericht (`tools\testbericht.ps1`) mitlaufen lassen.
 - [ ] ⭐ **Testinstallation auf frischem Spielstand ohne alte Config** – wie erlebt ein neuer Nutzer den Bot? (Standardwerte sind auf späten Spielstand abgestimmt.)
 
-## Erster Start für neue Nutzer
-- [ ] ⭐ **Einrichtungs-Assistent beim ersten Start:** Sprache, Profil („Neuer Spielstand / wenig Geld“, „Mittendrin“, „Viel Geld – Sammlung voll machen“) → passende Werte (Tageslimit, Reserve, Notfall-Nachkauf, Graden), Liste fehlender Mods mit Hinweis, was dadurch aus ist.
+## Bot passt sich dem Spielverlauf an (ersetzt den starren Assistenten)
+- [ ] ⭐ **Schritt 1 – Messen & anzeigen:** Ø Einnahmen/Kosten pro Tag (letzte 3 Tage), Level, Erweiterungen, Opener/Kassen/Vitrinen/Arbeiter, Lizenzen, Sammlungsfortschritt. Daraus **Spielphase** erkennen und im Dashboard zeigen („Phase: Sammeln (erkannt)“) – noch ohne Verhalten zu ändern, ein paar Spieltage beobachten.
+  - 🌱 Start (Level < 10, wenig Geld, keine Opener): Preise, Kasse, Nachbestellen, Rechnungen – keine Sammlungs-Packs, kein Graden.
+  - 🏗️ Aufbau (wenige Opener, mittlere Einnahmen): Geld zuerst in Erweiterungen + Lizenzen, Packs maßvoll.
+  - 📦 Sammeln (viele Opener, hohe Einnahmen): Packs zuerst, Notfall-Nachkauf aktiv.
+  - 🏆 Endspiel (Sammlung > 90 %): fehlende Karten von Kunden, PSA-10-Jagd, Graden voll.
+  - Wechsel erst, wenn die Werte einen ganzen Spieltag stabil sind (kein Hin-und-her).
+- [ ] **Schritt 2 – Auto-Werte:** Grenzen aus Einnahmen statt fester Zahlen (Tageslimit = % der Ø-Tageseinnahmen je Phase, Reserve = kommende Rechnungen + Puffer, Lizenzen/Erweiterungen nur bei Amortisation in X Tagen).
+- [ ] **Lernphase** bei Einstieg mitten im Spiel: erster Spieltag vorsichtig, nur messen; ab Tag 2 mit echten Zahlen.
+- [ ] **Kontrolle:** jede Einstellung „Auto“ (Standard, zeigt aktuellen Wert + Grund) oder „Manuell“ (wird nie überschrieben); Phase im Dashboard festlegbar; Phasenwechsel als Meldung im Verlauf.
+- [ ] Beim ersten Start trotzdem kurz: Sprache + Liste fehlender Mods (was dadurch aus ist).
 - [ ] **Sprache automatisch erkennen** – nur bei Neuinstallation: Windows auf Deutsch → Deutsch, sonst Englisch.
 
 ## Installation
