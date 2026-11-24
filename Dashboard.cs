@@ -518,7 +518,10 @@ namespace ShopBot
             GUILayout.BeginVertical(_sCardFlat);
             GUILayout.Label($"<b>F9</b>  {T("Dashboard")}\n<b>F8</b>  {T("Bot on/off")}\n<b>Esc</b>  {T("Close")}", _sDim);
             GUILayout.EndVertical();
+            GUILayout.BeginHorizontal();
+            GUILayout.Space(14);   // keep clear of the rounded window edge
             GUILayout.Label($"v{Info.Metadata.Version}  ·  {T("Drag the top bar to move")}", Txt(11, CDim));
+            GUILayout.EndHorizontal();
             GUILayout.Space(6);
             GUILayout.EndVertical();
         }

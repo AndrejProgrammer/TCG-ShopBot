@@ -3,7 +3,11 @@
 Reihenfolge = Empfehlung. ⭐ = wichtig vor dem Public-Schalten.
 
 ## Vor dem Veröffentlichen
-- [ ] ⭐ **v0.6.0 im Spiel testen:** Dashboard auf Deutsch? Alte Einstellungen übernommen (Log: „settings carried over“)? Animationen flüssig? Sprach-Menü öffnet/schließt? Testbericht (`tools\testbericht.ps1`) mitlaufen lassen.
+- [x] **v0.6.0 im Spiel getestet (24.11.):** Dashboard auf Deutsch ✓, 115 Einstellungen 1:1 übernommen ✓, alle Seiten sehen gut aus ✓, Feilschen bis Runde 5 ✓, Lizenz gekauft ✓, keine Fehler im Log ✓. Sidebar-Fußzeile war links abgeschnitten → behoben (Abstand).
+- [ ] ⭐ **Fehler: Tageslimit-Zähler wird beim Neustart zurückgesetzt** (`_daySpent` nur im Speicher). Neustart am selben Spieltag → Bot darf nochmal das volle Limit ausgeben (gesehen: „Einkauf heute $0 / $60.502“ bei „Kosten heute $177.118“). Lösung: `_daySpent`, `_daySpentDay`, `_emergencySpent`, `_emergencyDay` in der Config (intern) speichern oder beim Start aus `CPlayerData.m_GameReportDataCollect.supplyCost` des Tages ableiten.
+- [ ] **Tagesbericht** zählt erst ab Spielstart statt ab Tagesbeginn (Einnahmen „$0“ nach Neustart) – Tageswerte speichern oder aus dem Spiel-Tagesbericht nehmen.
+- [ ] **Übersicht direkt nach dem Start:** „Pack-Vorrat Ziel-Sets 0 / 0“ bis zur ersten Runde → „wird berechnet …“ anzeigen.
+- [ ] 8 verwaiste deutsche Einträge aus uralten Versionen in der Config aufräumen (z. B. „Anzahl Kassierer“, „Gleichzeitige Ziel-Sets“) – stören nicht.
 - [ ] ⭐ **Testinstallation auf frischem Spielstand ohne alte Config** – wie erlebt ein neuer Nutzer den Bot? (Standardwerte sind auf späten Spielstand abgestimmt.)
 
 ## Bot passt sich dem Spielverlauf an (ersetzt den starren Assistenten)
