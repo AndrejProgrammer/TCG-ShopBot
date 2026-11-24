@@ -1257,16 +1257,19 @@ namespace ShopBot
             var shelves = ShelfManager.GetShelfList();
             if (shelves == null) return;
 
+            // what is on the shelves and how much room the labeled slots of each goods type have
             var onShelf = new Dictionary<EItemType, int>();
+            var capacity = new Dictionary<EItemType, int>();
             foreach (var shelf in shelves)
             {
                 if (shelf == null || shelf.m_ItemNotForSale) continue;
                 foreach (var comp in shelf.GetItemCompartmentList())
                 {
-                    if (comp == null) continue;
+                    if (comp == null || comp.m_ItemNotForSale) continue;
                     var t = comp.GetItemType();
                     if (t == EItemType.None) continue;
                     onShelf[t] = (onShelf.TryGetValue(t, out var c) ? c : 0) + comp.GetItemCount();
+                    capacity[t] = (capacity.TryGetValue(t, out var m) ? m : 0) + Mathf.Max(comp.GetItemCount(), comp.GetMaxItemCount());
                 }
             }
 
@@ -1280,7 +1283,8 @@ namespace ShopBot
                     if (bx != null && bx.gameObject.activeInHierarchy && !bx.m_IsStored && bx.m_ItemCompartment != null && bx.m_ItemCompartment.GetItemCount() > 0
                         && !_openerPackTypes.Contains(bx.m_ItemCompartment.GetItemType())) boxes++;
             int orders = 0;
-            foreach (var kv in onShelf.OrderBy(k => k.Value))
+            // biggest gaps first
+            foreach (var kv in onShelf.OrderByDescending(k => (capacity.TryGetValue(k.Key, out var cp) ? cp : 0) - k.Value))
             {
                 if (orders >= _restockMaxPerMinute.Value || boxes >= _colMaxBoxesOnFloor.Value) break;
                 var type = kv.Key;
@@ -1289,18 +1293,24 @@ namespace ShopBot
                 if (idx < 0) continue;
                 float cost = CaseCost(idx, out int perCase);
                 if (RecentlyOrdered(type)) continue;              // Lieferung noch unterwegs
-                int total = kv.Value + (inBoxes.TryGetValue(type, out var b) ? b : 0) + (inDelivery.TryGetValue(type, out var dl) ? dl : 0);
-                if (total >= perCase / 2) continue;               // noch genug da
+                // Gap = room in all labeled slots of this goods minus what is on them. Before, "enough" was the shelf total –
+                // a few half-full slots hid 26 completely empty ones, so nothing was ordered.
+                int missing = (capacity.TryGetValue(type, out var capT) ? capT : 0) - kv.Value;
+                int available = (inBoxes.TryGetValue(type, out var b) ? b : 0) + (inDelivery.TryGetValue(type, out var dl) ? dl : 0);
+                int gap = missing - available;
+                if (gap < Mathf.Max(1, perCase / 2)) continue;     // boxes on the floor / on the way cover it
+                int cases = Mathf.Clamp(Mathf.CeilToInt(gap / (float)Mathf.Max(1, perCase)), 1, 3);
                 // Shelf goods earn money: only the safety budget applies, not the pack daily limit
                 // (pack buying used it up within minutes, so the shelves were never restocked)
-                if (Budget < cost * 1.1f) continue;
+                cases = Mathf.Min(cases, (int)(Budget / (cost * 1.1f)));
+                if (cases < 1) continue;
 
-                if (BuyRestockIndex(idx, type, 1))
+                if (BuyRestockIndex(idx, type, cases))
                 {
-                    MarkOrdered(type); MarkSpent(cost);
-                    orders++; boxes++;
-                    _statSpent += cost;
-                    NoteF($"Reordered: {InventoryBase.GetItemData(type)?.GetName() ?? type.ToString()} (1 box, ~{GameInstance.GetPriceString(cost)})");
+                    MarkOrdered(type); MarkSpent(cost * cases);
+                    orders++; boxes += cases;
+                    _statSpent += cost * cases;
+                    NoteF($"Reordered: {InventoryBase.GetItemData(type)?.GetName() ?? type.ToString()} ({cases} boxes, ~{GameInstance.GetPriceString(cost * cases)}) – {missing} free on the shelves");
                 }
             }
         }

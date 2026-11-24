@@ -297,6 +297,8 @@ namespace ShopBot
                 if (b == null || !b.gameObject.activeInHierarchy || b.m_ItemCompartment == null || b.m_IsStored) continue;
                 if (b.m_ItemCompartment.GetItemCount() <= 0 || !b.CanWorkerTakeBox()) continue;
                 if (!_openerPackTypes.Contains(b.m_ItemCompartment.GetItemType())) continue;
+                // shelves first: while labeled shelf slots of these packs still miss items, the box stays for the shelves
+                if (_stockSelf.Value && _shelfNeed.TryGetValue(b.m_ItemCompartment.GetItemType(), out var need) && need > 0) continue;
                 onFloor++;
                 var tb = Traverse.Create(b);
                 if (BoxBusy(b)) continue;
@@ -371,6 +373,21 @@ namespace ShopBot
             var rm = S<RestockManager>();
             var shelves = ShelfManager.GetShelfList();
             if (rm == null || shelves == null) return;
+
+            // how many items the labeled slots of each goods type still miss – the openers leave these boxes for the shelves
+            _shelfNeed.Clear();
+            foreach (var shelf in shelves)
+            {
+                if (shelf == null || shelf.m_ItemNotForSale || !shelf.IsValidObject()) continue;
+                foreach (var comp in shelf.GetItemCompartmentList())
+                {
+                    if (comp == null || comp.m_ItemNotForSale || !comp.m_CanPutItem) continue;
+                    var t = comp.GetItemType();
+                    if (t == EItemType.None) continue;
+                    int miss = comp.GetMaxItemCount() - comp.GetItemCount();
+                    if (miss > 0) _shelfNeed[t] = (_shelfNeed.TryGetValue(t, out var n) ? n : 0) + miss;
+                }
+            }
 
             // verfügbare Kartons nach Ware (nicht getragen, nicht unterwegs)
             var boxes = new Dictionary<EItemType, List<InteractablePackagingBox_Item>>();
@@ -464,6 +481,7 @@ namespace ShopBot
         }
 
         private float _emptySlotPullAt, _shelfStatAt = 30f;
+        private readonly Dictionary<EItemType, int> _shelfNeed = new Dictionary<EItemType, int>();
         private int _shelfStatMoved, _shelfStatEmpty, _shelfPullTries, _shelfPulled, _dispTry, _dispOk;
         internal string _dashShelfStatus = "";
         private string _dispWhy = "";
