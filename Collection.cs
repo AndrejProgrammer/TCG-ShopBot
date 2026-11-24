@@ -109,7 +109,7 @@ namespace ShopBot
             _colFills = Config.Bind("7. Collection", "Stock in opener fills", 2f, "Stock = capacity of ALL pack openers x this value (e.g. 11 openers x 448 packs x 2 = 9856 packs), split across the target sets. Adapts automatically when you add openers.");
             _colBudgetPerExtraSet = Config.Bind("7. Collection", "Budget per extra target set ($)", 50000f, "For every this much money above the reserve, one more target set is worked on at the same time. 0 = off.");
             _colPokemonOnly = Config.Bind("7. Collection", "Pokémon sets only", true, "Only sets from Pokémon shops (Pokemon Shop, Pokemon Pocket Shop) – no Tetramon/base game sets.");
-            _dayBuyLimit = Config.Bind("7. Collection", "Daily purchase limit ($)", 60000f, "The bot spends at most this much per game day on packs/displays (collection + restocking + reviews). 0 = no limit.");
+            _dayBuyLimit = Config.Bind("7. Collection", "Daily purchase limit ($)", 60000f, "The bot spends at most this much per game day on packs for the collection. Restocking the shop shelves is not limited by it (only the safety reserve). 0 = no limit.");
             _dayBuyLimitPercent = Config.Bind("7. Collection", "Daily limit at least percent of money", 0f, "The daily limit grows with your money: at least this percent of the money above the reserve. 0 = off (fixed value only).");
             _maxStockPacks = Config.Bind("7. Collection", "Max packs in stock overall", 15000, "Upper limit for the pack stock of all target sets together – no matter how much money there is.");
             _colMaxFocusSets = Config.Bind("7. Collection", "Max target sets at once", 10, "Upper limit for the number of target sets at the same time.");
@@ -123,7 +123,7 @@ namespace ShopBot
 
             _bulkEnabled = Config.Bind("8. Card storage", "Put duplicates into card storage", true, "Puts duplicate cards into the card storage so they end up in the display cases. 1 copy always stays in the album.");
             _bulkMaxValue = Config.Bind("8. Card storage", "Only cards below ($)", 100f, "More valuable duplicates stay in the album.");
-            _bulkMaxPerRun = Config.Bind("8. Card storage", "Max cards per run", 2000, "Limit per run (every 5 minutes).");
+            _bulkMaxPerRun = Config.Bind("8. Card storage", "Max cards per run", 2000, "Limit per card storage and run (every 2 minutes).");
             _gradedSell = Config.Bind("8. Card storage", "Sell graded cards first", true, "Graded cards go into the card storage first -> display cases (market price +20 %). Normal duplicates only when no graded cards are waiting.");
             _gradedKeepTen = Config.Bind("8. Card storage", "Grade 10 (PSA 10): only sell duplicates", true, "One of every grade 10 card always stays in the album.");
 
@@ -152,7 +152,7 @@ namespace ShopBot
             DayReportTick();
 
             if (_colEnabled.Value && (_colTimer += 1f) >= 60f) { _colTimer = 0f; SafeRun("Collection", CollectionTick); }
-            if (_bulkEnabled.Value && (_bulkTimer += 1f) >= 300f) { _bulkTimer = 0f; SafeRun("Card storage", BulkTick); }
+            if (_bulkEnabled.Value && (_bulkTimer += 1f) >= 120f) { _bulkTimer = 0f; SafeRun("Card storage", BulkTick); }
             if (_workersAuto.Value && (_workerTimer += 1f) >= 60f) { _workerTimer = 0f; SafeRun("Workers", WorkerTick); }
             if (_restockEnabled.Value && (_restockTimer += 1f) >= 60f) { _restockTimer = 0f; SafeRun("Restocking", RestockTick); }
             HandleUpgrades();
@@ -266,13 +266,12 @@ namespace ShopBot
                 }
                 float cost = CaseCost(idx, out int perCase);
                 int cases = Mathf.Clamp(_reviewCases.Value, 1, Mathf.Max(1, (int)(Budget / (cost * 1.1f))));
-                cases = Mathf.Min(cases, (int)(DayLeft() / Mathf.Max(0.01f, cost)));
+                // goods customers miss earn money: not limited by the pack daily limit (only the safety budget)
                 if (Budget < cost * 1.1f || cases < 1) break;
                 if (BuyRestockIndex(idx, type, cases))
                 {
                     MarkOrdered(type); MarkSpent(cost * cases);
                     _statSpent += cost * cases;
-                    AddDaySpent(cost * cases);
                     NoteF($"Customers miss {name} ({kv.Value}x) – ordered {cases} boxes (~{GameInstance.GetPriceString(cost * cases)})");
                 }
             }
@@ -952,70 +951,84 @@ namespace ShopBot
             if (shelves == null || shelves.Count == 0) return;
             var valid = shelves.Where(s => s != null && s.IsValidObject() && s.CanWorkerTake() && !s.IsEditingBulkBox()).ToList();
             if (valid.Count == 0) return;
-            var target = valid.FirstOrDefault(s => s.GetTotalCardAmount() < s.GetBoxTotalCardCountMax());
+            int Free(InteractableCardStorageShelf s) => s.GetBoxTotalCardCountMax() - s.GetTotalCardAmount();
 
-            // 1) Gegradete Karten zuerst verkaufen (PSA 10 nur Duplikate – eine bleibt immer)
+            // 1) Graded cards first (PSA 10 only duplicates – one always stays): into the storage with the most room
             if (_gradedSell.Value)
             {
                 int need = SellableGradedPoints();
                 if (need > 0)
                 {
-                    // Ablage voll? Billigste normale Doppelte zurück ins Album, damit die gegradeten Platz haben
-                    var gt = target ?? valid[0];
-                    int free = gt.GetBoxTotalCardCountMax() - gt.GetTotalCardAmount();
-                    if (free < need)
+                    var gt = valid.OrderByDescending(Free).First();
+                    // Storage full? Cheapest normal duplicates back to the album so the graded cards fit
+                    if (Free(gt) < need)
                     {
-                        int back = ReturnCheapCardsToAlbum(gt, Mathf.Min(need - free, 5000), out float backValue);
+                        int back = ReturnCheapCardsToAlbum(gt, Mathf.Min(need - Free(gt), 5000), out float backValue);
                         if (back > 0) NoteF($"Card storage full: {back} cheap duplicates (~{GameInstance.GetPriceString(backValue)}) back to the album – room for graded cards");
                     }
-                    target = gt;
+                    var glist = gt.GetCompactCardDataAmountList();
+                    int g = MoveGradedToStorage(glist, Mathf.Max(0, Free(gt)), out float gValue);
+                    if (g > 0)
+                    {
+                        gt.SetCompactCardDataAmountList(glist);
+                        S<InteractionPlayerController>()?.m_CollectionBinderFlipAnimCtrl?.SetCanUpdateSort(true);
+                        _statBulk += g;
+                        NoteF($"Card storage: {g} graded cards put up for sale (value ~{GameInstance.GetPriceString(gValue)})");
+                    }
                 }
             }
-            if (target == null) return;
 
-            int room = target.GetBoxTotalCardCountMax() - target.GetTotalCardAmount();
-            int budget = Mathf.Min(room, _bulkMaxPerRun.Value);
-            var list = target.GetCompactCardDataAmountList();
-
-            if (_gradedSell.Value)
-            {
-                int g = MoveGradedToStorage(list, Mathf.Max(0, target.GetBoxTotalCardCountMax() - target.GetTotalCardAmount()), out float gValue);
-                if (g > 0)
-                {
-                    target.SetCompactCardDataAmountList(list);
-                    S<InteractionPlayerController>()?.m_CollectionBinderFlipAnimCtrl?.SetCanUpdateSort(true);
-                    _statBulk += g;
-                    NoteF($"Card storage: {g} graded cards put up for sale (value ~{GameInstance.GetPriceString(gValue)})");
-                }
-                // Solange noch gegradete Karten in der Ablage warten, keine normalen Karten dazu -> Vitrinen zeigen zuerst gegradete
-                if (list.Any(e => e.gradedCardIndex > 0)) return;
-            }
-
-            // Normale Doppelte: verteilt über mehrere Bilder (ein Set pro Bild), damit nichts ruckelt
-            if (!_bulkRunning) StartCoroutine(BulkRawRoutine(target, list, budget));
+            // 2) Normal duplicates into ALL storages with room. Storages with graded cards waiting stay free for them
+            //    (so the display cases show graded cards first) – unless every storage has graded cards.
+            var withRoom = valid.Where(s => Free(s) > 0).ToList();
+            var noGraded = withRoom.Where(s => !_gradedSell.Value || !s.GetCompactCardDataAmountList().Any(e => e.gradedCardIndex > 0)).ToList();
+            var targets = (noGraded.Count > 0 ? noGraded : withRoom)
+                .Select(s => (shelf: s, list: s.GetCompactCardDataAmountList(), budget: Mathf.Min(Free(s), _bulkMaxPerRun.Value)))
+                .Where(t => t.budget > 0).ToList();
+            // Normal duplicates: spread over several frames (one set per frame) so nothing stutters
+            if (targets.Count > 0 && !_bulkRunning) StartCoroutine(BulkRawRoutine(targets));
         }
 
         private bool _bulkRunning;
 
-        private System.Collections.IEnumerator BulkRawRoutine(InteractableCardStorageShelf target, List<CompactCardDataAmount> list, int budget)
+        // Fills the targets one after another: when one storage is full (its budget used up), the next one continues
+        private System.Collections.IEnumerator BulkRawRoutine(List<(InteractableCardStorageShelf shelf, List<CompactCardDataAmount> list, int budget)> targets)
         {
             _bulkRunning = true;
-            int moved = 0; float value = 0f;
+            int moved = 0, total = 0, usedShelves = 0; float value = 0f;
             List<SetInfo> sets;
             try { sets = GetSets(); } catch { _bulkRunning = false; yield break; }
             float bulkLimit = _gradeEnabled.Value ? Mathf.Min(_bulkMaxValue.Value, _gradeMinValue.Value) : _bulkMaxValue.Value;
 
+            int ti = 0;
+            var target = targets[0].shelf; var list = targets[0].list; int budget = targets[0].budget;
+            void Flush()
+            {
+                if (moved <= 0 || target == null) return;
+                target.SetCompactCardDataAmountList(list);
+                total += moved; usedShelves++; moved = 0;
+            }
+            bool Next()
+            {
+                Flush();
+                if (++ti >= targets.Count) return false;
+                target = targets[ti].shelf; list = targets[ti].list; budget = targets[ti].budget;
+                return true;
+            }
+
             foreach (var set in sets)
             {
-                if (budget <= 0 || target == null) break;
+                if (budget <= 0 && !Next()) break;
+                if (target == null) break;
                 try
                 {
                     foreach (bool dim in set.Type == ECardExpansionType.Ghost ? new[] { false, true } : new[] { false })
                     {
                         var collected = CPlayerData.GetCardCollectedList(set.Type, dim);
                         int count = collected != null ? collected.Count : set.Total;
-                        for (int i = 0; i < count && budget > 0; i++)
+                        for (int i = 0; i < count; i++)
                         {
+                            if (budget <= 0 && !Next()) break;   // this storage is full -> next one
                             CardData cd;
                             try { cd = CPlayerData.GetCardData(i, set.Type, dim); } catch { continue; }
                             if (cd == null || cd.cardGrade > 0) continue;
@@ -1034,12 +1047,12 @@ namespace ShopBot
                 yield return null; // nächstes Set im nächsten Bild
             }
 
-            if (moved > 0 && target != null)
+            Flush();
+            if (total > 0)
             {
-                target.SetCompactCardDataAmountList(list);
                 S<InteractionPlayerController>()?.m_CollectionBinderFlipAnimCtrl?.SetCanUpdateSort(true);
-                _statBulk += moved;
-                NoteF($"Card storage: {moved} duplicate cards (value ~{GameInstance.GetPriceString(value)}) put in");
+                _statBulk += total;
+                NoteF($"Card storage: {total} duplicate cards (value ~{GameInstance.GetPriceString(value)}) put in ({usedShelves} storages)");
             }
             _bulkRunning = false;
         }
@@ -1257,8 +1270,15 @@ namespace ShopBot
                 }
             }
 
-            var inBoxes = CountItemsInBoxes(out int boxes);
+            var inBoxes = CountItemsInBoxes(out _);
             var inDelivery = CountItemsInDelivery();
+            // Box cap: only boxes for the shop shelves count – the many pack boxes for the openers must not block restocking
+            int boxes = 0;
+            var rmb = S<RestockManager>();
+            if (rmb != null)
+                foreach (var bx in rmb.m_ItemPackagingBoxList)
+                    if (bx != null && bx.gameObject.activeInHierarchy && !bx.m_IsStored && bx.m_ItemCompartment != null && bx.m_ItemCompartment.GetItemCount() > 0
+                        && !_openerPackTypes.Contains(bx.m_ItemCompartment.GetItemType())) boxes++;
             int orders = 0;
             foreach (var kv in onShelf.OrderBy(k => k.Value))
             {
@@ -1271,14 +1291,15 @@ namespace ShopBot
                 if (RecentlyOrdered(type)) continue;              // Lieferung noch unterwegs
                 int total = kv.Value + (inBoxes.TryGetValue(type, out var b) ? b : 0) + (inDelivery.TryGetValue(type, out var dl) ? dl : 0);
                 if (total >= perCase / 2) continue;               // noch genug da
-                if (Budget < cost * 1.1f || DayLeft() < cost) break;
+                // Shelf goods earn money: only the safety budget applies, not the pack daily limit
+                // (pack buying used it up within minutes, so the shelves were never restocked)
+                if (Budget < cost * 1.1f) continue;
 
                 if (BuyRestockIndex(idx, type, 1))
                 {
                     MarkOrdered(type); MarkSpent(cost);
                     orders++; boxes++;
                     _statSpent += cost;
-                    AddDaySpent(cost);
                     NoteF($"Reordered: {InventoryBase.GetItemData(type)?.GetName() ?? type.ToString()} (1 box, ~{GameInstance.GetPriceString(cost)})");
                 }
             }

@@ -2,6 +2,13 @@
 
 Ausführliche Entwickler-Notizen: [docs/ENTWICKLUNG.md](docs/ENTWICKLUNG.md)
 
+## 0.6.2 – 25.11.2026
+- **Fix – shop shelves were never restocked:** reordering goods for the shelves (and goods customers miss) no longer counts against the pack daily limit – pack buying used it up within minutes. The many pack boxes for the openers no longer count toward the box limit either. Only the safety reserve applies.
+- **Empty shelves without a label get filled:** the bot picks goods itself – boxes on the floor whose goods have the fewest shelf slots, otherwise goods from the storage shelf that are on no shelf yet. Never packs meant for the openers. The first item is placed the game's own way, so the game checks the fit and labels the slot. Can be switched off.
+- **All card storages are used:** duplicates are spread over every card storage with room (not only the first one); a single graded card no longer blocks the duplicates. Graded cards go into the storage with the most room. Runs every 2 minutes instead of 5.
+- **Display cases take cards from all card storages** – the ones with graded cards first.
+- Selling rules unchanged: normal cards only as duplicates (one copy always stays, sets stay complete), graded cards first, exactly one PSA 10 of every card stays.
+
 ## 0.6.1 – 25.11.2026
 - **Fix – daily limit after a restart:** "spent today" is now kept when you restart the game on the same game day (saved by the bot, with the game's own day report as fallback). Before, the bot could spend the daily limit twice. The emergency limit is kept too.
 - **Daily report survives a restart:** today's numbers and the last 7 days are saved – the pace ("new cards per day") no longer starts from zero.

@@ -11,7 +11,7 @@ namespace ShopBot
     // 2) Bot räumt selbst ein: Ware aus Kartons in Regale, Karten aus der Kartenablage in leere Vitrinen-Plätze
     public partial class Plugin
     {
-        private ConfigEntry<bool> _licEnabled, _licPokemonOnly, _stockSelf, _cardsSelf;
+        private ConfigEntry<bool> _licEnabled, _licPokemonOnly, _stockSelf, _cardsSelf, _stockEmptySlots;
         private ConfigEntry<float> _licMoneyFactor;
         private ConfigEntry<string> _licBought;   // dauerhaft: schon gekaufte Lizenzen (Artikel-NAMEN – Typ-Nummern der Mods ändern sich pro Start)
         private HashSet<string> _licBoughtSet;
@@ -51,6 +51,8 @@ namespace ShopBot
             _hireMax = Config.Bind("9. Workers", "Max workers (0 means all)", 0, "At most this many workers in total.");
             _hireMoneyFactor = Config.Bind("9. Workers", "Only hire if budget is at least X times the hiring fee", 10f, "Safety so enough money stays for packs.");
             _stockSelf = Config.Bind("16. Self-stocking", "Bot stocks shelves itself", true, "Puts goods from boxes straight into shelf slots meant for those goods (in addition to the workers).");
+            _stockEmptySlots = Config.Bind("16. Self-stocking", "Fill empty shelf slots without a label", true,
+                "Empty shelf slots that are not assigned to any goods yet get goods the bot chooses: boxes on the floor whose goods have the fewest shelf slots, otherwise goods from the storage shelf that are on no shelf yet. Never packs meant for the openers.");
             _stockPerSecond = Config.Bind("16. Self-stocking", "Items per second", 6, "How fast the bot stocks.");
             _cardsSelf = Config.Bind("16. Self-stocking", "Bot fills empty display slots", true, "Takes cards from the card storage and puts them into empty card slots.");
             _cardsPerSecond = Config.Bind("16. Self-stocking", "Cards per second", 2, "How fast the bot fills display cases.");
@@ -416,8 +418,6 @@ namespace ShopBot
                     }
                 }
             }
-            if (boxes.Count == 0) return;
-
             int moved = 0;
             foreach (var shelf in shelves)
             {
@@ -445,7 +445,72 @@ namespace ShopBot
                     }
                 }
             }
+            if (_stockEmptySlots.Value && budget > 0) moved += FillEmptySlots(shelves, boxes, ref budget);
             if (moved > 0) { _statSelfStocked += moved; if (_statSelfStocked % 50 < moved) NoteF($"Stocked by the bot: {_statSelfStocked} items in total"); }
+        }
+
+        private float _emptySlotPullAt;
+
+        // Empty shelf slots without a label: choose goods and put them in (the game assigns the slot to the goods)
+        private int FillEmptySlots(List<Shelf> shelves, Dictionary<EItemType, List<InteractablePackagingBox_Item>> boxes, ref int budget)
+        {
+            // how many slots each kind of goods already has
+            var slots = new Dictionary<EItemType, int>();
+            var empty = new List<(Shelf shelf, ShelfCompartment comp)>();
+            foreach (var shelf in shelves)
+            {
+                if (shelf == null || shelf.m_ItemNotForSale || !shelf.IsValidObject()) continue;
+                foreach (var comp in shelf.GetItemCompartmentList())
+                {
+                    if (comp == null || comp.m_ItemNotForSale) continue;
+                    var t = comp.GetItemType();
+                    if (t != EItemType.None) slots[t] = (slots.TryGetValue(t, out var n) ? n : 0) + 1;
+                    else if (comp.m_CanPutItem && comp.GetItemCount() == 0) empty.Add((shelf, comp));
+                }
+            }
+            if (empty.Count == 0) return 0;
+
+            bool ShelfGoods(EItemType t) => t != EItemType.None && !_openerPackTypes.Contains(t);   // never the opener packs
+            int moved = 0;
+            foreach (var (shelf, comp) in empty)
+            {
+                if (budget <= 0) break;
+                // goods on the floor with the fewest shelf slots
+                var pick = boxes.Where(kv => ShelfGoods(kv.Key) && kv.Value.Count > 0)
+                                .OrderBy(kv => slots.TryGetValue(kv.Key, out var n) ? n : 0).Select(kv => kv.Key).FirstOrDefault();
+                if (pick == EItemType.None)
+                {
+                    // nothing suitable on the floor: fetch goods from the storage shelf that are on no shelf yet (one box every 3 s)
+                    if (_pullFromStorage.Value && Time.unscaledTime >= _emptySlotPullAt)
+                    {
+                        _emptySlotPullAt = Time.unscaledTime + 3f;
+                        PullFromStorage(x => ShelfGoods(x) && !slots.ContainsKey(x) ? 0 : -1, 1, shelf.transform.position);
+                    }
+                    break;
+                }
+                var list = boxes[pick];
+                int before = moved;
+                // first item the way the game does it (like the player placing it): the game checks the fit and labels the slot
+                var first = list.FirstOrDefault(x => x != null && x.m_ItemCompartment.GetItemCount() > 0 && RealItemCount(x) > 0);
+                if (first == null) { boxes.Remove(pick); continue; }
+                try { first.DispenseItem(false, comp); } catch { }
+                if (comp.GetItemType() != pick || comp.GetItemCount() == 0) { boxes.Remove(pick); continue; }   // does not fit here -> try other goods next time
+                budget--; moved++;
+                while (budget > 0 && comp.HasEnoughSlot() && list.Count > 0)
+                {
+                    var box = list[0];
+                    if (box.m_ItemCompartment.GetItemCount() <= 0 || RealItemCount(box) <= 0) { list.RemoveAt(0); continue; }
+                    if (comp.CheckItemType(pick) != pick) break;          // this slot does not take these goods
+                    var item = box.m_ItemCompartment.GetFirstItem();
+                    if (item == null) { list.RemoveAt(0); continue; }
+                    item.LerpToTransform(comp.GetEmptySlotTransform(), comp.GetEmptySlotParent());
+                    comp.AddItem(item, false);
+                    box.m_ItemCompartment.RemoveItem(item);
+                    budget--; moved++;
+                }
+                if (moved > before) slots[pick] = (slots.TryGetValue(pick, out var c) ? c : 0) + 1;
+            }
+            return moved;
         }
 
         private void StockCards()
@@ -457,25 +522,32 @@ namespace ShopBot
             var storages = ShelfManager.GetCardStorageShelfList();
             var cardShelves = ShelfManager.GetCardShelfList();
             if (storages == null || cardShelves == null) return;
-            var storage = storages.FirstOrDefault(s => s != null && s.IsValidObject() && s.CanWorkerTake() && !s.IsEditingBulkBox() && s.GetTotalCardAmount() > 0);
-            if (storage == null) return;
+            // all card storages with cards – the ones with graded cards first, so the display cases show them first
+            var queue = storages.Where(s => s != null && s.IsValidObject() && s.CanWorkerTake() && !s.IsEditingBulkBox() && s.GetTotalCardAmount() > 0)
+                                .OrderByDescending(s => s.GetCompactCardDataAmountList()?.Any(e => e.gradedCardIndex > 0) ?? false).ToList();
+            if (queue.Count == 0) return;
+            int qi = 0;
+            var storage = queue[0];
+            bool outOfCards = false;
 
             int placed = 0;
             foreach (var cs in cardShelves)
             {
-                if (budget <= 0) break;
+                if (budget <= 0 || outOfCards) break;
                 if (cs == null || !cs.IsValidObject()) continue;
                 foreach (var comp in cs.GetCardCompartmentList())
                 {
                     if (budget <= 0) break;
                     if (comp == null || comp.m_ItemNotForSale || comp.m_StoredCardList.Count > 0 || comp.IsSettingPrice()) continue;
-                    var card = TakeCardGradedFirst(storage);               // wie der Arbeiter "Vitrinen befüllen", aber gegradete zuerst
-                    if (card == null) return;
+                    var card = TakeCardGradedFirst(storage);               // like the worker task "fill display cases", but graded first
+                    while (card == null && ++qi < queue.Count) { storage = queue[qi]; card = TakeCardGradedFirst(storage); }   // storage empty -> next one
+                    if (card == null) { outOfCards = true; break; }
                     card.transform.position = storage.transform.position + Vector3.up;
                     comp.SetCardOnShelf(card);
                     budget--; placed++;
                 }
             }
+            if (outOfCards && placed == 0) return;                   // storages empty – not a "display cases full" situation
             if (placed > 0)
             {
                 _statSelfCards += placed;

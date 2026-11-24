@@ -10,6 +10,7 @@ Reihenfolge = Empfehlung. ⭐ = wichtig vor dem Public-Schalten.
 - [x] (0.6.1) 8 verwaiste deutsche Einträge aus uralten Versionen in der Config aufräumen (z. B. „Anzahl Kassierer“, „Gleichzeitige Ziel-Sets“) – stören nicht.
 - [ ] ⭐ **Testinstallation auf frischem Spielstand ohne alte Config** – wie erlebt ein neuer Nutzer den Bot? (Standardwerte sind auf späten Spielstand abgestimmt.)
 
+- [ ] **0.6.2 im Spiel prüfen:** Log „Reordered: …“ erscheint, beschriftete Regale werden voll; leere Regale ohne Etikett bekommen Ware (keine Opener-Packs!); Kartenablage-Meldung „… (N storages)“ mit N > 1; Vitrinen bekommen Karten aus allen Ablagen.
 - [ ] **0.6.1 im Spiel prüfen:** Neustart am selben Tag → Log „already spent today (restored after restart)“, Dashboard „Einkauf heute“ nicht $0; Tagesbericht/Tempo nach Neustart weiter da; Log „unused old entries removed“.
 
 ## Bot passt sich dem Spielverlauf an (ersetzt den starren Assistenten)

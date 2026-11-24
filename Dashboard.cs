@@ -784,7 +784,7 @@ namespace ShopBot
             float dayLim = DayLimit;
             ProgressCard(T("Purchases today (bot)"), dayLim > 0 ? $"{Money(spentToday)} / {Money(dayLim)}" : Money(spentToday),
                 dayLim > 0 ? Mathf.Clamp01(spentToday / dayLim) : 0f, spentToday >= dayLim && dayLim > 0 ? CRed : CAccent,
-                T("Packs, displays, reorders – limit under Collection"));
+                T("Packs for the collection – shelf restocking is not limited"));
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
@@ -980,6 +980,7 @@ namespace ShopBot
             Two(() =>
             {
                 Switch(_stockSelf, T("Bot stocks shelves itself"), T("goods from boxes into matching shelf slots"));
+                Switch(_stockEmptySlots, T("Fill empty shelves without a label"), T("the bot picks goods – never packs for the openers"));
                 SliderInt(_stockPerSecond, T("Items per second"), 1, 30, "");
                 Switch(_cardsSelf, T("Bot fills empty display slots"), T("cards from the card storage"));
                 SliderInt(_cardsPerSecond, T("Cards per second"), 1, 10, "");
