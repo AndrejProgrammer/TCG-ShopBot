@@ -31,6 +31,7 @@
 {0} packs put in by the bot = {0} packs put in by the bot
 {0} purchases · {1} swaps · {2} declined = {0} purchases · {1} swaps · {2} declined
 {0} sent · {1} back = {0} sent · {1} back
+{0} slots · empty: {1} labeled, {2} without label = {0} slots · empty: {1} labeled, {2} without label
 % of market price – reselling +20 % = % of market price – reselling +20 %
 +1 level per bonus, double experience = +1 level per bonus, double experience
 0 \= no cap = 0 \= no cap

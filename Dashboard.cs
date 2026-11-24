@@ -977,6 +977,7 @@ namespace ShopBot
             });
 
             Section(T("Self-stocking & new products"), F($"{_statSelfStocked} items · {_statSelfCards} cards stocked"));
+            if (_dashShelfStatus.Length > 0) GUILayout.Label(_dashShelfStatus, _sDim);
             Two(() =>
             {
                 Switch(_stockSelf, T("Bot stocks shelves itself"), T("goods from boxes into matching shelf slots"));

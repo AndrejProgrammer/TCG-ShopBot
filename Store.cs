@@ -445,11 +445,47 @@ namespace ShopBot
                     }
                 }
             }
-            if (_stockEmptySlots.Value && budget > 0) moved += FillEmptySlots(shelves, boxes, ref budget);
+            int intoEmpty = 0;
+            if (_stockEmptySlots.Value && budget > 0) { intoEmpty = FillEmptySlots(shelves, boxes, ref budget); moved += intoEmpty; }
+            _shelfStatMoved += moved; _shelfStatEmpty += intoEmpty;
+            if (Time.unscaledTime >= _shelfStatAt) { _shelfStatAt = Time.unscaledTime + 60f; LogShelfStatus(shelves, boxes); }
             if (moved > 0) { _statSelfStocked += moved; if (_statSelfStocked % 50 < moved) NoteF($"Stocked by the bot: {_statSelfStocked} items in total"); }
         }
 
-        private float _emptySlotPullAt;
+        private float _emptySlotPullAt, _shelfStatAt = 30f;
+        private int _shelfStatMoved, _shelfStatEmpty;
+        internal string _dashShelfStatus = "";
+
+        // Once a minute: how the shelves look (so you can see in the log whether stocking works)
+        private void LogShelfStatus(List<Shelf> shelves, Dictionary<EItemType, List<InteractablePackagingBox_Item>> boxes)
+        {
+            int slots = 0, emptyLabeled = 0, emptyUnlabeled = 0;
+            var missing = new Dictionary<string, int>();
+            var stock = CountItemsInBoxes(out _);
+            foreach (var shelf in shelves)
+            {
+                if (shelf == null || shelf.m_ItemNotForSale || !shelf.IsValidObject()) continue;
+                foreach (var comp in shelf.GetItemCompartmentList())
+                {
+                    if (comp == null || comp.m_ItemNotForSale) continue;
+                    slots++;
+                    if (comp.GetItemCount() > 0) continue;
+                    var t = comp.GetItemType();
+                    if (t == EItemType.None) { emptyUnlabeled++; continue; }
+                    emptyLabeled++;
+                    if (!stock.TryGetValue(t, out var have) || have <= 0)
+                    {
+                        string n = t.ToString();
+                        try { n = InventoryBase.GetItemData(t)?.GetName() ?? n; } catch { }
+                        missing[n] = (missing.TryGetValue(n, out var c) ? c : 0) + 1;
+                    }
+                }
+            }
+            string miss = missing.Count == 0 ? "-" : string.Join(", ", missing.OrderByDescending(k => k.Value).Take(6).Select(k => $"{k.Key} ({k.Value})"));
+            Logger.LogInfo($"[Shelves] {slots} slots, empty: {emptyLabeled} labeled + {emptyUnlabeled} without label | last minute: {_shelfStatMoved} items stocked, {_shelfStatEmpty} into slots without label | no box for: {miss}");
+            _dashShelfStatus = F($"{slots} slots · empty: {emptyLabeled} labeled, {emptyUnlabeled} without label");
+            _shelfStatMoved = 0; _shelfStatEmpty = 0;
+        }
         private readonly Dictionary<EItemType, bool> _isBoxGoods = new Dictionary<EItemType, bool>();
 
         // Booster box / display (several packs in one product) – recognised by its name
