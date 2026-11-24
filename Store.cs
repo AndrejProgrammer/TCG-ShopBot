@@ -11,7 +11,7 @@ namespace ShopBot
     // 2) Bot räumt selbst ein: Ware aus Kartons in Regale, Karten aus der Kartenablage in leere Vitrinen-Plätze
     public partial class Plugin
     {
-        private ConfigEntry<bool> _licEnabled, _licPokemonOnly, _stockSelf, _cardsSelf, _stockEmptySlots;
+        private ConfigEntry<bool> _licEnabled, _licPokemonOnly, _stockSelf, _cardsSelf, _stockEmptySlots, _relabelEmpty;
         private ConfigEntry<float> _licMoneyFactor;
         private ConfigEntry<string> _licBought;   // dauerhaft: schon gekaufte Lizenzen (Artikel-NAMEN – Typ-Nummern der Mods ändern sich pro Start)
         private HashSet<string> _licBoughtSet;
@@ -52,7 +52,9 @@ namespace ShopBot
             _hireMoneyFactor = Config.Bind("9. Workers", "Only hire if budget is at least X times the hiring fee", 10f, "Safety so enough money stays for packs.");
             _stockSelf = Config.Bind("16. Self-stocking", "Bot stocks shelves itself", true, "Puts goods from boxes straight into shelf slots meant for those goods (in addition to the workers).");
             _stockEmptySlots = Config.Bind("16. Self-stocking", "Fill empty shelf slots without a label", true,
-                "Empty shelf slots that are not assigned to any goods yet get goods the bot chooses: boxes on the floor whose goods have the fewest shelf slots, otherwise goods from the storage shelf that are on no shelf yet. Never packs meant for the openers.");
+                "Empty shelf slots that are not assigned to any goods yet get goods the bot chooses: booster boxes/displays first, then packs (also of the new sets).");
+            _relabelEmpty = Config.Bind("16. Self-stocking", "Relabel empty slots whose goods are gone", true,
+                "An empty labeled slot whose goods are nowhere left (no box, nothing on the way) gets goods that are here – booster boxes/displays first, then packs of the new sets.");
             _stockPerSecond = Config.Bind("16. Self-stocking", "Items per second", 6, "How fast the bot stocks.");
             _cardsSelf = Config.Bind("16. Self-stocking", "Bot fills empty display slots", true, "Takes cards from the card storage and puts them into empty card slots.");
             _cardsPerSecond = Config.Bind("16. Self-stocking", "Cards per second", 2, "How fast the bot fills display cases.");
@@ -482,7 +484,7 @@ namespace ShopBot
 
         private float _emptySlotPullAt, _shelfStatAt = 30f;
         private readonly Dictionary<EItemType, int> _shelfNeed = new Dictionary<EItemType, int>();
-        private int _shelfStatMoved, _shelfStatEmpty, _shelfPullTries, _shelfPulled, _dispTry, _dispOk;
+        private int _shelfStatMoved, _shelfStatEmpty, _shelfPullTries, _shelfPulled, _dispTry, _dispOk, _relabelTry, _relabelOk;
         internal string _dashShelfStatus = "";
         private string _dispWhy = "";
         private void DispWhy(string m) { if (_dispWhy.Length == 0) _dispWhy = m; }
@@ -539,9 +541,9 @@ namespace ShopBot
                 }
             }
             string miss = missing.Count == 0 ? "-" : string.Join(", ", missing.OrderByDescending(k => k.Value).Take(6).Select(k => $"{k.Key} ({k.Value})"));
-            Logger.LogInfo($"[Shelves] {slots} slots, empty: {emptyLabeled} labeled + {emptyUnlabeled} without label | last minute: {_shelfStatMoved} items stocked, {_shelfStatEmpty} into slots without label | empty labeled: {onFloor} have boxes on the floor, {onlyStorage} only in storage | those floor boxes: {fTotal} (closed {fClosed}, no items {fNoItems}, busy {fBusy}, usable {fUsable}) | first item into empty slot: {_dispOk}/{_dispTry}{(_dispWhy.Length > 0 ? " (" + _dispWhy + ")" : "")} | busy flags: held {_busyHold}, moving {_busyLerp}, opening {_busyToggle}, stuck->free {_busyStuck} | storage pulls: {_shelfPulled}/{_shelfPullTries} | no box for: {miss}");
+            Logger.LogInfo($"[Shelves] {slots} slots, empty: {emptyLabeled} labeled + {emptyUnlabeled} without label | last minute: {_shelfStatMoved} items stocked, {_shelfStatEmpty} into slots without label | empty labeled: {onFloor} have boxes on the floor, {onlyStorage} only in storage | those floor boxes: {fTotal} (closed {fClosed}, no items {fNoItems}, busy {fBusy}, usable {fUsable}) | relabeled: {_relabelOk}/{_relabelTry} | first item into empty slot: {_dispOk}/{_dispTry}{(_dispWhy.Length > 0 ? " (" + _dispWhy + ")" : "")} | busy flags: held {_busyHold}, moving {_busyLerp}, opening {_busyToggle}, stuck->free {_busyStuck} | storage pulls: {_shelfPulled}/{_shelfPullTries} | no box for: {miss}");
             _dashShelfStatus = F($"{slots} slots · empty: {emptyLabeled} labeled, {emptyUnlabeled} without label");
-            _shelfStatMoved = 0; _shelfStatEmpty = 0; _shelfPullTries = 0; _shelfPulled = 0; _dispTry = 0; _dispOk = 0; _dispWhy = ""; _busyHold = _busyLerp = _busyToggle = _busyStuck = 0;
+            _shelfStatMoved = 0; _shelfStatEmpty = 0; _shelfPullTries = 0; _shelfPulled = 0; _dispTry = 0; _dispOk = 0; _dispWhy = ""; _busyHold = _busyLerp = _busyToggle = _busyStuck = 0; _relabelTry = _relabelOk = 0;
         }
         private readonly Dictionary<EItemType, bool> _isBoxGoods = new Dictionary<EItemType, bool>();
 
@@ -562,7 +564,15 @@ namespace ShopBot
         {
             // how many slots each kind of goods already has
             var slots = new Dictionary<EItemType, int>();
-            var empty = new List<(Shelf shelf, ShelfCompartment comp)>();
+            var empty = new List<(Shelf shelf, ShelfCompartment comp, bool relabel)>();
+            // goods that are still around (loose boxes, also busy ones) or on the way – their empty slots keep the label
+            var around = new HashSet<EItemType>();
+            var rmA = S<RestockManager>();
+            if (rmA != null)
+                foreach (var b in rmA.m_ItemPackagingBoxList)
+                    if (b != null && b.gameObject.activeInHierarchy && b.m_ItemCompartment != null && b.m_ItemCompartment.GetItemCount() > 0)
+                        around.Add(b.m_ItemCompartment.GetItemType());
+            foreach (var kv in CountItemsInDelivery()) if (kv.Value > 0) around.Add(kv.Key);
             foreach (var shelf in shelves)
             {
                 if (shelf == null || shelf.m_ItemNotForSale || !shelf.IsValidObject()) continue;
@@ -571,14 +581,18 @@ namespace ShopBot
                     if (comp == null || comp.m_ItemNotForSale) continue;
                     var t = comp.GetItemType();
                     if (t != EItemType.None) slots[t] = (slots.TryGetValue(t, out var n) ? n : 0) + 1;
-                    else if (comp.m_CanPutItem && comp.GetItemCount() == 0) empty.Add((shelf, comp));
+                    if (!comp.m_CanPutItem || comp.GetItemCount() != 0) continue;
+                    if (t == EItemType.None) empty.Add((shelf, comp, false));
+                    // labeled but its goods are gone (no box anywhere, nothing on the way) -> give it goods that are here
+                    else if (_relabelEmpty.Value && !around.Contains(t)) empty.Add((shelf, comp, true));
                 }
             }
             if (empty.Count == 0) return 0;
 
-            bool ShelfGoods(EItemType t) => t != EItemType.None && !_openerPackTypes.Contains(t);   // never the opener packs
+            // any goods – packs of the new sets too (thousands lie around for the openers; shelves only take a few hundred)
+            bool ShelfGoods(EItemType t) => t != EItemType.None;
             int moved = 0;
-            foreach (var (shelf, comp) in empty)
+            foreach (var (shelf, comp, relabel) in empty)
             {
                 if (budget <= 0) break;
                 // goods on the floor with the fewest shelf slots
@@ -603,8 +617,10 @@ namespace ShopBot
                 // first item the way the game does it (like the player placing it): the game checks the fit and labels the slot
                 var first = list.FirstOrDefault(x => x != null && x.m_ItemCompartment.GetItemCount() > 0 && RealItemCount(x) > 0);
                 if (first == null) { boxes.Remove(goods); continue; }
+                if (relabel) _relabelTry++;
                 try { first.DispenseItem(false, comp); } catch { }
                 if (comp.GetItemType() != goods || comp.GetItemCount() == 0) { boxes.Remove(goods); continue; }   // does not fit here -> try other goods next time
+                if (relabel) _relabelOk++;
                 budget--; moved++;
                 while (budget > 0 && comp.HasEnoughSlot() && list.Count > 0)
                 {

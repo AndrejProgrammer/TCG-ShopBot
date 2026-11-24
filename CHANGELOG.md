@@ -4,6 +4,7 @@ Ausführliche Entwickler-Notizen: [docs/ENTWICKLUNG.md](docs/ENTWICKLUNG.md)
 
 ## 0.6.2 – 25.11.2026
 - **Fix – shop shelves were never restocked:** reordering goods for the shelves (and goods customers miss) no longer counts against the pack daily limit – pack buying used it up within minutes. The many pack boxes for the openers no longer count toward the box limit either. Only the safety reserve applies.
+- **Empty labeled slots get new goods:** if the goods of an empty labeled slot are gone (no box anywhere, nothing on the way), the bot relabels it with goods that are here – booster boxes/displays first, then packs of the new sets. Packs for the openers may go onto the shelves too (only a few hundred fit). Can be switched off.
 - **Smarter shelf restocking:** orders by the real gap (room in all labeled slots of a goods type minus what is on them), up to 3 boxes at once. Before, a few half-full slots counted as "enough" and completely empty slots of the same goods were never refilled.
 - **Shelves first:** while labeled shelf slots of a pack type still miss items, the openers leave those boxes for the shelves (a few hundred items) – then all packs go to the openers again.
 - **Fix – boxes in front of the entrance were never used:** delivered boxes can keep a "being carried/moved/opened" flag forever, so the bot skipped them (seen: 176 boxes, all "busy"). A flagged box that has not moved for 15 s is now treated as free – for shelves, openers and sorting.
