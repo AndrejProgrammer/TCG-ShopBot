@@ -3,6 +3,7 @@
 Reihenfolge = Empfehlung. ⭐ = wichtig vor dem Public-Schalten.
 
 ## Vor dem Veröffentlichen
+- [ ] **0.6.3/0.6.4 im Spiel prüfen:** Einsatzplan nach Bedarf („Einsatzplan … (Arbeit für Arbeiter: …)“ im Verlauf), arbeiten die Arbeiter? Spielphase auf der Übersicht plausibel (erwartet beim User: Sammeln)? Regale bleiben voll, keine Fehler.
 - [x] **v0.6.0 im Spiel getestet (24.11.):** Dashboard auf Deutsch ✓, 115 Einstellungen 1:1 übernommen ✓, alle Seiten sehen gut aus ✓, Feilschen bis Runde 5 ✓, Lizenz gekauft ✓, keine Fehler im Log ✓. Sidebar-Fußzeile war links abgeschnitten → behoben (Abstand).
 - [x] (0.6.1) **Fehler: Tageslimit-Zähler wird beim Neustart zurückgesetzt** (`_daySpent` nur im Speicher). Neustart am selben Spieltag → Bot darf nochmal das volle Limit ausgeben (gesehen: „Einkauf heute $0 / $60.502“ bei „Kosten heute $177.118“). Lösung: `_daySpent`, `_daySpentDay`, `_emergencySpent`, `_emergencyDay` in der Config (intern) speichern oder beim Start aus `CPlayerData.m_GameReportDataCollect.supplyCost` des Tages ableiten.
 - [x] (0.6.1) **Tagesbericht** zählt erst ab Spielstart statt ab Tagesbeginn (Einnahmen „$0“ nach Neustart) – Tageswerte speichern oder aus dem Spiel-Tagesbericht nehmen.
@@ -17,7 +18,7 @@ Reihenfolge = Empfehlung. ⭐ = wichtig vor dem Public-Schalten.
 - [ ] **Beobachten:** Nachbestellen für große Regallücken kostet anfangs einige 10.000 $ – ggf. Menge pro Bestellung/Tag begrenzen (User gefragt, noch offen).
 
 ## Bot passt sich dem Spielverlauf an (ersetzt den starren Assistenten)
-- [ ] ⭐ **Schritt 1 – Messen & anzeigen:** Ø Einnahmen/Kosten pro Tag (letzte 3 Tage), Level, Erweiterungen, Opener/Kassen/Vitrinen/Arbeiter, Lizenzen, Sammlungsfortschritt. Daraus **Spielphase** erkennen und im Dashboard zeigen („Phase: Sammeln (erkannt)“) – noch ohne Verhalten zu ändern, ein paar Spieltage beobachten.
+- [x] (0.6.4, noch nicht im Spiel getestet) ⭐ **Schritt 1 – Messen & anzeigen:** Ø Einnahmen/Kosten pro Tag (letzte 3 Tage), Level, Erweiterungen, Opener/Kassen/Vitrinen/Arbeiter, Lizenzen, Sammlungsfortschritt. Daraus **Spielphase** erkennen und im Dashboard zeigen („Phase: Sammeln (erkannt)“) – noch ohne Verhalten zu ändern, ein paar Spieltage beobachten.
   - 🌱 Start (Level < 10, wenig Geld, keine Opener): Preise, Kasse, Nachbestellen, Rechnungen – keine Sammlungs-Packs, kein Graden.
   - 🏗️ Aufbau (wenige Opener, mittlere Einnahmen): Geld zuerst in Erweiterungen + Lizenzen, Packs maßvoll.
   - 📦 Sammeln (viele Opener, hohe Einnahmen): Packs zuerst, Notfall-Nachkauf aktiv.

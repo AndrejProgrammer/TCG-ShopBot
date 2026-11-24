@@ -3,7 +3,7 @@
 **ShopBot** is a BepInEx plugin for **TCG Card Shop Simulator** that runs your shop almost on its own – tuned for the **Real TCG Overhaul** mod pack (Pokémon).
 Goal: **own every Pokémon card in the Collection Tracker** (later all of them as PSA 10) – while the shop makes money.
 
-> Version **0.6.3** · Game: Steam default branch (Unity 6) · BepInEx 5.4.x · Dashboard in **English** and **Deutsch**
+> Version **0.6.4** · Game: Steam default branch (Unity 6) · BepInEx 5.4.x · Dashboard in **English** and **Deutsch**
 > 📖 **New here? → [Step-by-step guide](docs/INSTALL.md)** · 🇩🇪 [Deutsche Version](README.de.md)
 
 ---

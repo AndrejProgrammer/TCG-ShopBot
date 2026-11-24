@@ -393,3 +393,16 @@ Work left for the workers (next 2 min, after the bot): openers {0:N0} · shelves
 Adapt to demand during the day = Tagsüber nach Bedarf anpassen
 every 2 min: workers go where work is left; side task \= next task with work = alle 2 Min.: Arbeiter gehen dorthin, wo Arbeit übrig ist; Nebenrolle = nächste Aufgabe mit Arbeit
 minimum – the rest is split by demand = Mindestanzahl – der Rest wird nach Bedarf verteilt
+Start = Start
+Build-up = Aufbau
+Collect = Sammeln
+Endgame = Endspiel
+GAME PHASE = SPIELPHASE
+detected after 1 min = wird nach 1 Min. erkannt
+detected – no effect yet = erkannt – wirkt sich noch nicht aus
+Focus: prices, checkout, restocking and bills – no collection packs, no grading yet = Schwerpunkt: Preise, Kasse, Nachbestellen und Rechnungen – noch keine Sammlungs-Packs, kein Graden
+Focus: money first into expansions and licenses, packs in moderation = Schwerpunkt: Geld zuerst in Erweiterungen und Lizenzen, Packs maßvoll
+Focus: packs first, emergency restock, licenses for missing sets = Schwerpunkt: Packs zuerst, Notfall-Nachkauf, Lizenzen für fehlende Sets
+Focus: missing cards from customers, PSA 10 hunt, full grading = Schwerpunkt: fehlende Karten von Kunden, PSA-10-Jagd, Graden voll
+Level {0} · {1} expansions · {2} openers · ~{3} income/day · collection {4} = Level {0} · {1} Erweiterungen · {2} Opener · ~{3} Einnahmen/Tag · Sammlung {4}
+New game phase: {0} (before: {1}) = Neue Spielphase: {0} (vorher: {1})

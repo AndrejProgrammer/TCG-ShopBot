@@ -76,8 +76,8 @@ The easiest way is the **Real TCG Overhaul Mod Manager** – it brings everythin
 
 **Did it work?** Open `BepInEx\LogOutput.log` (in the game folder) with Notepad. It must contain:
 ```
-[Info   :   BepInEx] Loading [ShopBot 0.6.3]
-[Info   :   ShopBot] ShopBot 0.6.3 loaded. F8 = on/off, F9 = dashboard. Language: English
+[Info   :   BepInEx] Loading [ShopBot 0.6.4]
+[Info   :   ShopBot] ShopBot 0.6.4 loaded. F8 = on/off, F9 = dashboard. Language: English
 ```
 
 ## 7. The dashboard (F9)

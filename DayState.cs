@@ -57,7 +57,7 @@ namespace ShopBot
 
         // ---------- Daily report ----------
         private static string ReportToString(DayRecord r) =>
-            string.Format(CultureInfo.InvariantCulture, "{0},{1:0.##},{2:0.##},{3},{4},{5}", r.Day, r.Income, r.Spent, r.Customers, r.Packs, r.HaveStart);
+            string.Format(CultureInfo.InvariantCulture, "{0},{1:0.##},{2:0.##},{3},{4},{5},{6:0.##}", r.Day, r.Income, r.Spent, r.Customers, r.Packs, r.HaveStart, r.ShopIncome);
 
         private static DayRecord ReportFromString(string s)
         {
@@ -71,6 +71,7 @@ namespace ShopBot
             int.TryParse(f[3], NumberStyles.Integer, inv, out r.Customers);
             int.TryParse(f[4], NumberStyles.Integer, inv, out r.Packs);
             int.TryParse(f[5], NumberStyles.Integer, inv, out r.HaveStart);
+            if (f.Length > 6) float.TryParse(f[6], NumberStyles.Float, inv, out r.ShopIncome);   // since 0.6.4
             return r;
         }
 

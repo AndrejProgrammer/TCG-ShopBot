@@ -773,6 +773,18 @@ namespace ShopBot
             float costs = -(rep.supplyCost + rep.upgradeCost + rep.employeeCost + rep.rentCost + rep.billCost);
 
             PageTitle(T("Overview"));
+            // Game phase (detected; for now only shown – the behaviour does not change yet)
+            GUILayout.BeginVertical(_sCard);
+            GUILayout.BeginHorizontal();
+            GUILayout.Label(T("GAME PHASE"), Txt(11, CDim, FontStyle.Bold, false));
+            GUILayout.FlexibleSpace();
+            GUILayout.Label(_phase == GamePhase.Unknown ? T("detected after 1 min") : T("detected – no effect yet"), _sDim);
+            GUILayout.EndHorizontal();
+            Color pc = _phase == GamePhase.Start ? CBlue : _phase == GamePhase.Buildup ? CYellow : _phase == GamePhase.Collect ? CAccent : _phase == GamePhase.Endgame ? CGreen : CDim;
+            GUILayout.Label(T(PhaseName(_phase)), Txt(22, pc, FontStyle.Bold, false));
+            if (_phaseReason.Length > 0) GUILayout.Label(_phaseReason, _sDim);
+            if (_phase != GamePhase.Unknown) GUILayout.Label(T(PhasePlan(_phase)), _sTxt);
+            GUILayout.EndVertical();
             GUILayout.BeginHorizontal();
             Stat(T("Money"), Money(CPlayerData.m_CoinAmountDouble), F($"held back {Money(Reserve)}"));
             Stat(T("Revenue today"), Money(income), F($"{rep.itemAmountSold} items · {rep.cardAmountSold} cards"), CGreen);

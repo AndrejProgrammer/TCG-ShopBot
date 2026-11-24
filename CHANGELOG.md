@@ -2,6 +2,10 @@
 
 Ausführliche Entwickler-Notizen: [docs/ENTWICKLUNG.md](docs/ENTWICKLUNG.md)
 
+## 0.6.4 – 25.11.2026
+- **Game phase detection (step 1 – shown only):** the bot measures shop level, expansions, pack openers, money, collection progress and the average shop income per day, and detects the phase: **Start**, **Build-up**, **Collect** or **Endgame**. Shown on the overview with the reason and what the bot will focus on in that phase. A phase change only counts after 5 minutes (no flickering) and is noted in the history. The behaviour does not change yet – that comes in step 2.
+- The daily report now also keeps the total shop income per day (needed for the phase).
+
 ## 0.6.3 – 25.11.2026 – shelves really get filled
 - **Fix – boxes in front of the entrance were never used:** delivered boxes keep an "opening" flag forever, so the bot skipped them (seen: 176 boxes, all "busy"). A box stuck in "opening" is now treated as free after 3 s, a carried/moved box that lies still after 15 s – for shelves, openers and sorting.
 - **Fix – empty shelf slots with a label stayed empty:** the bot asked the game which goods are inside the slot – for an empty slot that is "none", so it stopped. Only half-full slots were topped up. Now the first item goes in the game's own way, the rest as before.
