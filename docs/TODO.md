@@ -43,7 +43,8 @@ Reihenfolge = Empfehlung. ⭐ = wichtig vor dem Public-Schalten.
 
 ## Veröffentlichen (erst nach OK vom User)
 - [x] (24.11.) Repo `AndrejProgrammer/TCG-ShopBot` ist öffentlich (Hauptzweig gegen Force-Push/Löschen geschützt, Wiki aus)
-- [ ] GitHub-Release v0.6.0 mit `dist\ShopBot-0.6.0.zip` (`powershell -File tools\release.ps1`)
+- [x] (24.11.) GitHub-Release **v0.7.0 als Pre-Release** mit `ShopBot-0.7.0.zip` (inkl. Installer)
+- [ ] Nach erfolgreichem Spieltest: Pre-Release-Markierung entfernen (`gh release edit v0.7.0 --prerelease=false`)
 
 ## Sonstiges / Ideen
 - [ ] Weitere Sprachen (Französisch, Spanisch, Russisch …) – erst später, User wollte vorerst nur DE/EN.
