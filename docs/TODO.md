@@ -42,7 +42,7 @@ Reihenfolge = Empfehlung. ⭐ = wichtig vor dem Public-Schalten.
 - [ ] **Update-Hinweis (opt-in, Standard aus):** neueste GitHub-Release abfragen, im Dashboard „Version x.y.z verfügbar“.
 
 ## Veröffentlichen (erst nach OK vom User)
-- [ ] Repo `AndrejProgrammer/TCG-ShopBot` auf public stellen
+- [x] (24.11.) Repo `AndrejProgrammer/TCG-ShopBot` ist öffentlich (Hauptzweig gegen Force-Push/Löschen geschützt, Wiki aus)
 - [ ] GitHub-Release v0.6.0 mit `dist\ShopBot-0.6.0.zip` (`powershell -File tools\release.ps1`)
 
 ## Sonstiges / Ideen
