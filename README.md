@@ -1,6 +1,10 @@
-# ShopBot – your card shop runs itself
+# ShopBot – TCG Card Shop Simulator automation mod (BepInEx)
 
-**ShopBot** is a BepInEx plugin for **TCG Card Shop Simulator** that runs your shop almost on its own – tuned for the **Real TCG Overhaul** mod pack (Pokémon).
+[![Download](https://img.shields.io/github/v/release/AndrejProgrammer/TCG-ShopBot?label=download&style=for-the-badge&color=ff9933)](https://github.com/AndrejProgrammer/TCG-ShopBot/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/AndrejProgrammer/TCG-ShopBot/total?style=for-the-badge&color=4a90e2)](https://github.com/AndrejProgrammer/TCG-ShopBot/releases)
+[![License: MIT](https://img.shields.io/badge/license-MIT-45d17a?style=for-the-badge)](LICENSE)
+
+**ShopBot** is a free **TCG Card Shop Simulator mod** (BepInEx plugin) that runs your card shop almost on its own: **auto checkout** at every register, **auto restock** of shelves and display cases, **auto fill pack openers**, **auto pricing**, buying packs for your **Pokémon collection**, **PSA grading**, workers, licenses and expansions – tuned for the **Real TCG Overhaul** mod pack (Pokémon).
 Goal: **own every Pokémon card in the Collection Tracker** (later all of them as PSA 10) – while the shop makes money.
 
 > Version **0.7.2** · Game: Steam default branch (Unity 6) · BepInEx 5.4.x · Dashboard in **English** and **Deutsch**
