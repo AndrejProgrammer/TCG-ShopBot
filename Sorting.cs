@@ -158,42 +158,83 @@ namespace ShopBot
         // letzten Karton-Eintrag entnehmen und einen echten Karton daraus erzeugen – hier direkt an der Stelle, wo er gebraucht wird.
         private int _statPulled;
 
+        private float _pullWhyAt;
+        private string _pullWhy = "";
+
+        // Takes boxes out of the storage shelves. Looks at EVERY box entry of a compartment (not only the top one) –
+        // like the counting does – and takes the matching box out wherever it sits.
         private int PullFromStorage(Func<EItemType, int> priority, int max, Vector3 pos)
         {
             var sm = S<ShelfManager>();
             if (sm == null || max <= 0) return 0;
-            var found = new List<(ShelfCompartment comp, EItemType type, int prio)>();
+            var found = new List<(ShelfCompartment comp, System.Collections.IList recs, int index, EItemType type, int prio)>();
+            int compartments = 0, records = 0;
             foreach (var ws in sm.m_WarehouseShelfList)
             {
-                if (ws == null || !ws.IsValidObject()) continue;
+                if (ws == null) continue;
                 var comps = Traverse.Create(ws).Field("m_ItemCompartmentList").GetValue<List<ShelfCompartment>>();
                 if (comps == null) continue;
                 foreach (var comp in comps)
                 {
-                    if (comp == null || comp.GetStoredBoxRecordCount() <= 0) continue;
-                    var recs = Traverse.Create(comp).Field("m_StoredBoxRecordList").GetValue<List<StoredBoxRecord>>();
+                    if (comp == null) continue;
+                    var recs = Traverse.Create(comp).Field("m_StoredBoxRecordList").GetValue() as System.Collections.IList;
                     if (recs == null || recs.Count == 0) continue;
-                    var type = recs[recs.Count - 1].itemType;
-                    int p = priority(type);
-                    if (p >= 0) found.Add((comp, type, p));
+                    compartments++; records += recs.Count;
+                    // newest box of each type first (from the top of the stack)
+                    var seen = new HashSet<EItemType>();
+                    for (int i = recs.Count - 1; i >= 0; i--)
+                    {
+                        var tr = Traverse.Create(recs[i]);
+                        var type = tr.Field("itemType").GetValue<EItemType>();
+                        if (type == EItemType.None || tr.Field("amount").GetValue<int>() <= 0 || !seen.Add(type)) continue;
+                        int p = priority(type);
+                        if (p >= 0) found.Add((comp, recs, i, type, p));
+                    }
                 }
             }
             int pulled = 0;
+            var usedComps = new HashSet<ShelfCompartment>();
             foreach (var f in found.OrderBy(x => x.prio))
             {
                 if (pulled >= max) break;
+                if (!usedComps.Add(f.comp)) continue;          // indices change after taking a box – one per compartment and round
                 try
                 {
-                    if (!f.comp.TryPopLastStoredBoxRecord(out var rec)) continue;
+                    object recObj;
+                    if (f.index == f.recs.Count - 1)
+                    {
+                        if (!f.comp.TryPopLastStoredBoxRecord(out var top)) { Why($"pop failed for {f.type}"); continue; }
+                        recObj = top;
+                    }
+                    else
+                    {
+                        recObj = f.recs[f.index];
+                        f.recs.RemoveAt(f.index);                  // box from the middle of the stack
+                    }
                     StoredBoxVisualBatcher.RebuildImmediate(f.comp);
+                    var tr = Traverse.Create(recObj);
+                    var type = tr.Field("itemType").GetValue<EItemType>();
+                    int amount = tr.Field("amount").GetValue<int>();
+                    bool big = tr.Field("isBigBox").GetValue<bool>();
                     var p = pos + new Vector3(UnityEngine.Random.Range(-0.4f, 0.4f), 0.6f + pulled * 0.35f, UnityEngine.Random.Range(-0.4f, 0.4f));
-                    var box = RestockManager.SpawnPackageBoxItemAtTransform(rec.itemType, rec.amount, rec.isBigBox, p, Quaternion.identity);
+                    var box = RestockManager.SpawnPackageBoxItemAtTransform(type, amount, big, p, Quaternion.identity);
                     if (box != null) { pulled++; _statPulled++; }
+                    else Why($"spawning a box of {type} failed");
                 }
-                catch (Exception e) { Logger.LogWarning("[Take from storage]" + e.Message); break; }
+                catch (Exception e) { Logger.LogWarning("[Take from storage] " + e.Message); break; }
             }
+            if (pulled == 0) Why(found.Count == 0 ? $"no matching box ({compartments} storage compartments, {records} boxes)" : $"{found.Count} matching, none taken");
             if (pulled > 0 && _statPulled % 20 < pulled) NoteF($"Taken from storage: {_statPulled} boxes in total");
             return pulled;
+        }
+
+        // Reason why nothing came out of storage – once a minute in the log
+        private void Why(string why)
+        {
+            _pullWhy = why;
+            if (Time.unscaledTime < _pullWhyAt) return;
+            _pullWhyAt = Time.unscaledTime + 60f;
+            Logger.LogInfo("[Take from storage] nothing taken: " + why);
         }
 
         // Wie die Arbeiter: zuerst Fächer mit passendem Etikett/Inhalt, dann freie Fächer
