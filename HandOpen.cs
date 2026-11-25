@@ -41,7 +41,7 @@ namespace ShopBot
             if (LightManager.GetHasDayEnded()) return;
             var rm = S<RestockManager>();
             // the singleton may only register on first use (like the grading sequence) -> also look in the scene
-            var seq = S<CardOpeningSequence>() ?? UnityEngine.Object.FindObjectOfType<CardOpeningSequence>();
+            var seq = S<CardOpeningSequence>() ?? UnityEngine.Object.FindAnyObjectByType<CardOpeningSequence>();
             if (rm == null || seq == null) return;
             int budget = Mathf.FloorToInt(_handAcc);
             int opened = 0, cards = 0;

@@ -20,7 +20,8 @@ Goal: **own every Pokémon card in the Collection Tracker** (later all of them a
 | 👷 **Workers** | All workers fill the **pack openers** (only packs of unfinished Pokémon sets), work plan by strengths, 3× bonus daily, hires new workers |
 | 📦 **Packs & collection** | Reads the Collection Tracker, buys packs of the sets with the **most new cards per dollar**, takes boxes from storage, **emergency restock** when the openers run dry |
 | ⚙️ **Pack openers** | Fills openers itself, **spreads packs evenly when stock is low** so every opener keeps running, starts half-full ones, collects finished ones. **No opener yet?** The bot opens collection packs itself, like a machine |
-| 🏷️ **Prices** | Market price **+20 %**, rounded (products, single cards, graded cards) |
+| 🏷️ **Prices** | Market price **+20 %**, rounded (products, single cards, graded cards); optionally adapted to how fast each product sells |
+| 🔔 **Notifications** | Short notes on screen: set complete, new license, grading package opened, new game phase … |
 | 🛒 **Shelves & displays** | Stocks shelves itself, puts cards into empty display slots (graded first) |
 | 🗑️ **Tidying** | Full boxes onto the storage shelf, empty boxes into the trash |
 | 🏅 **Grading** | Sends cards to PSA (Standard, full 52-card submissions, most expensive first), **opens returned packages** and sells graded cards (one PSA 10 of every card stays) |

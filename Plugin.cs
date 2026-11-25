@@ -685,7 +685,7 @@ namespace ShopBot
             var s = S<GradedCardOpeningSequence>();
             if (s == null)
             {
-                try { s = UnityEngine.Object.FindObjectOfType<GradedCardOpeningSequence>(); } catch { }
+                try { s = UnityEngine.Object.FindAnyObjectByType<GradedCardOpeningSequence>(); } catch { }
             }
             if (s == null)
             {

@@ -15,7 +15,6 @@ namespace ShopBot
         private ConfigEntry<bool> _colEnabled;
         private ConfigEntry<float> _colReserve;
         private ConfigEntry<int> _colFocusSets;
-        private ConfigEntry<int> _colBufferCases;
         private ConfigEntry<int> _colCasesPerBuy;
         private ConfigEntry<float> _colFills;
         private ConfigEntry<float> _colBudgetPerExtraSet, _colBudgetPerExtraFill, _colMaxFills;
@@ -208,7 +207,6 @@ namespace ShopBot
         // "XXX ist zu teuer" (1-2 Sterne) -> Aufschlag für genau diesen Artikel senken (nie unter Minimum)
         private float _reviewTimer;
         private readonly HashSet<string> _seenReviews = new HashSet<string>();
-        private bool _reviewsPrimed;
         internal readonly Dictionary<EItemType, float> _itemMarkup = new Dictionary<EItemType, float>(); // % pro Artikel
         private int _markupDay = -1;
 
