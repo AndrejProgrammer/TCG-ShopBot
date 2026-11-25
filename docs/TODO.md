@@ -61,6 +61,20 @@ Jede Ausgabe = Investition mit Kosten (einmalig + laufend, z. B. Miete/Lohn) und
 - [x] PSA-10-Fortschritt in der Sammlung, „Set fertig!“-Meldung
 - [x] Preise nach Verkaufstempo (optional, Standard aus) – im Spiel testen, bevor es Standard wird
 
+## Nächste Runde (geplant 25.11., Reihenfolge = Plan)
+- [ ] ⭐ **Effizienz – weniger Rechenleistung:**
+  - Reflection in heißen Schleifen ersetzen: `Traverse.Create(b).Field(...)` pro Karton/Sekunde (m_IsBeingHold, m_IsLerpingToPos, m_IsTogglingOpenClose, m_IsBoxOpened, m_StoredItemList in `RealItemCount`, m_IsBoxedUp) → einmal erzeugte `AccessTools.FieldRefAccess`-Zugriffe (schnell).
+  - Ein gemeinsamer **Karton-Schnappschuss pro Sekunde** (Typ, Anzahl, offen, beschäftigt, echte Artikel) statt 8× dieselbe Liste `RestockManager.m_ItemPackagingBoxList` (900+ Kartons) zu durchlaufen – Stellen: Collection.cs (CountItemsInBoxes, WorkDemand, Nachbestellen), Sorting.cs (SortTick, PullFromStorage), Store.cs (StockOpeners, StockShelves, FillEmptySlots, LogShelfStatus), HandOpen.cs.
+  - Regal-Fächer (204) nur einmal pro Sekunde einlesen und teilen (Regalbedarf, Preise, Verkaufstempo, Regal-Übersicht).
+  - Berater: Opener-Leerlauf nur alle 5 s messen statt jede Sekunde.
+  - **Leistungsanzeige** in den Einstellungen: Millisekunden pro Bild, die der Bot braucht (vorher/nachher vergleichen).
+- [ ] **Log schlanker:** Schalter „Ausführliches Log“ (Standard aus) – häufige Meldungen (Regal-Übersicht, Selbst eingeräumt, Opener befüllt, Vitrinen befüllt, Preise angepasst) nur dann in die Log-Datei, im Verlauf weiterhin. Achtung: `tools\testbericht.ps1` zählt diese Meldungen – für Tests einschalten oder Muster anpassen.
+- [ ] ⭐ **Packs nach echtem Wert kaufen:** pro Set messen, was ein geöffnetes Pack bringt (neue Karten + Verkaufswert der Doppelten, aus den eingesammelten Opener-Karten) → Sets mit dem besten Wert pro Dollar zuerst; Packs, die sich selbst finanzieren, bevorzugen. Anlass: viel Mega Shine für ~$32/Pack gekauft.
+- [ ] ⭐ **Automatische Spielstand-Sicherung:** beim Start einmal pro Tag den Ordner `%USERPROFILE%\AppData\LocalLow\OPNeonGames\Card Shop Simulator` kopieren (z. B. nach `BepInEx\ShopBot-Backups\`), die letzten 5 behalten, abschaltbar.
+- [ ] **Diagramm auf der Berater-Seite:** letzte 7 Tage – Einnahmen, Ausgaben, Gewinn, neue Karten pro Tag (Daten liegen im Tagesbericht).
+- [ ] **Knopf „Empfohlene Einstellungen“** (Einstellungen-Seite): alles auf sinnvolle Standardwerte zurücksetzen, mit Rückfrage.
+- [ ] Offen aus dem Test 0.7.3: Einblendung oben im Bild und PSA-10-Karte in der Sammlung – vom User noch nicht bestätigt (im Log nicht sichtbar).
+
 ## Sonstiges / Ideen
 - [ ] Weitere Sprachen (Französisch, Spanisch, Russisch …) – erst später, User wollte vorerst nur DE/EN.
 - [ ] Hinweis: Plugin-ID `ratta.shopbot` (Windows-Benutzername) bleibt – Ändern würde alle Einstellungen zurücksetzen.
