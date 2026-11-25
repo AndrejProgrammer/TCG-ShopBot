@@ -150,7 +150,8 @@ namespace ShopBot
                 if (idx < 30)
                 {
                     float cost = CPlayerData.GetUnlockShopRoomCost(idx);
-                    bool space = _advBottlenecks.Any(b => b.Key == "shelfSpace");
+                    float rentPerRoom = _lastRent > 0f ? _lastRent / Mathf.Max(1, idx + 1) : 0f;
+                    bool space = _advBottlenecks.Any(b => b.Key == "shelfSpace") && rentPerRoom <= _advProfit * 0.1f;
                     if (space) investNeed += cost;
                     _advInvest.Add(($"Shop expansion {idx + 1}", cost, space ? (FormattableString)$"worth it: shelf space is a bottleneck" : $"wait: space is not the bottleneck (more rent)"));   // i18n-fs
                 }

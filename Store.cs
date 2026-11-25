@@ -196,6 +196,8 @@ namespace ShopBot
         }
 
         // ---------------- Arbeiter einstellen (wie "Einstellen" im Telefon) ----------------
+        private int _demandLeftCount;
+
         private void HandleHiring()
         {
             if (!_hireEnabled.Value || (_hireTimer += 1f) < 60f) return;
@@ -225,6 +227,13 @@ namespace ShopBot
             }
             if (best < 0) return;
             if (Budget < bestCost * Mathf.Max(1f, _hireMoneyFactor.Value)) return;
+            // budget pots on: hire only when work has been left over for a while and the wage pays off (advisor step 3)
+            if (PotsActive)
+            {
+                if (_dashDemand.opener + _dashDemand.shelf + _dashDemand.display > 0f) _demandLeftCount++; else _demandLeftCount = 0;
+                if (_demandLeftCount < 5) return;                               // 5 checks (minutes) in a row with work left over
+                if (wm.m_WorkerDataList[best].costPerDay > _advProfit * 0.05f) return;   // wage at most ~5 % of the profit per day
+            }
 
             // exakt wie HireWorkerPanelUI.OnPressHireButton
             PriceChangeManager.AddTransaction(0f - bestCost, ETransactionType.HireWorker, best);
@@ -302,7 +311,7 @@ namespace ShopBot
                 if (b.m_ItemCompartment.GetItemCount() <= 0 || !b.CanWorkerTakeBox()) continue;
                 if (!_openerPackTypes.Contains(b.m_ItemCompartment.GetItemType())) continue;
                 // shelves first: while labeled shelf slots of these packs still miss items, the box stays for the shelves
-                if (_stockSelf.Value && _shelfNeed.TryGetValue(b.m_ItemCompartment.GetItemType(), out var need) && need > 0) continue;
+                if (ShelfReserves(b.m_ItemCompartment.GetItemType())) continue;
                 onFloor++;
                 var tb = Traverse.Create(b);
                 if (BoxBusy(b)) continue;
@@ -392,6 +401,13 @@ namespace ShopBot
                     if (miss > 0) _shelfNeed[t] = (_shelfNeed.TryGetValue(t, out var n) ? n : 0) + miss;
                 }
             }
+            float nowN = Time.unscaledTime;
+            foreach (var kv in _shelfNeed)
+            {
+                if (!_shelfNeedTrack.TryGetValue(kv.Key, out var tr) || kv.Value < tr.need) { _shelfNeedTrack[kv.Key] = (kv.Value, nowN); _shelfNeedStuck.Remove(kv.Key); }
+                else if (nowN - tr.since > 180f) _shelfNeedStuck.Add(kv.Key);
+            }
+            foreach (var k in _shelfNeedTrack.Keys.Where(k => !_shelfNeed.ContainsKey(k)).ToList()) { _shelfNeedTrack.Remove(k); _shelfNeedStuck.Remove(k); }
 
             // verfügbare Kartons nach Ware (nicht getragen, nicht unterwegs)
             var boxes = new Dictionary<EItemType, List<InteractablePackagingBox_Item>>();
@@ -487,6 +503,10 @@ namespace ShopBot
 
         private float _emptySlotPullAt, _shelfStatAt = 30f;
         private readonly Dictionary<EItemType, int> _shelfNeed = new Dictionary<EItemType, int>();
+        // safeguard: if the shelf need of a goods type does not go down for 3 min, the slot cannot be filled -> do not hold boxes back
+        private readonly Dictionary<EItemType, (int need, float since)> _shelfNeedTrack = new Dictionary<EItemType, (int, float)>();
+        private readonly HashSet<EItemType> _shelfNeedStuck = new HashSet<EItemType>();
+        private bool ShelfReserves(EItemType t) => _stockSelf.Value && _shelfNeed.TryGetValue(t, out var n) && n > 0 && !_shelfNeedStuck.Contains(t);
         private int _shelfStatMoved, _shelfStatEmpty, _shelfPullTries, _shelfPulled, _dispTry, _dispOk, _relabelTry, _relabelOk;
         internal string _dashShelfStatus = "";
         private string _dispWhy = "";

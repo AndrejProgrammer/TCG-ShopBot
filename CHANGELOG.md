@@ -2,6 +2,15 @@
 
 Ausführliche Entwickler-Notizen: [docs/ENTWICKLUNG.md](docs/ENTWICKLUNG.md)
 
+## 0.7.3 – 25.11.2026 – invests wisely
+- **Expansions by payback** (with budget pots): a shop expansion only when shelf space is the bottleneck and the extra rent is at most ~10 % of the profit per day; warehouse only when boxes recently did not fit on the storage shelves.
+- **Hiring by payback** (with budget pots): only when work has been left over for 5 minutes in a row and the wage is at most ~5 % of the profit per day.
+- **Opening packs by hand early on:** while there is no pack opener in the shop, the bot opens collection packs itself – with the same game call the pack opener machine uses (card odds and god packs stay the game's own) – 20 packs per minute, adjustable, can be switched off. Stops as soon as you place an opener.
+- **Safeguard "shelves before openers":** if the need of a shelf slot does not go down for 3 minutes (slot cannot be filled), the openers get those boxes again.
+- **Shelf restocking limit per day** (optional, default off).
+- **Daily values per save:** spent today and the daily report are kept per save slot – two saves no longer mix their numbers.
+- Advisor: concrete opener tip ("about N openers are enough for your income"), packs per day from the measured game clock.
+
 ## 0.7.2 – 25.11.2026 – budget pots
 - **Budget pots:** once a full day is measured (and "Adapt settings to the game phase" is on), the profit per day (income − rent, electricity, wages) is split: **reserve** (3 days of fixed costs, always kept) → **worthwhile investments** (licenses for sets without packs, expansions when shelf space is the bottleneck) → **packs**. Collect/Endgame: ~85 % of the profit goes to packs (instead of a fixed daily limit), Build-up 40 %, Start 10 %. A quarter of idle money on the account goes to packs on top. The emergency restock may add 30 % of the profit (instead of a fixed $100,000). Shown on the Advisor page as "Budget plan for today".
 - Advisor: "Income so far today" until a full day is measured, "calculating …" right after loading, fixed costs kept across restarts, clearer texts.

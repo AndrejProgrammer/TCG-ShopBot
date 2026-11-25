@@ -967,6 +967,7 @@ namespace ShopBot
                 Section(T("Purchasing & reviews"));
                 Switch(_restockEnabled, T("Reorder packs/displays"));
                 Switch(_restockOnlyTcg, T("Packs and displays only"), T("no figures, games, accessories"));
+                Slider(_restockDayLimit, T("Shelf restocking limit per day"), 0f, 200000f, 5000f, v => v <= 0 ? T("no limit") : Usd(v), T("goods for the shop shelves – 0 = only the safety reserve applies"));
                 Switch(_reviewEnabled, T("React to customer reviews"), T("order missed packs, lower the price on complaints"));
                 Slider(_reviewMinMarkup, T("Minimum markup on complaints"), 0f, 30f, 1f, Pct);
             });
@@ -1107,6 +1108,8 @@ namespace ShopBot
             }, () =>
             {
                 Switch(_openerStartPartial, T("Start half-full openers"));
+                Switch(_handOpen, T("Open packs by hand while there is no pack opener"), F($"early game: like a pack opener machine · {_statHandOpened} opened"));
+                SliderInt(_handOpenPerMinute, T("Packs opened by hand per minute"), 5, 120, "");
                 SliderInt(_openerMinBatch, T("Minimum portion per opener"), 16, 400, " " + T("packs"));
                 Slider(_openerTurbo, T("Opener turbo"), 1f, 5f, 0.5f, v => v <= 1f ? T("off") : $"{v:0.0}×", T("packs are opened this much faster"));
             });

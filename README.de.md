@@ -7,7 +7,7 @@
 **ShopBot** ist ein kostenloser **Mod für TCG Card Shop Simulator** (BepInEx-Plugin), der deinen Kartenladen weitgehend allein führt: **automatisch kassieren** an allen Kassen, **Regale und Vitrinen automatisch auffüllen**, **Pack-Opener befüllen**, **Preise setzen**, Packs für deine **Pokémon-Sammlung** kaufen, **PSA-Graden**, Arbeiter, Lizenzen und Erweiterungen – optimiert für das **Real TCG Overhaul**-Modpack (Pokémon).
 Ziel: **alle Pokémon-Karten im Collection Tracker besitzen** (später alle als PSA 10) – während der Laden Geld verdient.
 
-> Version **0.7.2** · Spiel: Steam-Standard-Branch (Unity 6) · BepInEx 5.4.x · Dashboard auf **Englisch** und **Deutsch**
+> Version **0.7.3** · Spiel: Steam-Standard-Branch (Unity 6) · BepInEx 5.4.x · Dashboard auf **Englisch** und **Deutsch**
 > 📖 **Neu hier? → [Schritt-für-Schritt-Anleitung](docs/ANLEITUNG.md)** · 🇬🇧 [English version](README.md)
 
 ---
@@ -19,7 +19,7 @@ Ziel: **alle Pokémon-Karten im Collection Tracker besitzen** (später alle als 
 | 💰 **Kasse** | Kassiert an **allen freien Kassen gleichzeitig** (scannen, Geld nehmen, Wechselgeld) – du brauchst keine Kassierer |
 | 👷 **Arbeiter** | Alle Arbeiter befüllen die **Pack-Opener** (nur Packs unfertiger Pokémon-Sets), Einsatzplan nach Stärken, täglich 3× Bonus, stellt neue Arbeiter ein |
 | 📦 **Packs & Sammlung** | Liest den Collection Tracker, kauft Packs der Sets mit den **meisten neuen Karten pro Dollar**, holt Kartons selbst aus dem Lager, **Notfall-Nachkauf**, wenn die Opener leerlaufen |
-| ⚙️ **Pack-Opener** | Befüllt Opener selbst, **verteilt bei knappem Vorrat gleichmäßig**, damit alle Opener laufen, startet halbvolle, sammelt fertige ein |
+| ⚙️ **Pack-Opener** | Befüllt Opener selbst, **verteilt bei knappem Vorrat gleichmäßig**, damit alle Opener laufen, startet halbvolle, sammelt fertige ein. **Noch kein Opener?** Dann öffnet der Bot Sammlungs-Packs selbst, wie eine Maschine |
 | 🏷️ **Preise** | Marktpreis **+20 %**, gerundet (Produkte, Einzelkarten, gegradete) |
 | 🛒 **Regale & Vitrinen** | Räumt Ware selbst ein, legt Karten in leere Vitrinen-Plätze (gegradete zuerst) |
 | 🗑️ **Ordnung** | Volle Kartons ins Lagerregal, leere Kartons in den Mülleimer |

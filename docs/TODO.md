@@ -3,6 +3,7 @@
 Reihenfolge = Empfehlung. ⭐ = wichtig vor dem Public-Schalten.
 
 ## Vor dem Veröffentlichen
+- [ ] ⭐ **0.7.3 im Spiel testen:** Log ohne Fehler, Berater/Budget-Plan wie 0.7.2, Opener-Tipp mit Zahl („etwa N Opener reichen“), Tageswerte nach Neustart (jetzt mit Spielstand-Kennung), keine Erweiterung/Einstellung ohne Grund. Packs-selbst-öffnen nur auf einem Spielstand ohne Opener testbar.
 - [ ] ⭐ **0.7.0 im Spiel prüfen:** Log „[Compat] … all … found“ (sonst: welche Funktion aus?), Spielphase + „Auto: …“-Zeile auf der Übersicht plausibel (erwartet: Sammeln, Tageslimit ~70 % der Einnahmen erst ab dem 2. gemessenen Tag), Einsatzplan nach Bedarf, Regale voll, keine Fehler. Danach Installer an einer echten Release-ZIP testen. Außerdem aus 0.6.3/0.6.4: Einsatzplan nach Bedarf („Einsatzplan … (Arbeit für Arbeiter: …)“ im Verlauf), arbeiten die Arbeiter? Spielphase auf der Übersicht plausibel (erwartet beim User: Sammeln)? Regale bleiben voll, keine Fehler.
 - [x] **v0.6.0 im Spiel getestet (24.11.):** Dashboard auf Deutsch ✓, 115 Einstellungen 1:1 übernommen ✓, alle Seiten sehen gut aus ✓, Feilschen bis Runde 5 ✓, Lizenz gekauft ✓, keine Fehler im Log ✓. Sidebar-Fußzeile war links abgeschnitten → behoben (Abstand).
 - [x] (0.6.1) **Fehler: Tageslimit-Zähler wird beim Neustart zurückgesetzt** (`_daySpent` nur im Speicher). Neustart am selben Spieltag → Bot darf nochmal das volle Limit ausgeben (gesehen: „Einkauf heute $0 / $60.502“ bei „Kosten heute $177.118“). Lösung: `_daySpent`, `_daySpentDay`, `_emergencySpent`, `_emergencyDay` in der Config (intern) speichern oder beim Start aus `CPlayerData.m_GameReportDataCollect.supplyCost` des Tages ableiten.
@@ -14,16 +15,16 @@ Reihenfolge = Empfehlung. ⭐ = wichtig vor dem Public-Schalten.
 - [x] (0.6.3, getestet 24.11.) Regale: leere Fächer 188 → 66 in 3 Min., 4.500–6.600 Artikel/Min., Neubelegung 100 %, Nachbestellen nach Lücke, Kartenablagen alle 4, keine Fehler. Ursprünglich geplant: Log „Reordered: …“ erscheint, beschriftete Regale werden voll; leere Regale ohne Etikett bekommen Ware (keine Opener-Packs!); Kartenablage-Meldung „… (N storages)“ mit N > 1; Vitrinen bekommen Karten aus allen Ablagen.
 - [x] (getestet 24.11.) **0.6.1 im Spiel prüfen:** Neustart am selben Tag → Log „already spent today (restored after restart)“, Dashboard „Einkauf heute“ nicht $0; Tagesbericht/Tempo nach Neustart weiter da; Log „unused old entries removed“.
 
-- [ ] **Beobachten:** „Regale vor Openern“ – lässt sich ein beschriftetes Fach nie befüllen, bekommen die Opener diese Pack-Sorte nicht mehr (keine Absicherung eingebaut). In der Regal-Übersicht prüfen.
-- [ ] **Beobachten:** Nachbestellen für große Regallücken kostet anfangs einige 10.000 $ – ggf. Menge pro Bestellung/Tag begrenzen (User gefragt, noch offen).
+- [x] (0.7.3: nach 3 Min. ohne Fortschritt werden die Kartons wieder freigegeben) **Beobachten:** „Regale vor Openern“ – lässt sich ein beschriftetes Fach nie befüllen, bekommen die Opener diese Pack-Sorte nicht mehr (keine Absicherung eingebaut). In der Regal-Übersicht prüfen.
+- [x] (0.7.3: optionales Tageslimit „Nachbestellen für die Regale“) **Beobachten:** Nachbestellen für große Regallücken kostet anfangs einige 10.000 $ – ggf. Menge pro Bestellung/Tag begrenzen (User gefragt, noch offen).
 
 ## Berater – wirtschaften wie ein guter Spieler (Konzept 24.11.)
 Jede Ausgabe = Investition mit Kosten (einmalig + laufend, z. B. Miete/Lohn) und Nutzen/Tag aus Messwerten → Amortisation → Bestes zuerst. Engpässe statt starrer Phasen.
 - [x] (0.7.1) **Schritt 1 – Messen & Berater-Seite:** Einnahmen/Fixkosten/Gewinn pro Tag, Rücklage, Engpässe, Tipps für den Spieler, nächste Investitionen. Im Spiel prüfen, ob die Zahlen stimmen (Fixkosten = gemessene Rechnungen).
 - [x] (0.7.1) **Schritt 2 – Grading-Stufe nach Gewinn** (schnellste Stufe ≤ 15 % Gewinn/Tag, die sich füllen lässt). Prüfen: welche Stufe wählt er, wie viele Tage?
-- [ ] **Schritt 3 – Erweiterungen und Arbeiter nach Amortisation** statt „Budget ≥ 5× Preis“: Erweiterung nur bei Engpass „Regalfläche“ und Mietplus ≤ ~10 % Gewinn/Tag (Mietplus nach einer Erweiterung messen); Arbeiter einstellen nur, wenn über Tage Arbeit übrig bleibt.
+- [x] (0.7.3, noch nicht im Spiel getestet) **Schritt 3 – Erweiterungen und Arbeiter nach Amortisation** statt „Budget ≥ 5× Preis“: Erweiterung nur bei Engpass „Regalfläche“ und Mietplus ≤ ~10 % Gewinn/Tag (Mietplus nach einer Erweiterung messen); Arbeiter einstellen nur, wenn über Tage Arbeit übrig bleibt.
 - [x] (0.7.2, noch nicht im Spiel getestet) **Schritt 4 – Budget-Töpfe** statt Tageslimit/Faktoren: Gewinn → Rücklage → Investitionen (Engpass, beste Amortisation) → Packs.
-- [ ] **Schritt 5 – Packs selbst öffnen am Anfang** (ohne Opener) – prüfen, ob das Spiel das per Code zulässt.
+- [x] (0.7.3, noch nicht im Spiel getestet – nur ohne Opener aktiv, braucht einen frischen Spielstand) **Schritt 5 – Packs selbst öffnen am Anfang** (ohne Opener) – prüfen, ob das Spiel das per Code zulässt.
 
 ## Bot passt sich dem Spielverlauf an (ersetzt den starren Assistenten)
 - [x] (0.6.4, noch nicht im Spiel getestet) ⭐ **Schritt 1 – Messen & anzeigen:** Ø Einnahmen/Kosten pro Tag (letzte 3 Tage), Level, Erweiterungen, Opener/Kassen/Vitrinen/Arbeiter, Lizenzen, Sammlungsfortschritt. Daraus **Spielphase** erkennen und im Dashboard zeigen („Phase: Sammeln (erkannt)“) – noch ohne Verhalten zu ändern, ein paar Spieltage beobachten.

@@ -7,7 +7,7 @@
 **ShopBot** is a free **TCG Card Shop Simulator mod** (BepInEx plugin) that runs your card shop almost on its own: **auto checkout** at every register, **auto restock** of shelves and display cases, **auto fill pack openers**, **auto pricing**, buying packs for your **Pokémon collection**, **PSA grading**, workers, licenses and expansions – tuned for the **Real TCG Overhaul** mod pack (Pokémon).
 Goal: **own every Pokémon card in the Collection Tracker** (later all of them as PSA 10) – while the shop makes money.
 
-> Version **0.7.2** · Game: Steam default branch (Unity 6) · BepInEx 5.4.x · Dashboard in **English** and **Deutsch**
+> Version **0.7.3** · Game: Steam default branch (Unity 6) · BepInEx 5.4.x · Dashboard in **English** and **Deutsch**
 > 📖 **New here? → [Step-by-step guide](docs/INSTALL.md)** · 🇩🇪 [Deutsche Version](README.de.md)
 
 ---
@@ -19,7 +19,7 @@ Goal: **own every Pokémon card in the Collection Tracker** (later all of them a
 | 💰 **Checkout** | Serves **all free registers at the same time** (scan, take money, give change) – no cashiers needed |
 | 👷 **Workers** | All workers fill the **pack openers** (only packs of unfinished Pokémon sets), work plan by strengths, 3× bonus daily, hires new workers |
 | 📦 **Packs & collection** | Reads the Collection Tracker, buys packs of the sets with the **most new cards per dollar**, takes boxes from storage, **emergency restock** when the openers run dry |
-| ⚙️ **Pack openers** | Fills openers itself, **spreads packs evenly when stock is low** so every opener keeps running, starts half-full ones, collects finished ones |
+| ⚙️ **Pack openers** | Fills openers itself, **spreads packs evenly when stock is low** so every opener keeps running, starts half-full ones, collects finished ones. **No opener yet?** The bot opens collection packs itself, like a machine |
 | 🏷️ **Prices** | Market price **+20 %**, rounded (products, single cards, graded cards) |
 | 🛒 **Shelves & displays** | Stocks shelves itself, puts cards into empty display slots (graded first) |
 | 🗑️ **Tidying** | Full boxes onto the storage shelf, empty boxes into the trash |

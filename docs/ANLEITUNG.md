@@ -80,8 +80,8 @@ Am einfachsten über den **Real TCG Overhaul Mod Manager** installieren – der 
 
 **Hat es geklappt?** Öffne `BepInEx\LogOutput.log` (im Spielordner) mit dem Editor. Dort muss stehen:
 ```
-[Info   :   BepInEx] Loading [ShopBot 0.7.2]
-[Info   :   ShopBot] ShopBot 0.7.2 loaded. F8 = on/off, F9 = dashboard. Language: Deutsch
+[Info   :   BepInEx] Loading [ShopBot 0.7.3]
+[Info   :   ShopBot] ShopBot 0.7.3 loaded. F8 = on/off, F9 = dashboard. Language: Deutsch
 ```
 Die Log-Datei ist immer Englisch – so können auch andere bei Fehlern helfen.
 

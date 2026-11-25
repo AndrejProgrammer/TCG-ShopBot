@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace ShopBot
 {
-    [BepInPlugin("ratta.shopbot", "ShopBot", "0.7.2")]
+    [BepInPlugin("ratta.shopbot", "ShopBot", "0.7.3")]
     public partial class Plugin : BaseUnityPlugin
     {
         // ---- Konfiguration ----
@@ -130,6 +130,7 @@ namespace ShopBot
             BindEmergencyConfig();
             BindDayStateConfig();
             BindPhaseConfig();
+            BindHandOpenConfig();
             BindDashboardConfig();
             MigrateConfig();
             InitLanguage();

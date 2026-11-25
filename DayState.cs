@@ -34,6 +34,18 @@ namespace ShopBot
         // Called when the shop is no longer loaded (main menu) – another save may be loaded next
         private void ResetDayStateRestore() { _dayRestored = false; _reportRestored = false; }
 
+        // Saved values belong to one save slot: "s<slot>:" in front. Values of another slot are ignored.
+        private static int SaveSlot { get { try { return CPlayerData.m_SaveIndex; } catch { return -1; } } }
+        private static string SlotTag => "s" + SaveSlot + ":";
+        // value of this save slot ("" if it belongs to another slot); old values without a tag are accepted once
+        private static string ForThisSlot(string v)
+        {
+            if (string.IsNullOrEmpty(v)) return "";
+            if (!v.StartsWith("s")) return v;                       // before 0.7.3: no slot tag
+            int c = v.IndexOf(':');
+            return c > 0 && v.Substring(0, c + 1) == SlotTag ? v.Substring(c + 1) : "";
+        }
+
         // ---------- Daily limit ----------
         private void RestoreDayState()
         {
@@ -41,7 +53,7 @@ namespace ShopBot
             _dayRestored = true;
             int day = CPlayerData.m_CurrentDay;
             float saved = 0f, savedEmergency = 0f;
-            var p = (_dayState.Value ?? "").Split(';');
+            var p = ForThisSlot(_dayState.Value).Split(';');
             if (p.Length >= 3 && int.TryParse(p[0], out var d) && d == day)
             {
                 float.TryParse(p[1], NumberStyles.Float, CultureInfo.InvariantCulture, out saved);
@@ -57,7 +69,7 @@ namespace ShopBot
         }
 
         private void SaveDayState() =>
-            _dayState.Value = string.Format(CultureInfo.InvariantCulture, "{0};{1:0.##};{2:0.##}", _daySpentDay, _daySpent, _emergencySpent);
+            _dayState.Value = SlotTag + string.Format(CultureInfo.InvariantCulture, "{0};{1:0.##};{2:0.##}", _daySpentDay, _daySpent, _emergencySpent);
 
         // ---------- Daily report ----------
         private static string ReportToString(DayRecord r) =>
@@ -87,7 +99,7 @@ namespace ShopBot
             _reportRestored = true;
             DayRecord today = null;
             _dayHistory.Clear();
-            foreach (var part in (_dayReportState.Value ?? "").Split('|'))
+            foreach (var part in ForThisSlot(_dayReportState.Value).Split('|'))
             {
                 var r = part.Length > 0 ? ReportFromString(part) : null;
                 if (r == null || r.Day > day) continue;          // other/older save: ignore days "from the future"
@@ -109,7 +121,7 @@ namespace ShopBot
             var sb = new StringBuilder();
             foreach (var r in _dayHistory) { if (sb.Length > 0) sb.Append('|'); sb.Append(ReportToString(r)); }
             if (_today != null) { if (sb.Length > 0) sb.Append('|'); sb.Append(ReportToString(_today)); }
-            _dayReportState.Value = sb.ToString();
+            _dayReportState.Value = SlotTag + sb.ToString();
         }
     }
 

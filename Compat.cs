@@ -70,6 +70,8 @@ namespace ShopBot
             foreach (var m in new[] { "m_HoldCardAtEnd", "m_StateIndex", "m_IsGetHighValueCard", "m_IsScreenActive", "m_ScreenGrp", "CardRevealEnd" })
                 yield return ("Grading packages", typeof(GradedCardOpeningSequence), m);
             yield return ("Grading packages", typeof(InteractablePackagingBox_Card), "m_StoredCardDataList");
+            yield return ("Open packs by hand", typeof(CardOpeningSequence), "GetPackContentCardDataList");
+            yield return ("Open packs by hand", typeof(InventoryBase), "ItemTypeToCollectionPackType");
             yield return ("Day end", typeof(EndOfDayReportScreen), "m_IsLoadingNextDay");
             yield return ("Day end", typeof(EndOfDayReportScreen), "m_IsActive");
         }
@@ -100,6 +102,6 @@ namespace ShopBot
         }
 
         // Feature names for the dashboard/history (translated)
-        private static readonly string[] FeatureNames = { "Stocking", "Fill openers", "Sorting", "Checkout", "Customer offers", "Grading packages", "Day end", "Prices", "Cashier help", "Openers", "Bills", "Bonus", "Card storage", "Collection", "Displays", "Emergency restock", "Expansions", "Grading", "Hiring", "Licenses", "Opener turbo", "Restocking", "Reviews", "Upgrades", "Workers", "Game phase" };  // i18n
+        private static readonly string[] FeatureNames = { "Stocking", "Fill openers", "Sorting", "Checkout", "Customer offers", "Grading packages", "Day end", "Prices", "Cashier help", "Openers", "Bills", "Bonus", "Card storage", "Collection", "Displays", "Emergency restock", "Expansions", "Grading", "Hiring", "Licenses", "Opener turbo", "Restocking", "Reviews", "Upgrades", "Workers", "Game phase", "Advisor", "Open packs by hand" };  // i18n
     }
 }

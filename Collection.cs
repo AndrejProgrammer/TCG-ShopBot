@@ -67,6 +67,14 @@ namespace ShopBot
         private ConfigEntry<int> _reviewCases;
         private ConfigEntry<float> _reviewMinMarkup;
         private ConfigEntry<bool> _restockOnlyTcg;
+        private ConfigEntry<float> _restockDayLimit;
+        private float _restockSpent; private int _restockDay = -1;
+        // money left today for shelf goods (float.MaxValue = no limit)
+        private float RestockLeft()
+        {
+            if (_restockDay != CPlayerData.m_CurrentDay) { _restockDay = CPlayerData.m_CurrentDay; _restockSpent = 0f; }
+            return _restockDayLimit.Value <= 0f ? float.MaxValue : Mathf.Max(0f, _restockDayLimit.Value - _restockSpent);
+        }
         private ConfigEntry<int> _colMaxBoxesOnFloor;
         private ConfigEntry<bool> _colSetWorkerPacks;
         private ConfigEntry<bool> _colClaimBoost;
@@ -134,6 +142,8 @@ namespace ShopBot
 
             _restockEnabled = Config.Bind("10. Restocking", "Reorder products", true, "Reorders products when shelf + storage are almost empty.");
             _restockMaxPerMinute = Config.Bind("10. Restocking", "Max orders per minute", 3, "Limit so not too many boxes arrive.");
+            _restockDayLimit = Config.Bind("10. Restocking", "Shelf restocking limit per day ($)", 0f,
+                "At most this much per game day for goods for the shop shelves (restocking + goods customers miss). 0 = no limit (only the safety reserve applies).");
         }
 
         // Wird aus dem Haupt-Takt (1x pro Sekunde) aufgerufen
@@ -154,6 +164,7 @@ namespace ShopBot
             DayReportTick();
             HandleGamePhase();
             HandleAdvisor();
+            HandleHandOpen();
 
             if (ColActive && (_colTimer += 1f) >= 60f) { _colTimer = 0f; SafeRun("Collection", CollectionTick); }
             if (_bulkEnabled.Value && (_bulkTimer += 1f) >= 120f) { _bulkTimer = 0f; SafeRun("Card storage", BulkTick); }
@@ -183,7 +194,7 @@ namespace ShopBot
                     float amount = bill.amountToPay;
                     payFn(false);
                     var after = CPlayerData.GetBill(type);
-                    if (after == null || after.amountToPay <= 0f) { parts.Add($"{L(name)} {GameInstance.GetPriceString(amount)}"); NoteBillPaid(amount); }
+                    if (after == null || after.amountToPay <= 0f) { parts.Add($"{L(name)} {GameInstance.GetPriceString(amount)}"); NoteBillPaid(amount); if (type == EBillType.Rent) _lastRent = amount; }
                 }
                 Pay(EBillType.Rent, "Rent", screen.OnPressPayRentBill);  // i18n
                 Pay(EBillType.Electric, "Electricity", screen.OnPressPayElectricBill);  // i18n
@@ -270,12 +281,14 @@ namespace ShopBot
                 }
                 float cost = CaseCost(idx, out int perCase);
                 int cases = Mathf.Clamp(_reviewCases.Value, 1, Mathf.Max(1, (int)(Budget / (cost * 1.1f))));
-                // goods customers miss earn money: not limited by the pack daily limit (only the safety budget)
+                cases = Mathf.Min(cases, (int)Mathf.Min(int.MaxValue / 2, RestockLeft() / Mathf.Max(0.01f, cost)));
+                // goods customers miss earn money: not limited by the pack daily limit (only the safety budget + shelf limit)
                 if (Budget < cost * 1.1f || cases < 1) break;
                 if (BuyRestockIndex(idx, type, cases))
                 {
                     MarkOrdered(type); MarkSpent(cost * cases);
                     _statSpent += cost * cases;
+                    RestockLeft(); _restockSpent += cost * cases;
                     NoteF($"Customers miss {name} ({kv.Value}x) – ordered {cases} boxes (~{GameInstance.GetPriceString(cost * cases)})");
                 }
             }
@@ -323,6 +336,16 @@ namespace ShopBot
             }
             int level = CPlayerData.m_ShopLevel + 1;
             float factor = ExpFactor;
+            // Budget pots on: only buy what pays off (advisor step 3)
+            //  shop expansion: only when shelf space is the bottleneck and the extra rent is at most ~10 % of the profit per day
+            //  warehouse: only when boxes recently did not fit on the storage shelves any more
+            bool shopWorth = true, whWorth = true;
+            if (PotsActive)
+            {
+                float rentPerRoom = _lastRent > 0f ? _lastRent / Mathf.Max(1, CPlayerData.m_UnlockRoomCount + 1) : 0f;
+                shopWorth = _advBottlenecks.Any(b => b.Key == "shelfSpace") && rentPerRoom <= _advProfit * 0.1f;
+                whWorth = Time.unscaledTime - _sortNoRoomAt < 1800f && _sortNoRoomAt > 0f;
+            }
 
             // 1) Laden-Erweiterung
             int idx = CPlayerData.m_UnlockRoomCount;
@@ -331,7 +354,7 @@ namespace ShopBot
             {
                 int req = Mathf.Clamp(idx * 2 + 1, 2, 60) + idx / 4 * 2;
                 float cost = CPlayerData.GetUnlockShopRoomCost(idx);
-                if (level >= req && Budget >= cost * factor)
+                if (shopWorth && level >= req && Budget >= cost * factor)
                 {
                     BuyExpansion(cost, isWarehouse: false, idx);
                     NoteF($"Shop expansion {idx + 1} bought ({GameInstance.GetPriceString(cost)}) – more space for shelves/openers");
@@ -340,7 +363,7 @@ namespace ShopBot
             }
 
             // 2) Lager freischalten
-            if (_expWarehouse.Value && !CPlayerData.m_IsWarehouseRoomUnlocked)
+            if (_expWarehouse.Value && !CPlayerData.m_IsWarehouseRoomUnlocked && whWorth)
             {
                 float price = urm.m_ShopB_UnlockPrice;
                 if (level >= urm.m_ShopB_UnlockLevelRequired && Budget >= price * factor)
@@ -359,7 +382,7 @@ namespace ShopBot
             }
 
             // 3) Lager-Erweiterung
-            if (_expWarehouse.Value && CPlayerData.m_IsWarehouseRoomUnlocked)
+            if (_expWarehouse.Value && CPlayerData.m_IsWarehouseRoomUnlocked && whWorth)
             {
                 int widx = CPlayerData.m_UnlockWarehouseRoomCount;
                 int maxWh = Mathf.Min(_expMaxWarehouse.Value, urm.m_LockedWarehouseRoomBlockerList?.Count ?? 0, 14);
@@ -487,7 +510,7 @@ namespace ShopBot
         // Rücklage: "ganzes Geld nutzen" = nur so viel, wie die offenen + die nächsten Tagesrechnungen kosten (nie ins Minus).
         // Sonst die feste Sicherheitsreserve.
         private ConfigEntry<bool> _useAllMoney;
-        private float _billsEstimate = 5000f, _billsToday; private int _billsDay = -1;
+        private float _billsEstimate = 5000f, _billsToday, _lastRent; private int _billsDay = -1;
         private void NoteBillPaid(float amount)
         {
             if (_billsDay != CPlayerData.m_CurrentDay) { _billsDay = CPlayerData.m_CurrentDay; _billsToday = 0f; }
@@ -1182,7 +1205,7 @@ namespace ShopBot
                     foreach (var b in rm.m_ItemPackagingBoxList)
                         if (b != null && b.gameObject.activeInHierarchy && !b.m_IsStored && b.m_ItemCompartment != null && b.m_ItemCompartment.GetItemCount() > 0)
                         { var t = b.m_ItemCompartment.GetItemType(); floor[t] = (floor.TryGetValue(t, out var n) ? n : 0) + b.m_ItemCompartment.GetItemCount(); }
-                int packs = floor.Where(kv => _openerPackTypes.Contains(kv.Key) && !(_shelfNeed.TryGetValue(kv.Key, out var sn) && sn > 0)).Sum(kv => kv.Value);
+                int packs = floor.Where(kv => _openerPackTypes.Contains(kv.Key) && !ShelfReserves(kv.Key)).Sum(kv => kv.Value);
                 opener = Mathf.Min(freeRoom, packs) - (_openerSelf.Value ? _openerPerSecond.Value * window : 0f);
                 // shelves: missing items in labeled slots, as far as the goods are lying around
                 foreach (var kv in _shelfNeed) shelf += Mathf.Min(kv.Value, floor.TryGetValue(kv.Key, out var n2) ? n2 : 0);
@@ -1384,6 +1407,7 @@ namespace ShopBot
                 // Shelf goods earn money: only the safety budget applies, not the pack daily limit
                 // (pack buying used it up within minutes, so the shelves were never restocked)
                 cases = Mathf.Min(cases, (int)(Budget / (cost * 1.1f)));
+                cases = Mathf.Min(cases, (int)Mathf.Min(int.MaxValue / 2, RestockLeft() / Mathf.Max(0.01f, cost)));   // shelf limit per day
                 if (cases < 1) continue;
 
                 if (BuyRestockIndex(idx, type, cases))
@@ -1391,6 +1415,7 @@ namespace ShopBot
                     MarkOrdered(type); MarkSpent(cost * cases);
                     orders++; boxes += cases;
                     _statSpent += cost * cases;
+                    RestockLeft(); _restockSpent += cost * cases;
                     NoteF($"Reordered: {InventoryBase.GetItemData(type)?.GetName() ?? type.ToString()} ({cases} boxes, ~{GameInstance.GetPriceString(cost * cases)}) – {missing} free on the shelves");
                 }
             }

@@ -18,6 +18,7 @@ namespace ShopBot
         private ConfigEntry<bool> _pullFromStorage;
         private float _sortAcc;
         private int _statSorted, _statTrashed;
+        internal float _sortNoRoomAt = -1f;      // last time boxes did not fit on the storage shelves (advisor: warehouse worth it)
         private float _sortFullLogAt;
         private readonly Dictionary<InteractablePackagingBox_Item, float> _emptySince = new Dictionary<InteractablePackagingBox_Item, float>();
 
@@ -166,6 +167,7 @@ namespace ShopBot
                     }
                     catch (Exception e) { Logger.LogWarning("[Sorting]" + e.Message); }
                 }
+                if (noRoom > 0) _sortNoRoomAt = Time.unscaledTime;
                 if (noRoom > 0 && Time.unscaledTime >= _sortFullLogAt)
                 {
                     _sortFullLogAt = Time.unscaledTime + 600f;
