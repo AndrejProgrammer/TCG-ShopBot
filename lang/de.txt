@@ -496,3 +496,9 @@ early game: like a pack opener machine · {0} opened = am Anfang: wie eine Opene
 Packs opened by hand per minute = Selbst geöffnete Packs pro Minute
 Opened by hand (no pack opener yet): {0} packs in total = Selbst geöffnet (noch kein Pack-Opener): {0} Packs insgesamt
 Open packs by hand = Packs selbst öffnen
+Set complete: {0} ({1} cards)! = Set fertig: {0} ({1} Karten)!
+PSA 10 collection = PSA-10-Sammlung
+cards you own as PSA 10 – the later goal = Karten, die du als PSA 10 besitzt – das spätere Ziel
+Notifications = Einblendungen
+short note at the top for important events (set complete, new license …) = kurzer Hinweis oben bei wichtigen Ereignissen (Set fertig, neue Lizenz …)
+

@@ -872,6 +872,7 @@ namespace ShopBot
                 float perDay = CardsPerDay();
                 GUILayout.BeginHorizontal();
                 ProgressCard(T("Cards collected"), $"{_goalHave:N0} / {_goalTotal:N0}", _goalTotal > 0 ? (float)_goalHave / _goalTotal : 0f, CGreen, F($"{missing:N0} still missing"));
+                ProgressCard(T("PSA 10 collection"), _psa10Have >= 0 ? $"{_psa10Have:N0} / {_goalTotal:N0}" : "…", _goalTotal > 0 && _psa10Have > 0 ? (float)_psa10Have / _goalTotal : 0f, CPurple, T("cards you own as PSA 10 – the later goal"));
                 ProgressCard(T("Pace"), perDay > 0f ? F($"{perDay:N0} new cards / day") : "–", 0f, CAccent,
                              perDay > 0f ? F($"about {Mathf.CeilToInt(missing / perDay):N0} game days left") : T("after the first day change"));
                 GUILayout.EndHorizontal();
@@ -1234,6 +1235,7 @@ namespace ShopBot
             {
                 Slider(_dashScale, T("Dashboard size"), 0f, 2.5f, 0.05f, v => v <= 0.3f ? T("auto") : $"{v:0.00}×", T("auto = fits your screen height"));
                 Switch(_showOverlay, T("Status line top left"), T("small line with the last action"));
+                Switch(_toastsOn, T("Notifications"), T("short note at the top for important events (set complete, new license …)"));
             }, () =>
             {
                 GUILayout.BeginVertical(_sCard);

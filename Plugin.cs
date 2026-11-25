@@ -131,6 +131,7 @@ namespace ShopBot
             BindDayStateConfig();
             BindPhaseConfig();
             BindHandOpenConfig();
+            BindToastConfig();
             BindDashboardConfig();
             MigrateConfig();
             InitLanguage();
@@ -934,6 +935,7 @@ namespace ShopBot
             _lastTpl = tpl; _lastArgs = args; _lastAction = null;
             Logger.LogInfo(Lang.Source(tpl, args));
             RecordHistory(tpl, args);
+            MaybeToast(tpl, args);
         }
 
         // Message in the current language
@@ -951,6 +953,7 @@ namespace ShopBot
         private void OnGUI()
         {
             if (_dashOpen) { DrawDashboard(); return; }
+            DrawToasts();
             if (!_showOverlay.Value) return;
             if (_style == null)
             {

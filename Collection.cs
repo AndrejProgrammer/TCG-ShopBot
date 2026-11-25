@@ -885,6 +885,7 @@ namespace ShopBot
             var pokeSets = sets.Where(s => s.Total > 0 && (!_colPokemonOnly.Value || s.Shop.IndexOf("pok", StringComparison.OrdinalIgnoreCase) >= 0)).ToList();
             _goalTotal = pokeSets.Sum(s => s.Total);
             _goalHave = pokeSets.Sum(s => Mathf.Min(s.Have, s.Total));
+            TrackCollectionProgress(pokeSets);
             _goalNoPacks = pokeSets.Where(s => s.Have < s.Total && noBox.Contains(s.Name)).Select(s => $"{s.Name} ({s.Total - s.Have})").ToList();
             _goalPaused = capped.ToList();
             _dashSetsBuyable = candidates.Count;
