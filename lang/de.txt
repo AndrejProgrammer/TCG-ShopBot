@@ -502,3 +502,10 @@ cards you own as PSA 10 – the later goal = Karten, die du als PSA 10 besitzt �
 Notifications = Einblendungen
 short note at the top for important events (set complete, new license …) = kurzer Hinweis oben bei wichtigen Ereignissen (Set fertig, neue Lizenz …)
 
+Adjust product markup to sales speed = Aufschlag nach Verkaufstempo anpassen
+every 15 min: sells out fast \= +2 %, does not sell \= -2 % = alle 15 Min.: schnell ausverkauft = +2 %, verkauft sich nicht = −2 %
+Sales speed: lowest markup = Verkaufstempo: niedrigster Aufschlag
+Sales speed: highest markup = Verkaufstempo: höchster Aufschlag
+Markups by sales speed = Aufschläge nach Verkaufstempo
+{0} products = {0} Produkte
+Prices by sales speed: {0} products dearer, {1} cheaper ({2:0}–{3:0} %) = Preise nach Verkaufstempo: {0} Produkte teurer, {1} günstiger ({2:0}–{3:0} %)

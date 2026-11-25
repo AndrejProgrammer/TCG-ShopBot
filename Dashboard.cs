@@ -963,6 +963,9 @@ namespace ShopBot
                 Switch(_priceRound, T("Round prices"), T("from $1 to whole dollars – quick change"));
                 Slider(_priceItemPercent, T("Markup products"), 0f, 60f, 1f, Pct);
                 Slider(_priceCardPercent, T("Markup single cards & graded"), 0f, 60f, 1f, Pct);
+                Switch(_dynPriceOn, T("Adjust product markup to sales speed"), T("every 15 min: sells out fast = +2 %, does not sell = -2 %"));
+                Slider(_dynMin, T("Sales speed: lowest markup"), 0f, 60f, 1f, Pct);
+                Slider(_dynMax, T("Sales speed: highest markup"), 0f, 80f, 1f, Pct);
             }, () =>
             {
                 Section(T("Purchasing & reviews"));
@@ -1027,6 +1030,19 @@ namespace ShopBot
                 Switch(_sortTrashEmpty, T("Throw away empty boxes"), T("needs a trash bin in the shop"));
                 SliderInt(_sortPerSecond, T("Boxes per second"), 1, 20, "");
             });
+
+            if (_dynPriceOn.Value && _dynMarkup.Count > 0)
+            {
+                Section(T("Markups by sales speed"), F($"{_dynMarkup.Count} products"));
+                foreach (var kv in _dynMarkup.OrderByDescending(k => k.Value).Take(20))
+                {
+                    GUILayout.BeginHorizontal(_sCardFlat);
+                    GUILayout.Label(InventoryBase.GetItemData(kv.Key)?.GetName() ?? kv.Key.ToString(), _sTxt);
+                    GUILayout.FlexibleSpace();
+                    GUILayout.Label($"+{kv.Value:0}%", Txt(12, kv.Value > _priceItemPercent.Value ? CGreen : kv.Value < _priceItemPercent.Value ? CAccent : CText, FontStyle.Bold, false));
+                    GUILayout.EndHorizontal();
+                }
+            }
 
             if (_itemMarkup.Count > 0)
             {

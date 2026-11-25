@@ -3,7 +3,7 @@
 Reihenfolge = Empfehlung. ⭐ = wichtig vor dem Public-Schalten.
 
 ## Vor dem Veröffentlichen
-- [ ] ⭐ **0.7.3 im Spiel testen:** Log ohne Fehler, Berater/Budget-Plan wie 0.7.2, Opener-Tipp mit Zahl („etwa N Opener reichen“), Tageswerte nach Neustart (jetzt mit Spielstand-Kennung), keine Erweiterung/Einstellung ohne Grund. Packs-selbst-öffnen nur auf einem Spielstand ohne Opener testbar.
+- [ ] ⭐ **0.7.3 im Spiel testen:** Log ohne Fehler, Berater/Budget-Plan wie 0.7.2, Opener-Tipp mit Zahl („etwa N Opener reichen“), Tageswerte nach Neustart (jetzt mit Spielstand-Kennung), keine Erweiterung/Einstellung ohne Grund. Packs-selbst-öffnen nur auf einem Spielstand ohne Opener testbar. Einblendungen (z. B. bei Lizenz/Grading-Paket), PSA-10-Karte in der Sammlung, „Preise nach Verkaufstempo“ einschalten und nach 15 Min. die Meldung prüfen.
 - [ ] ⭐ **0.7.0 im Spiel prüfen:** Log „[Compat] … all … found“ (sonst: welche Funktion aus?), Spielphase + „Auto: …“-Zeile auf der Übersicht plausibel (erwartet: Sammeln, Tageslimit ~70 % der Einnahmen erst ab dem 2. gemessenen Tag), Einsatzplan nach Bedarf, Regale voll, keine Fehler. Danach Installer an einer echten Release-ZIP testen. Außerdem aus 0.6.3/0.6.4: Einsatzplan nach Bedarf („Einsatzplan … (Arbeit für Arbeiter: …)“ im Verlauf), arbeiten die Arbeiter? Spielphase auf der Übersicht plausibel (erwartet beim User: Sammeln)? Regale bleiben voll, keine Fehler.
 - [x] **v0.6.0 im Spiel getestet (24.11.):** Dashboard auf Deutsch ✓, 115 Einstellungen 1:1 übernommen ✓, alle Seiten sehen gut aus ✓, Feilschen bis Runde 5 ✓, Lizenz gekauft ✓, keine Fehler im Log ✓. Sidebar-Fußzeile war links abgeschnitten → behoben (Abstand).
 - [x] (0.6.1) **Fehler: Tageslimit-Zähler wird beim Neustart zurückgesetzt** (`_daySpent` nur im Speicher). Neustart am selben Spieltag → Bot darf nochmal das volle Limit ausgeben (gesehen: „Einkauf heute $0 / $60.502“ bei „Kosten heute $177.118“). Lösung: `_daySpent`, `_daySpentDay`, `_emergencySpent`, `_emergencyDay` in der Config (intern) speichern oder beim Start aus `CPlayerData.m_GameReportDataCollect.supplyCost` des Tages ableiten.
@@ -54,6 +54,11 @@ Jede Ausgabe = Investition mit Kosten (einmalig + laufend, z. B. Miete/Lohn) und
 - [x] (24.11.) Repo `AndrejProgrammer/TCG-ShopBot` ist öffentlich (Hauptzweig gegen Force-Push/Löschen geschützt, Wiki aus)
 - [x] (24.11.) GitHub-Release **v0.7.0 als Pre-Release** mit `ShopBot-0.7.0.zip` (inkl. Installer)
 - [x] (24.11.) **v0.7.2 als normales Release (Latest)** veröffentlicht – Budget-Töpfe, Berater, Grading-Stufe im Spiel geprüft. Ältere Pre-Releases (0.4.2–0.7.0) bestehen noch.
+
+## Ideen (umgesetzt in 0.7.3)
+- [x] Einblendungen im Spiel bei wichtigen Ereignissen
+- [x] PSA-10-Fortschritt in der Sammlung, „Set fertig!“-Meldung
+- [x] Preise nach Verkaufstempo (optional, Standard aus) – im Spiel testen, bevor es Standard wird
 
 ## Sonstiges / Ideen
 - [ ] Weitere Sprachen (Französisch, Spanisch, Russisch …) – erst später, User wollte vorerst nur DE/EN.

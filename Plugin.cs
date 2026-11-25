@@ -132,6 +132,7 @@ namespace ShopBot
             BindPhaseConfig();
             BindHandOpenConfig();
             BindToastConfig();
+            BindDynPriceConfig();
             BindDashboardConfig();
             MigrateConfig();
             InitLanguage();
@@ -478,6 +479,7 @@ namespace ShopBot
             _priceTimer = 0f;
 
             int changedItems = 0, changedCards = 0;
+            SampleSales();
             float itemMul = 1f + _priceItemPercent.Value / 100f;
             float cardMul = 1f + _priceCardPercent.Value / 100f;
 
@@ -496,7 +498,9 @@ namespace ShopBot
                         if (type == EItemType.None || !seen.Add(type)) continue;
                         float market = CPlayerData.GetItemMarketPrice(type);
                         if (market <= 0f) continue;
-                        float mul = _itemMarkup.TryGetValue(type, out var pct) ? 1f + pct / 100f : itemMul; // ggf. wegen Beschwerden gesenkt
+                        // markup: lowered after complaints > by sales speed (if on) > the normal markup
+                        float mul = _itemMarkup.TryGetValue(type, out var pct) ? 1f + pct / 100f
+                                  : _dynPriceOn.Value && _dynMarkup.TryGetValue(type, out var dyn) ? 1f + dyn / 100f : itemMul;
                         float target = RoundPrice(market * mul);
                         if (Mathf.Abs(CPlayerData.GetItemPrice(type, preventZero: false) - target) > 0.009f)
                         {
@@ -542,6 +546,79 @@ namespace ShopBot
 
             if (changedItems + changedCards > 0)
                 NoteF($"Prices adjusted: {changedItems} products, {changedCards} cards (+{_priceItemPercent.Value:0}% / +{_priceCardPercent.Value:0}%)");
+        }
+
+        // ================= Prices by sales speed (optional) =================
+        // Every price check (20 s) the bot counts how many items of each product left the shelves (= sold).
+        // Every 15 minutes: sold more than the shelf capacity -> markup +2 %, sold nothing -> -2 %, within min..max.
+        private BepInEx.Configuration.ConfigEntry<bool> _dynPriceOn;
+        private BepInEx.Configuration.ConfigEntry<float> _dynMin, _dynMax;
+        internal readonly Dictionary<EItemType, float> _dynMarkup = new Dictionary<EItemType, float>();
+        private readonly Dictionary<EItemType, int> _salesPrev = new Dictionary<EItemType, int>(), _salesSold = new Dictionary<EItemType, int>(), _salesCap = new Dictionary<EItemType, int>();
+        private float _salesSince = -1f;
+        private BepInEx.Configuration.ConfigEntry<string> _dynState;
+
+        private void BindDynPriceConfig()
+        {
+            _dynPriceOn = Config.Bind("6. Prices", "Adjust product markup to sales speed", false,
+                "Every 15 minutes: products that sell out fast get +2 % markup, products that do not sell at all get -2 % – within the limits below. Lowered markups after customer complaints still win.");
+            _dynMin = Config.Bind("6. Prices", "Sales speed: lowest markup (%)", 10f, "The markup never goes below this.");
+            _dynMax = Config.Bind("6. Prices", "Sales speed: highest markup (%)", 40f, "The markup never goes above this.");
+            _dynState = Config.Bind("99. Internal", "Markups by sales speed", "", new BepInEx.Configuration.ConfigDescription("Internal: learned markups (item=percent). Do not edit.", null, Hidden));
+            foreach (var part in (_dynState.Value ?? "").Split('|'))
+            {
+                var kv = part.Split('=');
+                if (kv.Length == 2 && int.TryParse(kv[0], out var id) && float.TryParse(kv[1], System.Globalization.NumberStyles.Float, CultureInfo.InvariantCulture, out var v)) _dynMarkup[(EItemType)id] = v;
+            }
+        }
+
+        private void SampleSales()
+        {
+            if (!_dynPriceOn.Value) { _salesSince = -1f; return; }
+            var shelves = ShelfManager.GetShelfList();
+            if (shelves == null) return;
+            var now = new Dictionary<EItemType, int>();
+            _salesCap.Clear();
+            foreach (var shelf in shelves)
+            {
+                if (shelf == null || shelf.m_ItemNotForSale) continue;
+                foreach (var comp in shelf.GetItemCompartmentList())
+                {
+                    if (comp == null || comp.m_ItemNotForSale) continue;
+                    var t = comp.GetItemType();
+                    if (t == EItemType.None) continue;
+                    now[t] = (now.TryGetValue(t, out var n) ? n : 0) + comp.GetItemCount();
+                    _salesCap[t] = (_salesCap.TryGetValue(t, out var c) ? c : 0) + comp.GetMaxItemCount();
+                }
+            }
+            // a drop on the shelf = sold (restocking only adds)
+            foreach (var kv in now)
+                if (_salesPrev.TryGetValue(kv.Key, out var before) && kv.Value < before)
+                    _salesSold[kv.Key] = (_salesSold.TryGetValue(kv.Key, out var s) ? s : 0) + (before - kv.Value);
+            _salesPrev.Clear();
+            foreach (var kv in now) _salesPrev[kv.Key] = kv.Value;
+
+            if (_salesSince < 0f) { _salesSince = Time.unscaledTime; _salesSold.Clear(); return; }
+            if (Time.unscaledTime - _salesSince < 900f || LightManager.GetHasDayEnded()) return;
+            // evaluate the last 15 minutes
+            int up = 0, down = 0;
+            float lo = Mathf.Min(_dynMin.Value, _dynMax.Value), hi = Mathf.Max(_dynMin.Value, _dynMax.Value);
+            foreach (var kv in _salesCap)
+            {
+                var t = kv.Key;
+                if (_itemMarkup.ContainsKey(t)) continue;                             // complaints decide for this product
+                float cur = _dynMarkup.TryGetValue(t, out var m) ? m : _priceItemPercent.Value;
+                int sold = _salesSold.TryGetValue(t, out var s) ? s : 0;
+                float next = cur;
+                if (kv.Value > 0 && sold > kv.Value) next = cur + 2f;                   // sells out fast
+                else if (sold == 0 && (_salesPrev.TryGetValue(t, out var on) && on > 0)) next = cur - 2f;   // on the shelf, nobody buys
+                next = Mathf.Clamp(next, lo, hi);
+                if (Mathf.Abs(next - cur) > 0.01f) { _dynMarkup[t] = next; if (next > cur) up++; else down++; }
+            }
+            _salesSold.Clear();
+            _salesSince = Time.unscaledTime;
+            if (up + down > 0) _dynState.Value = string.Join("|", _dynMarkup.Select(kv => (int)kv.Key + "=" + kv.Value.ToString("0.#", CultureInfo.InvariantCulture)));
+            if (up + down > 0) NoteF($"Prices by sales speed: {up} products dearer, {down} cheaper ({lo:0}–{hi:0} %)");
         }
 
         // Runden: ab 1 auf ganze Beträge (schnelles Wechselgeld), darunter auf 10 Cent (sonst wären Billigkarten 10x zu teuer)

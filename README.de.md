@@ -20,7 +20,8 @@ Ziel: **alle Pokémon-Karten im Collection Tracker besitzen** (später alle als 
 | 👷 **Arbeiter** | Alle Arbeiter befüllen die **Pack-Opener** (nur Packs unfertiger Pokémon-Sets), Einsatzplan nach Stärken, täglich 3× Bonus, stellt neue Arbeiter ein |
 | 📦 **Packs & Sammlung** | Liest den Collection Tracker, kauft Packs der Sets mit den **meisten neuen Karten pro Dollar**, holt Kartons selbst aus dem Lager, **Notfall-Nachkauf**, wenn die Opener leerlaufen |
 | ⚙️ **Pack-Opener** | Befüllt Opener selbst, **verteilt bei knappem Vorrat gleichmäßig**, damit alle Opener laufen, startet halbvolle, sammelt fertige ein. **Noch kein Opener?** Dann öffnet der Bot Sammlungs-Packs selbst, wie eine Maschine |
-| 🏷️ **Preise** | Marktpreis **+20 %**, gerundet (Produkte, Einzelkarten, gegradete) |
+| 🏷️ **Preise** | Marktpreis **+20 %**, gerundet (Produkte, Einzelkarten, gegradete); auf Wunsch angepasst daran, wie schnell sich ein Produkt verkauft |
+| 🔔 **Einblendungen** | Kurze Hinweise im Bild: Set fertig, neue Lizenz, Grading-Paket geöffnet, neue Spielphase … |
 | 🛒 **Regale & Vitrinen** | Räumt Ware selbst ein, legt Karten in leere Vitrinen-Plätze (gegradete zuerst) |
 | 🗑️ **Ordnung** | Volle Kartons ins Lagerregal, leere Kartons in den Mülleimer |
 | 🏅 **Graden** | Schickt Karten zu PSA (Standard, volle 52er-Einsendungen, teuerste zuerst), **öffnet zurückgekommene Pakete** und verkauft gegradete Karten (eine PSA 10 jeder Karte bleibt) |

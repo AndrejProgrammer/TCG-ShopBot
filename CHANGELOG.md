@@ -10,6 +10,9 @@ Ausführliche Entwickler-Notizen: [docs/ENTWICKLUNG.md](docs/ENTWICKLUNG.md)
 - **Shelf restocking limit per day** (optional, default off).
 - **Daily values per save:** spent today and the daily report are kept per save slot – two saves no longer mix their numbers.
 - Advisor: concrete opener tip ("about N openers are enough for your income"), packs per day from the measured game clock.
+- **Notifications:** short notes at the top of the screen for important events – set complete, new license, grading package opened, new game phase, expansion, new worker, a feature switched off. Can be switched off (Settings).
+- **"Set complete!"** message when a set is finished, and **PSA 10 progress** on the Collection page (cards you own as PSA 10).
+- **Prices by sales speed (optional, off by default):** every 15 minutes products that sell out fast get +2 % markup, products that do not sell at all −2 %, within 10–40 % (adjustable). Lowered markups after complaints still win. Learned markups are kept across restarts.
 
 ## 0.7.2 – 25.11.2026 – budget pots
 - **Budget pots:** once a full day is measured (and "Adapt settings to the game phase" is on), the profit per day (income − rent, electricity, wages) is split: **reserve** (3 days of fixed costs, always kept) → **worthwhile investments** (licenses for sets without packs, expansions when shelf space is the bottleneck) → **packs**. Collect/Endgame: ~85 % of the profit goes to packs (instead of a fixed daily limit), Build-up 40 %, Start 10 %. A quarter of idle money on the account goes to packs on top. The emergency restock may add 30 % of the profit (instead of a fixed $100,000). Shown on the Advisor page as "Budget plan for today".
