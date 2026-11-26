@@ -7,7 +7,7 @@
 **ShopBot** ist ein kostenloser **Mod für TCG Card Shop Simulator** (BepInEx-Plugin), der deinen Kartenladen weitgehend allein führt: **automatisch kassieren** an allen Kassen, **Regale und Vitrinen automatisch auffüllen**, **Pack-Opener befüllen**, **Preise setzen**, Packs für deine **Pokémon-Sammlung** kaufen, **PSA-Graden**, Arbeiter, Lizenzen und Erweiterungen – optimiert für das **Real TCG Overhaul**-Modpack (Pokémon).
 Ziel: **alle Pokémon-Karten im Collection Tracker besitzen** (später alle als PSA 10) – während der Laden Geld verdient.
 
-> Version **0.7.3** · Spiel: Steam-Standard-Branch (Unity 6) · BepInEx 5.4.x · Dashboard auf **Englisch** und **Deutsch**
+> Version **0.7.4** · Spiel: Steam-Standard-Branch (Unity 6) · BepInEx 5.4.x · Dashboard auf **Englisch** und **Deutsch**
 > 📖 **Neu hier? → [Schritt-für-Schritt-Anleitung](docs/ANLEITUNG.md)** · 🇬🇧 [English version](README.md)
 
 ---
@@ -67,7 +67,7 @@ Die Log-Datei (`BepInEx\LogOutput.log`) bleibt immer Englisch, damit Fehlerberic
 |---|---|
 | TCG Card Shop Simulator | 1.07 (Steam-Standard-Branch, Unity 6) |
 | BepInEx | 5.4.x (x64) |
-| Real TCG Overhaul Mod Manager | 2.1.1 (35 Mods) |
+| Real TCG Overhaul Mod Manager | 2.1.2 (35 Mods) |
 | Enhanced Prefab Loader | 6.9.0 |
 | Collection Tracker | 3.1.4 |
 | CardGrade Overhaul | 1.2.7 |
