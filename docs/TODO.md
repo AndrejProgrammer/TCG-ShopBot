@@ -53,6 +53,7 @@ Jede Ausgabe = Investition mit Kosten (einmalig + laufend, z. B. Miete/Lohn) und
 ## Veröffentlichen (erst nach OK vom User)
 - [x] (24.11.) Repo `AndrejProgrammer/TCG-ShopBot` ist öffentlich (Hauptzweig gegen Force-Push/Löschen geschützt, Wiki aus)
 - [x] (24.11.) GitHub-Release **v0.7.0 als Pre-Release** mit `ShopBot-0.7.0.zip` (inkl. Installer)
+- [x] (26.11.) **v0.7.4 als normales Release (Latest)** – Lag-Fixes, Auto-Tempo, Spielstand-Sicherung, Tagesverlauf-Fix
 - [x] (25.11.) **v0.7.3 als normales Release (Latest)**
 - [x] (24.11.) **v0.7.2 als normales Release** veröffentlicht – Budget-Töpfe, Berater, Grading-Stufe im Spiel geprüft. Ältere Pre-Releases (0.4.2–0.7.0) bestehen noch.
 
