@@ -22,15 +22,27 @@ namespace ShopBot
         private bool Guard(string feature, Action a)
         {
             if (FeatureOff(feature)) return false;
+            long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
             try { a(); if (_featErr.ContainsKey(feature)) _featErr[feature] = 0; return true; }
             catch (Exception e) { FeatureFailed(feature, e); return false; }
+            finally { FeatureTime(feature, t0); }
         }
 
         private bool GuardB(string feature, Func<bool> f)
         {
             if (FeatureOff(feature)) return false;
+            long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
             try { bool r = f(); if (_featErr.ContainsKey(feature)) _featErr[feature] = 0; return r; }
             catch (Exception e) { FeatureFailed(feature, e); return false; }
+            finally { FeatureTime(feature, t0); }
+        }
+
+        // slowest single run per feature in the current minute (shown in the [Perf] log line)
+        internal readonly Dictionary<string, double> _featMaxMs = new Dictionary<string, double>();
+        private void FeatureTime(string feature, long t0)
+        {
+            double ms = (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+            if (!_featMaxMs.TryGetValue(feature, out var m) || ms > m) _featMaxMs[feature] = ms;
         }
 
         private void FeatureFailed(string feature, Exception e)
@@ -86,11 +98,25 @@ namespace ShopBot
             foreach (var (feature, type, member) in CompatMembers())
             {
                 checkedCount++;
-                bool ok = type != null && (AccessTools.Field(type, member) != null || AccessTools.Method(type, member) != null || AccessTools.Property(type, member) != null);
+                bool ok = type != null && HasMember(type, member);
                 if (ok) continue;
                 if (!missing.TryGetValue(feature, out var l)) missing[feature] = l = new List<string>();
                 l.Add($"{type?.Name ?? "?"}.{member}");
             }
+            // optional mods: check right at start, so a new user sees at once what is off (before, only when the feature first ran)
+            var mods = new[] { ("CollectionTracker.CTRestockShop", "Collection Tracker", "Collection / pack buying"),
+                               ("CardGradeOverhaul.Grading", "CardGrade Overhaul", "Grading"),
+                               ("Upgrades.UpStore", "Upgrades", "Collection point upgrades") };
+            var found = new List<string>(); var lacking = new List<string>();
+            foreach (var (typeName, mod, feat) in mods)
+            {
+                if (Fast.TypeByName(typeName) != null) { found.Add(mod); continue; }
+                lacking.Add(mod);
+                ModMissing(mod, feat);
+            }
+            Logger.LogInfo($"[Mods] found: {(found.Count > 0 ? string.Join(", ", found) : "none")}" + (lacking.Count > 0 ? $" | missing (those features are off): {string.Join(", ", lacking)}" : ""));
+            if (lacking.Count > 0) NoteF($"Mods missing: {string.Join(", ", lacking)} – the bot works without them, only those features are off");
+
             string game = Application.version;
             if (missing.Count == 0)
             {
@@ -101,7 +127,22 @@ namespace ShopBot
             Logger.LogWarning($"[Compat] game {game}: {missing.Count} features switched off: {string.Join(", ", missing.Keys)}");
         }
 
+        // Field, method or property with this name (also in base classes)? Plain reflection on purpose:
+        // AccessTools.Field/Method write a HarmonyX warning into the log for every miss ("Could not find field …"),
+        // and the check asks for methods too – that made 4 harmless but confusing warnings at every start.
+        private static bool HasMember(Type type, string name)
+        {
+            const System.Reflection.BindingFlags all = System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic |
+                                                       System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.DeclaredOnly;
+            for (var t = type; t != null; t = t.BaseType)
+            {
+                if (t.GetField(name, all) != null || t.GetProperty(name, all) != null) return true;
+                if (t.GetMethods(all).Any(m => m.Name == name)) return true;
+            }
+            return false;
+        }
+
         // Feature names for the dashboard/history (translated)
-        private static readonly string[] FeatureNames = { "Stocking", "Fill openers", "Sorting", "Checkout", "Customer offers", "Grading packages", "Day end", "Prices", "Cashier help", "Openers", "Bills", "Bonus", "Card storage", "Collection", "Displays", "Emergency restock", "Expansions", "Grading", "Hiring", "Licenses", "Opener turbo", "Restocking", "Reviews", "Upgrades", "Workers", "Game phase", "Advisor", "Open packs by hand" };  // i18n
+        private static readonly string[] FeatureNames = { "Stocking", "Fill openers", "Sorting", "Checkout", "Customer offers", "Grading packages", "Day end", "Prices", "Cashier help", "Openers", "Bills", "Bonus", "Card storage", "Collection", "Displays", "Emergency restock", "Expansions", "Grading", "Hiring", "Licenses", "Opener turbo", "Restocking", "Reviews", "Upgrades", "Workers", "Game phase", "Advisor", "Open packs by hand", "Shop survey" };  // i18n
     }
 }

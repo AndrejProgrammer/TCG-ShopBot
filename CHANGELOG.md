@@ -2,6 +2,26 @@
 
 Ausführliche Entwickler-Notizen: [docs/ENTWICKLUNG.md](docs/ENTWICKLUNG.md)
 
+## 0.7.4 – 26.11.2026 – less lag, fits every shop
+- **Fix: daily history kept getting lost** (since 0.7.3). The save slot was taken from a counter that goes up with every save, so the bot thought another save was loaded and threw the last days away – the advisor lost its averages and the budget pots switched off. Now the real slot (0–3) is used; old values are taken over once.
+- **Licenses the collection does not need** (the set already has buyable packs): at most one per game day and, with budget pots, only if it costs at most ~3 % of the profit per day (test: six such licenses for $240,000 at once).
+- **Daily save backup:** at game start the save folder is copied to BepInEx/ShopBot-Backups (once per day, last 5 kept, on a background thread). Settings → Safety & log.
+- **Shorter log:** routine messages (stocked, openers filled, prices adjusted, sorted …) only in the history, in LogOutput.log only with the new switch "Detailed log".
+- **"Restore recommended settings" button** (Settings, with a second click to confirm). Keeps language, hotkeys, dashboard size, bought licenses and internal counters.
+- **Missing mods are checked at start** (Collection Tracker, CardGrade Overhaul, Upgrades): log line [Mods] and a note on the overview – before, the note came only when the feature first ran.
+- **Advisor: chart of the last 7 days** – income, bot spending and new cards per day.
+- **Fits every shop:** once per second the bot measures the shop (pack openers and their size, shelves and slots, display cases, storage shelves, loose boxes) and shows it on the overview ("Your shop"). With openers it fills them, without openers it opens packs by hand.
+- **Auto speed (default on):** the bot works as fast as the shop needs – openers filled within ~10 s, shelves ~20 s, display cases and loose boxes ~20 s. The speed sliders are now the minimum. A time limit of 3 ms per frame keeps it from lagging; the rest is done in the next round. Off = exactly the slider values like before.
+- **Fewer boxes in the shop, smarter buying:** the bot computes how many packs the openers use per minute (from each machine's time per pack). Only about 5 minutes of that stay on the floor for the openers, the rest goes into storage. Pack buying counts boxes on the floor AND still on the way and stops at that limit (the setting "Max full boxes in the shop overall" stays the upper bound). The emergency restock aims at 10 minutes of use instead of the full opener capacity. Every box on the floor is a 3D object – 600 of them cost a lot of FPS.
+- **Stutter once a minute fixed:** Grading and Upgrades looked up the other mods' classes by name every run (searches all types of all 35 mods, ~200 ms) – now only once. Shelf reorders: one order per run, spread over the minute, instead of up to 3 in the same frame (~300 ms).
+- **[Perf] line in the log every minute:** bot time, slowest frame, FPS, slowest tasks, packs into openers, opener use, boxes in the shop vs. limit.
+- Shelf slots are read only once per second (shared by the shelf need and the survey).
+- The compatibility check at start no longer writes 4 harmless HarmonyX warnings ("Could not find field … CheckChangeReady" etc.) into the log.
+- **Much less work per frame:** private game fields in the hot loops (900+ boxes, storage shelf records) are now read with fast pre-built accessors instead of looking them up by name every time (Traverse) – far less CPU time and garbage.
+- **No more stutter every second:** the once-per-second work is spread over 6 frames instead of running all in one frame.
+- Advisor measures opener idle time every 5 s instead of every second.
+- **Performance display** (Settings): how many ms the bot needs per second and its slowest frame.
+
 ## 0.7.3 – 25.11.2026 – invests wisely
 - **Expansions by payback** (with budget pots): a shop expansion only when shelf space is the bottleneck and the extra rent is at most ~10 % of the profit per day; warehouse only when boxes recently did not fit on the storage shelves.
 - **Hiring by payback** (with budget pots): only when work has been left over for 5 minutes in a row and the wage is at most ~5 % of the profit per day.

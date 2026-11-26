@@ -129,9 +129,9 @@ Testbericht starten (läuft eigenständig, schreibt `TESTBERICHT.md`):
 - [ ] Kartenablage war überfüllt (16.583/10.000) – beobachten, ob sie sich leert.
 - [ ] Ideen: Tagesbericht (Einnahmen/Ausgaben pro Tag) im Dashboard, dynamisch mehr Vitrinen-Arbeiter bei voller Ablage, gegradete Karten mit eigenem Aufschlag, ShopBot-Version hochzählen.
 
-## Mod-Stand (Real TCG Overhaul Mod Manager 2.1.1)
+## Mod-Stand (Real TCG Overhaul Mod Manager 2.1.2)
 
-35 Mods aktiv, alle aktuell (19.11.): u. a. CardGradeOverhaul 1.2.7, RTCGO Holographics 1.0.8, EnhancedPrefabLoader 6.9.0, Collection Tracker 3.1.4, QOLShopOS 1.2.4, TextureReplacer 1.7.9, Purchase Overhaul 1.3.6, Pokemon-Pakete aus Mod 577 (inkl. Pack Opening Machines, Figurines 3.8), Master Set Displays, Custom Customers.
+35 Mods aktiv, alle aktuell (19.11., am 26.11. mit Manager 2.1.2 erneut geprüft – keine neuen Versionen): u. a. CardGradeOverhaul 1.2.7, RTCGO Holographics 1.0.8, EnhancedPrefabLoader 6.9.0, Collection Tracker 3.1.4, QOLShopOS 1.2.4, TextureReplacer 1.7.9, Purchase Overhaul 1.3.6, Pokemon-Pakete aus Mod 577 (inkl. Pack Opening Machines, Figurines 3.8), Master Set Displays, Custom Customers.
 
 ## Änderungen 20.11.
 

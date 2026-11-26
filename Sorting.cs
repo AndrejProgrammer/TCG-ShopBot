@@ -35,7 +35,7 @@ namespace ShopBot
         private void HandleSorting()
         {
             if (!_sortEnabled.Value && !_sortTrashEmpty.Value) return;
-            _sortAcc = Mathf.Min(_sortAcc + Mathf.Max(1, _sortPerSecond.Value), Mathf.Max(1, _sortPerSecond.Value) * 2f);
+            _sortAcc = Mathf.Min(_sortAcc + _rateSort, _rateSort * 2f);
             SafeRun("Sorting", SortTick);
         }
 
@@ -47,8 +47,7 @@ namespace ShopBot
 
         private bool BoxBusy(InteractablePackagingBox_Item b)
         {
-            var tb = Traverse.Create(b);
-            bool hold = tb.Field("m_IsBeingHold").GetValue<bool>(), lerp = tb.Field("m_IsLerpingToPos").GetValue<bool>(), toggle = tb.Field("m_IsTogglingOpenClose").GetValue<bool>();
+            bool hold = Fast.Hold(b), lerp = Fast.Lerp(b), toggle = Fast.Toggle(b);
             if (!hold && !lerp && !toggle) { _busySince.Remove(b); return false; }
             if (hold) _busyHold++; if (lerp) _busyLerp++; if (toggle) _busyToggle++;
             var p = b.transform.position;
@@ -65,7 +64,7 @@ namespace ShopBot
             // reset the stuck flag in the game too, so the WORKERS can take the box again (not "being held" – that is real)
             if (!hold)
             {
-                try { if (toggle) tb.Field("m_IsTogglingOpenClose").SetValue(false); if (lerp) tb.Field("m_IsLerpingToPos").SetValue(false); } catch { }
+                try { if (toggle) Fast.SetToggle(b, false); if (lerp) Fast.SetLerp(b, false); } catch { }
             }
             _busySince.Remove(b);
             return false;                                           // flag stuck, box lies still -> free
@@ -88,14 +87,16 @@ namespace ShopBot
                 if (b.m_ItemCompartment.GetItemCount() <= 0)
                 {
                     // Sicherheit: nur geöffnete Kartons, die schon 5 s leer sind (nie frisch gelieferte)
-                    if (!Traverse.Create(b).Field("m_IsBoxOpened").GetValue<bool>()) continue;
+                    if (!Fast.Opened(b)) continue;
                     if (!_emptySince.TryGetValue(b, out var since)) { _emptySince[b] = Time.unscaledTime; continue; }
                     if (Time.unscaledTime - since >= 5f) empty.Add(b);
                 }
                 else { _emptySince.Remove(b); full.Add(b); }
             }
+            _scSortBacklog = empty.Count + full.Count;
             if (_emptySince.Count > 500) { foreach (var k in _emptySince.Keys.Where(k => k == null).ToList()) _emptySince.Remove(k); }
 
+            ActionStart();
             int done = 0;
 
             // 1) Leere Kartons -> Mülleimer
@@ -105,7 +106,7 @@ namespace ShopBot
                 if (bin != null)
                     foreach (var b in empty)
                     {
-                        if (done >= budget) break;
+                        if (done >= budget || OutOfTime) break;
                         try { bin.DiscardBox(b, isPlayer: false); _emptySince.Remove(b); done++; _statTrashed++; } catch { }
                     }
             }
@@ -117,9 +118,7 @@ namespace ShopBot
                 var keep = new HashSet<InteractablePackagingBox_Item>();
                 if (_sortKeepOpenerPacks.Value && _openerSelf.Value && _openerPackTypes.Count > 0)
                 {
-                    int cap = 0;
-                    var ops = ShelfManager.GetAutoPackOpenerList();
-                    if (ops != null) foreach (var o in ops) if (o != null) cap += Mathf.Max(0, o.m_MaxPackCount);
+                    int cap = AutoSpeed ? FloorKeepPacks : _scOpenerCap;   // auto: about 5 min of opener use, the rest into storage
                     int kept = 0;
                     foreach (var b in full.Where(b => _openerPackTypes.Contains(b.m_ItemCompartment.GetItemType()))
                                           .OrderBy(b => _focusPackTypes.Contains(b.m_ItemCompartment.GetItemType()) ? 0 : 1))
@@ -145,7 +144,7 @@ namespace ShopBot
                 var noRoomTypes = new Dictionary<string, int>();
                 foreach (var b in full)
                 {
-                    if (done >= budget) break;
+                    if (done >= budget || OutOfTime) break;
                     if (keep.Contains(b)) continue;
                     var type = b.m_ItemCompartment.GetItemType();
                     if (type == EItemType.None) continue;
@@ -200,21 +199,21 @@ namespace ShopBot
             foreach (var ws in sm.m_WarehouseShelfList)
             {
                 if (ws == null) continue;
-                var comps = Traverse.Create(ws).Field("m_ItemCompartmentList").GetValue<List<ShelfCompartment>>();
+                var comps = Fast.Compartments(ws);
                 if (comps == null) continue;
                 foreach (var comp in comps)
                 {
                     if (comp == null) continue;
-                    var recs = Traverse.Create(comp).Field("m_StoredBoxRecordList").GetValue() as System.Collections.IList;
+                    var recs = Fast.Records(comp);
                     if (recs == null || recs.Count == 0) continue;
                     compartments++; records += recs.Count;
                     // newest box of each type first (from the top of the stack)
                     var seen = new HashSet<EItemType>();
                     for (int i = recs.Count - 1; i >= 0; i--)
                     {
-                        var tr = Traverse.Create(recs[i]);
-                        var type = tr.Field("itemType").GetValue<EItemType>();
-                        if (type == EItemType.None || tr.Field("amount").GetValue<int>() <= 0 || !seen.Add(type)) continue;
+                        var rec = recs[i];
+                        var type = Fast.RecType(rec);
+                        if (type == EItemType.None || Fast.RecAmount(rec) <= 0 || !seen.Add(type)) continue;
                         int p = priority(type);
                         if (p >= 0) found.Add((comp, recs, i, type, p));
                     }
@@ -240,10 +239,9 @@ namespace ShopBot
                         f.recs.RemoveAt(f.index);                  // box from the middle of the stack
                     }
                     StoredBoxVisualBatcher.RebuildImmediate(f.comp);
-                    var tr = Traverse.Create(recObj);
-                    var type = tr.Field("itemType").GetValue<EItemType>();
-                    int amount = tr.Field("amount").GetValue<int>();
-                    bool big = tr.Field("isBigBox").GetValue<bool>();
+                    var type = Fast.RecType(recObj);
+                    int amount = Fast.RecAmount(recObj);
+                    bool big = Fast.RecBig(recObj);
                     var p = pos + new Vector3(UnityEngine.Random.Range(-0.4f, 0.4f), 0.6f + pulled * 0.35f, UnityEngine.Random.Range(-0.4f, 0.4f));
                     var box = RestockManager.SpawnPackageBoxItemAtTransform(type, amount, big, p, Quaternion.identity);
                     if (box != null) { pulled++; _statPulled++; }

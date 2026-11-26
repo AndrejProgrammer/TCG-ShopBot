@@ -146,20 +146,35 @@ namespace ShopBot
         }
 
         // Wird aus dem Haupt-Takt (1x pro Sekunde) aufgerufen
-        private void HandleEconomy()
+        // Spread over stages 1-4 (one frame each, see Plugin.Update) – same order as before
+        private void HandleEconomy(int stage)
         {
             if (LoadingNextDay()) return;
 
-            // Zuerst die Rechnungen – dann Arbeiter-Bonus – erst danach wird eingekauft
-            HandleBills();
-            HandleWorkerBonus();
-            HandleReviews();
-            HandleExpansions();
-            HandleLicenses();
-            HandleSelfStocking();
-            HandleHiring();
-            HandleSorting();
-            HandlePackEmergency();
+            switch (stage)
+            {
+                case 1:
+                    SafeRun("Shop survey", ScanShop);
+                    // Zuerst die Rechnungen – dann Arbeiter-Bonus – erst danach wird eingekauft
+                    HandleBills();
+                    HandleWorkerBonus();
+                    HandleReviews();
+                    HandleExpansions();
+                    HandleLicenses();
+                    return;
+                case 2:
+                    HandleSelfStocking();
+                    return;
+                case 3:
+                    HandleSelfStocking2();
+                    return;
+                case 4:
+                    HandleHiring();
+                    HandleSorting();
+                    HandlePackEmergency();
+                    return;
+            }
+
             DayReportTick();
             HandleGamePhase();
             HandleAdvisor();
@@ -168,7 +183,7 @@ namespace ShopBot
             if (ColActive && (_colTimer += 1f) >= 60f) { _colTimer = 0f; SafeRun("Collection", CollectionTick); }
             if (_bulkEnabled.Value && (_bulkTimer += 1f) >= 120f) { _bulkTimer = 0f; SafeRun("Card storage", BulkTick); }
             if (_workersAuto.Value && (_workerTimer += 1f) >= 60f) { _workerTimer = 0f; SafeRun("Workers", WorkerTick); }
-            if (_restockEnabled.Value && (_restockTimer += 1f) >= 60f) { _restockTimer = 0f; SafeRun("Restocking", RestockTick); }
+            if (_restockEnabled.Value && (_restockTimer += 1f) >= 60f / RestockRuns) { _restockTimer = 0f; SafeRun("Restocking", RestockTick); }
             HandleUpgrades();
             HandleGrading();
         }
@@ -498,7 +513,7 @@ namespace ShopBot
         private static bool LoadingNextDay()
         {
             var r = S<EndOfDayReportScreen>();
-            return r != null && (Traverse.Create(r).Field("m_IsLoadingNextDay").GetValue<bool>() || Traverse.Create(r).Field("m_IsActive").GetValue<bool>());
+            return r != null && (Fast.EodLoadingNext(r) || Fast.EodIsActive(r));
         }
 
         // Geld über der Reserve. Abbuchungen laufen über ein Spiel-Ereignis und kommen erst im nächsten Bild an –
@@ -541,8 +556,8 @@ namespace ShopBot
 
         private bool CtReady()
         {
-            if (_ctShopType == null) _ctShopType = AccessTools.TypeByName("CollectionTracker.CTRestockShop");
-            if (_ctOrderType == null) _ctOrderType = AccessTools.TypeByName("CollectionTracker.CTSetOrdering");
+            if (_ctShopType == null) _ctShopType = Fast.TypeByName("CollectionTracker.CTRestockShop");
+            if (_ctOrderType == null) _ctOrderType = Fast.TypeByName("CollectionTracker.CTSetOrdering");
             if (_ctShopType == null || _ctOrderType == null)
             {
                 if (!_ctWarned) { _ctWarned = true; Logger.LogWarning("Collection Tracker not found – collection features off."); ModMissing("Collection Tracker", "Collection / pack buying"); }  // i18n-last
@@ -642,18 +657,17 @@ namespace ShopBot
                     foreach (var ws in sm.m_WarehouseShelfList)
                     {
                         if (ws == null) continue;
-                        var comps = Traverse.Create(ws).Field("m_ItemCompartmentList").GetValue<List<ShelfCompartment>>();
+                        var comps = Fast.Compartments(ws);
                         if (comps == null) continue;
                         foreach (var comp in comps)
                         {
                             if (comp == null) continue;
-                            var recs = Traverse.Create(comp).Field("m_StoredBoxRecordList").GetValue() as IList;
+                            var recs = Fast.Records(comp);
                             if (recs == null) continue;
                             foreach (var r in recs)
                             {
-                                var tr = Traverse.Create(r);
-                                var type = tr.Field("itemType").GetValue<EItemType>();
-                                int n = tr.Field("amount").GetValue<int>();
+                                var type = Fast.RecType(r);
+                                int n = Fast.RecAmount(r);
                                 if (n <= 0 || type == EItemType.None) continue;
                                 d[type] = (d.TryGetValue(type, out var c) ? c : 0) + n;
                             }
@@ -751,12 +765,23 @@ namespace ShopBot
                 var coming = CountItemsInDelivery();
                 int have = _openerPackTypes.Sum(t => (stock.TryGetValue(t, out var a) ? a : 0) + (coming.TryGetValue(t, out var b) ? b : 0));
                 int need = Mathf.RoundToInt(cap * Mathf.Max(0.1f, _emergencyFills.Value));
+                // auto: the openers' real use decides (10 min), not their full capacity – 98,304 packs could never lie in the shop
+                if (AutoSpeed && _scOpenerPacksPerMin > 0f) need = Mathf.Min(need, OpenerUse(EmergencyMinutes));
+                if (BoxesInShop >= FloorBoxLimit) { UpdatePackSupply(have, need); return; }   // shop full of boxes – buying would not help
                 UpdatePackSupply(have, need);
                 if (EmergencyActive || have >= need) return;
                 _emergencyUntil = Time.unscaledTime + 30f;
                 NoteF($"Emergency restock: only {have} packs left for the openers (target at least {need}) – ordering now");
                 _colTimer = 60f;                                       // Sammlung gleich im nächsten Takt
             });
+        }
+
+        private float _boxLimitLogAt;
+        private void NoteBoxLimit(int boxes)
+        {
+            if (Time.unscaledTime < _boxLimitLogAt) return;
+            _boxLimitLogAt = Time.unscaledTime + 600f;
+            NoteF($"Collection: {boxes} full boxes in the shop or on the way (limit {FloorBoxLimit}, about {FloorMinutes:0} min of opener use) – buying more when the openers have used them");
         }
 
         // Bestellungen, die noch unterwegs sind: nicht sofort nochmal bestellen
@@ -895,6 +920,7 @@ namespace ShopBot
             // 4) Nachkaufen
             var stock = CountItemsInBoxes(out int boxes);
             var coming = CountItemsInDelivery();
+            boxes += _scDeliveryBoxes;                                   // boxes on the way will lie in the shop too
 
             // Vorrat aus Opener-Kapazität berechnen: alle Automaten x Packs pro Automat x Füllungen
             int openerCapacity = 0;
@@ -912,7 +938,7 @@ namespace ShopBot
 
             foreach (var f in focus)
             {
-                if (boxes >= _colMaxBoxesOnFloor.Value) { NoteF($"Collection: {boxes} full boxes in the shop (limit {_colMaxBoxesOnFloor.Value}) – waiting"); break; }
+                if (boxes >= FloorBoxLimit) { NoteBoxLimit(boxes); break; }
                 float cost = CaseCost(f.Value, out int perCase);
                 var setTypes = GetSetPackTypes(f.Key.Type);
                 // Lieferung noch unterwegs -> nicht nochmal; im Notfall nur warten, wenn wirklich etwas von diesem Set unterwegs ist
@@ -920,7 +946,7 @@ namespace ShopBot
                 int have = setTypes.Sum(t => (stock.TryGetValue(t, out var c) ? c : 0) + (coming.TryGetValue(t, out var d) ? d : 0));
                 if (have >= targetPerSet)
                 {
-                    Logger.LogInfo($"[Collection] {f.Key.Name}: enough stock ({have}/{targetPerSet} packs)");
+                    if (VerboseLog) Logger.LogInfo($"[Collection] {f.Key.Name}: enough stock ({have}/{targetPerSet} packs)");
                     continue;
                 }
                 // Große Mengen: auf den berechneten Vorrat auffüllen, max. X Kartons pro Bestellung, so viel das Budget hergibt
@@ -1205,16 +1231,16 @@ namespace ShopBot
                         if (b != null && b.gameObject.activeInHierarchy && !b.m_IsStored && b.m_ItemCompartment != null && b.m_ItemCompartment.GetItemCount() > 0)
                         { var t = b.m_ItemCompartment.GetItemType(); floor[t] = (floor.TryGetValue(t, out var n) ? n : 0) + b.m_ItemCompartment.GetItemCount(); }
                 int packs = floor.Where(kv => _openerPackTypes.Contains(kv.Key) && !ShelfReserves(kv.Key)).Sum(kv => kv.Value);
-                opener = Mathf.Min(freeRoom, packs) - (_openerSelf.Value ? _openerPerSecond.Value * window : 0f);
+                opener = Mathf.Min(freeRoom, packs) - (_openerSelf.Value ? BotCap(_rateOpener) * window : 0f);
                 // shelves: missing items in labeled slots, as far as the goods are lying around
                 foreach (var kv in _shelfNeed) shelf += Mathf.Min(kv.Value, floor.TryGetValue(kv.Key, out var n2) ? n2 : 0);
-                shelf -= _stockSelf.Value ? _stockPerSecond.Value * window : 0f;
+                shelf -= _stockSelf.Value ? BotCap(_rateShelf) * window : 0f;
                 // display cases: empty card slots, as far as cards wait in the card storage
                 int emptyCards = 0;
                 var cs = ShelfManager.GetCardShelfList();
                 if (cs != null) foreach (var c in cs) if (c != null) foreach (var comp in c.GetCardCompartmentList()) if (comp != null && !comp.m_ItemNotForSale && comp.m_StoredCardList.Count == 0) emptyCards++;
                 int waiting = ShelfManager.GetCardStorageShelfList()?.Where(x => x != null).Sum(x => x.GetTotalCardAmount()) ?? 0;
-                display = Mathf.Min(emptyCards, waiting) - (_cardsSelf.Value ? _cardsPerSecond.Value * window : 0f);
+                display = Mathf.Min(emptyCards, waiting) - (_cardsSelf.Value ? BotCap(_rateCards) * window : 0f);
             }
             catch { }
             return (Mathf.Max(0f, opener), Mathf.Max(0f, shelf), Mathf.Max(0f, display));
@@ -1354,6 +1380,10 @@ namespace ShopBot
         }
 
         // ================= Produkte nachbestellen =================
+        // one order per run, spread over the minute ("max orders per minute" runs) – an order opens the game's order screen
+        // and costs up to ~300 ms; several in the same frame made a visible stutter
+        private int RestockRuns => Mathf.Clamp(_restockMaxPerMinute.Value, 1, 6);
+
         private void RestockTick()
         {
             if (!CtReady()) return;
@@ -1389,7 +1419,7 @@ namespace ShopBot
             // biggest gaps first
             foreach (var kv in onShelf.OrderByDescending(k => (capacity.TryGetValue(k.Key, out var cp) ? cp : 0) - k.Value))
             {
-                if (orders >= _restockMaxPerMinute.Value || boxes >= _colMaxBoxesOnFloor.Value) break;
+                if (orders >= 1 || boxes >= _colMaxBoxesOnFloor.Value) break;
                 var type = kv.Key;
                 if (_restockOnlyTcg.Value && InventoryBase.GetItemData(type)?.category != EItemCategory.TCG) continue; // keine Figuren/Spiele/Zubehör
                 int idx = BestRestockIndex(type);
@@ -1475,7 +1505,7 @@ namespace ShopBot
             try
             {
                 // EnhancedPrefabLoader.API.Epl.Api.Assets.Shops.GetShopInfoFor(itemType) – Typ einmal suchen, ohne Warnungs-Spam
-                if (!_eplSearched) { _eplSearched = true; _eplType = AccessTools.TypeByName("EnhancedPrefabLoader.API.Epl"); }
+                if (!_eplSearched) { _eplSearched = true; _eplType = Fast.TypeByName("EnhancedPrefabLoader.API.Epl"); }
                 if (_eplType == null) return null;
                 object Prop(object o, string name)
                 {

@@ -53,7 +53,7 @@ namespace ShopBot
                 if (!_openerPackTypes.Contains(type) || BoxBusy(b)) continue;
                 if (RealItemCount(b) <= 0)
                 {
-                    if (!Traverse.Create(b).Field("m_IsBoxOpened").GetValue<bool>()) { try { b.SetOpenCloseBox(true, false); } catch { } }
+                    if (!Fast.Opened(b)) { try { b.SetOpenCloseBox(true, false); } catch { } }
                     continue;
                 }
                 var packType = InventoryBase.ItemTypeToCollectionPackType(type);

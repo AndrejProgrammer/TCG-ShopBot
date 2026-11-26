@@ -568,6 +568,37 @@ namespace ShopBot
             }
         }
 
+        // Last 7 days: shop income (green) and bot spending (red) as bars, new collection cards below each day
+        private void DrawWeekChart()
+        {
+            var days = new List<DayRecord>(_dayHistory);
+            if (_today != null && !days.Contains(_today)) days.Add(_today);
+            days = days.Where(d => d != null).OrderBy(d => d.Day).ToList();
+            if (days.Count > 7) days = days.Skip(days.Count - 7).ToList();
+            Section(T("Last 7 days"), T("income (green) · bot spending (red) · new cards"));
+            if (days.Count == 0) { GUILayout.Label(T("Data comes in after the first game day."), _sDim); return; }
+
+            float max = Mathf.Max(1f, days.Max(d => Mathf.Max(d.ShopIncome, d.Spent)));
+            var area = GUILayoutUtility.GetRect(10, 150, GUILayout.ExpandWidth(true));
+            RR(area, CCard, 10f);
+            float colW = (area.width - 24f) / 7f, top = area.y + 10f, h = area.height - 52f;
+            for (int i = 0; i < days.Count; i++)
+            {
+                var d = days[i];
+                float x = area.x + 12f + i * colW, bw = Mathf.Max(4f, colW * 0.28f);
+                float hi = h * Mathf.Clamp01(d.ShopIncome / max), hs = h * Mathf.Clamp01(d.Spent / max);
+                RR(new Rect(x + colW * 0.18f, top + h - hi, bw, Mathf.Max(2f, hi)), CGreen, 3f);
+                RR(new Rect(x + colW * 0.18f + bw + 3f, top + h - hs, bw, Mathf.Max(2f, hs)), CRed, 3f);
+                // new cards that day = start of the next day - start of this day (today: so far)
+                int next = i + 1 < days.Count ? days[i + 1].HaveStart : _goalHave;
+                string cards = d.HaveStart >= 0 && next >= d.HaveStart ? $"+{next - d.HaveStart}" : "";
+                bool today = d == _today;
+                GUI.Label(new Rect(x, top + h + 4f, colW, 16f), (today ? T("today") : F($"Day {d.Day + 1}")), Txt(11, today ? CAccent : CDim, FontStyle.Bold, false, TextAnchor.MiddleCenter));
+                GUI.Label(new Rect(x, top + h + 20f, colW, 16f), cards.Length > 0 ? F($"{cards} cards") : "", Txt(11, CText, FontStyle.Normal, false, TextAnchor.MiddleCenter));
+            }
+            GUILayout.Label(F($"Biggest bar: {Money(max)}"), _sDim);
+        }
+
         // ================= Building blocks =================
         private static void RR(Rect r, Color c, float radius) =>
             GUI.DrawTexture(r, Texture2D.whiteTexture, ScaleMode.StretchToFill, true, 0f, c, 0f, radius);
@@ -793,6 +824,19 @@ namespace ShopBot
             if (autoText.Length > 0) GUILayout.Label(autoText, Txt(12, PhaseAuto ? CGreen : CDim));
             GUILayout.EndVertical();
             Switch(_phaseAuto, T("Adapt settings to the game phase"), T("collection, grading, emergency restock, packs first, daily limit – off = your own values"));
+
+            // What the bot found in this shop and how fast it works here
+            GUILayout.BeginVertical(_sCard);
+            GUILayout.BeginHorizontal();
+            GUILayout.Label(T("YOUR SHOP"), Txt(11, CDim, FontStyle.Bold, false));
+            GUILayout.FlexibleSpace();
+            GUILayout.Label(AutoSpeed ? T("speed adapts to the shop") : T("fixed speed (slider values)"), _sDim);
+            GUILayout.EndHorizontal();
+            GUILayout.Label(F($"{_scOpeners} pack openers · {_scShelves} shelves ({_scSlots} slots, {_scSlotsEmpty} empty) · {_scDisplays} display cases ({_scDisplayEmpty} of {_scDisplaySlots} slots empty) · {_scStorageShelves} storage shelves"), _sTxt);
+            GUILayout.Label(ShopModeText(), _sTxt);
+            GUILayout.Label(F($"Speed now: shelves {_rateShelf}/s · openers {_rateOpener}/s · display cases {_rateCards}/s · sorting {_rateSort}/s"), Txt(12, CGreen));
+            GUILayout.EndVertical();
+            Switch(_autoSpeed, T("Speed adapts to the shop"), T("as fast as your shop needs – the sliders are the minimum; a time limit per frame prevents lag"));
             GUILayout.BeginHorizontal();
             Stat(T("Money"), Money(CPlayerData.m_CoinAmountDouble), F($"held back {Money(Reserve)}"));
             Stat(T("Revenue today"), Money(income), F($"{rep.itemAmountSold} items · {rep.cardAmountSold} cards"), CGreen);
@@ -1200,6 +1244,7 @@ namespace ShopBot
             Stat(T("Profit / day"), fullDays ? Money(_advProfit) : "…", fullDays ? T("before packs and investments") : T("after the first full day"), _advProfit >= 0f ? CGreen : CRed);
             Stat(T("Reserve"), Money(_advReserveTarget), T("3 days of fixed costs"));
             GUILayout.EndHorizontal();
+            DrawWeekChart();
 
             Section(T("Budget plan for today"), PotsActive ? T("profit is split: reserve → investments → packs") : T("active after the first full day (with \"Adapt settings to the game phase\")"));
             if (PotsActive)
@@ -1237,6 +1282,25 @@ namespace ShopBot
             }
         }
 
+        private float _resetArmedUntil;
+
+        // Sets all settings to their defaults – except language, hotkeys, dashboard size and internal state
+        private int ResetToRecommended()
+        {
+            int n = 0;
+            foreach (var def in Config.Keys.ToList())
+            {
+                var e = Config[def];
+                if (def.Section.StartsWith("99.") || def.Key.IndexOf("(internal)", StringComparison.OrdinalIgnoreCase) >= 0) continue;
+                if (e == _language || e == _dashKey || e == _toggleKey || e == _dashScale) continue;
+                if (Equals(e.BoxedValue, e.DefaultValue)) continue;
+                e.BoxedValue = e.DefaultValue;
+                n++;
+            }
+            try { Config.Save(); } catch { }
+            return n;
+        }
+
         private void PageSettings()
         {
             PageTitle(T("Settings"));
@@ -1269,6 +1333,33 @@ namespace ShopBot
             {
                 Slider(_startDelay, T("Start delay after loading"), 3f, 60f, 1f, v => $"{v:0} s");
             });
+
+            Section(T("Safety & log"));
+            Two(() =>
+            {
+                Switch(_backupOn, T("Back up the saves daily"), F($"at game start into BepInEx/ShopBot-Backups · last: {(_backupStatus.Length > 0 ? _backupStatus : "–")}"));
+                SliderInt(_backupKeep, T("Number of save backups to keep"), 1, 30, "");
+            }, () =>
+            {
+                Switch(_verboseLog, T("Detailed log"), T("routine messages also in LogOutput.log – off: only in the history (shorter log for bug reports)"));
+            });
+
+            Section(T("Recommended settings"), T("all settings back to the default values"));
+            GUILayout.BeginVertical(_sCard);
+            GUILayout.Label(T("Resets every setting to the recommended value (auto speed, game phase, budget pots on). Kept: language, hotkeys, dashboard size, bought licenses and the bot's internal counters."), _sDim);
+            bool armed = Time.unscaledTime < _resetArmedUntil;
+            if (Btn(armed ? T("Really reset? Click again") : T("Restore recommended settings")))
+            {
+                if (armed) { int n = ResetToRecommended(); _resetArmedUntil = 0f; NoteF($"Recommended settings restored ({n} settings changed)"); }
+                else _resetArmedUntil = Time.unscaledTime + 5f;
+            }
+            GUILayout.EndVertical();
+
+            Section(T("Performance"), T("how much time the bot needs"));
+            GUILayout.BeginVertical(_sCard);
+            GUILayout.Label(F($"Bot: {_perfAvgMsPerSec:0.0} ms per second · slowest frame {_perfWorstFrameMs:0.0} ms"), _sSmallBold);
+            GUILayout.Label(T("At 60 FPS a frame has about 16 ms. Under 2 ms per frame you should not notice the bot."), _sDim);
+            GUILayout.EndVertical();
 
             Section(T("About"));
             GUILayout.BeginVertical(_sCard);

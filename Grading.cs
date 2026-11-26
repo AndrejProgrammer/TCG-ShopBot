@@ -43,10 +43,10 @@ namespace ShopBot
 
         private void GradingTick()
         {
-            var tGrading = AccessTools.TypeByName("CardGradeOverhaul.Grading");
-            var tCompanies = AccessTools.TypeByName("CardGradeOverhaul.Companies");
-            var tCompany = AccessTools.TypeByName("CardGradeOverhaul.Company");
-            var tWant = AccessTools.TypeByName("CardGradeOverhaul.Want");
+            var tGrading = Fast.TypeByName("CardGradeOverhaul.Grading");
+            var tCompanies = Fast.TypeByName("CardGradeOverhaul.Companies");
+            var tCompany = Fast.TypeByName("CardGradeOverhaul.Company");
+            var tWant = Fast.TypeByName("CardGradeOverhaul.Want");
             if (tGrading == null || tCompanies == null || tCompany == null || tWant == null)
             {
                 if (!_gradeWarned) { _gradeWarned = true; Logger.LogWarning("CardGrade Overhaul not found – auto grading off."); ModMissing("CardGrade Overhaul", "Grading"); }  // i18n-last

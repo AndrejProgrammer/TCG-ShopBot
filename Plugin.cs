@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace ShopBot
 {
-    [BepInPlugin("ratta.shopbot", "ShopBot", "0.7.3")]
+    [BepInPlugin("ratta.shopbot", "ShopBot", "0.7.4")]
     public partial class Plugin : BaseUnityPlugin
     {
         // ---- Konfiguration ----
@@ -131,15 +131,33 @@ namespace ShopBot
             BindDayStateConfig();
             BindPhaseConfig();
             BindHandOpenConfig();
+            BindShopScanConfig();
+            BindBackupConfig();
+            _verboseLog = Config.Bind("1. General", "Detailed log", false,
+                "On: routine messages (stocked, openers filled, prices adjusted, sorted …) are also written to BepInEx/LogOutput.log. Off: only in the history on the dashboard – the log stays short for bug reports.");
             BindToastConfig();
             BindDynPriceConfig();
             BindDashboardConfig();
             MigrateConfig();
             InitLanguage();
+            StartSaveBackup();
+            Logger.LogInfo($"[Log] detailed log: {(_verboseLog.Value ? "on" : "off – routine messages only in the history")}");
             Logger.LogInfo($"ShopBot {Info.Metadata.Version} loaded. F8 = on/off, F9 = dashboard. Language: {Lang.Names[Lang.Current]}");
         }
 
         private void Update()
+        {
+            PerfBegin();
+            try { BotUpdate(); }
+            finally { PerfEnd(); PerfFrame(); PerfMinute(); }
+        }
+
+        // The once-per-second work is spread over several frames (stages) instead of one big frame –
+        // otherwise everything runs in the same frame and the game stutters every second.
+        private int _stage = -1;
+        private const int LastStage = 6;
+
+        private void BotUpdate()
         {
             HandleDashboardKey();
             if (_toggleKey.Value.IsDown())
@@ -161,20 +179,36 @@ namespace ShopBot
             if (!_enabled.Value || _busy) return;
 
             _tick += Time.unscaledDeltaTime;
-            if (_tick < 1f) return;
-            _tick = 0f;
+            if (_stage < 0)
+            {
+                if (_tick < 1f) return;
+                _tick = 0f;
+                _stage = 0;
+            }
+            int stage = _stage;
+            _stage = stage >= LastStage ? -1 : stage + 1;
+            StageStart();
 
-            // Erst arbeiten, wenn der Laden fertig geladen ist (nie im Hauptmenü / Ladebildschirm)
-            _readyFlag = GameReady();
-            if (!_readyFlag) return;
-            CompatCheck();
+            if (stage == 0)
+            {
+                // Erst arbeiten, wenn der Laden fertig geladen ist (nie im Hauptmenü / Ladebildschirm)
+                _readyFlag = GameReady();
+                if (!_readyFlag) { _stage = -1; return; }
+                CompatCheck();
+            }
+            else if (!_readyFlag) { _stage = -1; return; }
 
             try
             {
                 // Hintergrund-Aufgaben (brauchen keine freie Spielersteuerung)
-                if (_priceEnabled.Value) Guard("Prices", HandlePrices);
-                if (_cashierHelp.Value && !_autoCheckout.Value) Guard("Cashier help", HandleCashiers);   // bot checkout replaces the cashier help
-                HandleEconomy();
+                if (stage == 0)
+                {
+                    PerfSecond();
+                    if (_priceEnabled.Value) Guard("Prices", HandlePrices);
+                    if (_cashierHelp.Value && !_autoCheckout.Value) Guard("Cashier help", HandleCashiers);   // bot checkout replaces the cashier help
+                    return;
+                }
+                if (stage < LastStage) { HandleEconomy(stage); return; }
 
                 if (!CanAct()) return;
 
@@ -247,13 +281,7 @@ namespace ShopBot
             if (ipc.IsInUIMode()) return false;
             if (cm.m_IsPlayerTrading) return false;
 
-            var t = Traverse.Create(ipc);
-            foreach (var f in new[] { "m_IsCashCounterMode", "m_IsPhoneScreenMode", "m_IsWorkerInteractMode",
-                                      "m_IsPlayTableGameMode", "m_IsDecoScreenMode", "m_IsExitingViewCardAlbumMode" })
-            {
-                var fld = t.Field(f);
-                if (fld.FieldExists() && fld.GetValue<bool>()) return false;
-            }
+            if (Fast.AnyPlayerMode(ipc)) return false;
 
             if (ScreenActive(S<SettingScreen>())) return false;
             if (ScreenActive(S<PauseScreen>())) return false;
@@ -265,9 +293,7 @@ namespace ShopBot
         private static bool ScreenActive(Component screen)
         {
             if (screen == null) return false;
-            var grp = Traverse.Create(screen).Field("m_ScreenGrp");
-            if (!grp.FieldExists()) return false;
-            var go = grp.GetValue<GameObject>();
+            var go = Fast.ScreenGroup(screen);
             return go != null && go.activeSelf;
         }
 
@@ -280,8 +306,7 @@ namespace ShopBot
             foreach (var o in list.ToArray())
             {
                 if (o == null || !o.gameObject.activeInHierarchy) continue;
-                var boxed = Traverse.Create(o).Field("m_IsBoxedUp");
-                if (boxed.FieldExists() && boxed.GetValue<bool>()) continue;
+                if (Fast.BoxedUp(o)) continue;
 
                 int stored = o.GetStoredItemList().Count;
                 bool processing = o.GetIsProcessing();
@@ -661,10 +686,9 @@ namespace ShopBot
             {
                 if (b == null || !b.gameObject.activeInHierarchy) continue;
                 active++;
-                var tb = Traverse.Create(b);
-                if (tb.Field("m_IsOpeningBox").GetValue<bool>()) { opening++; continue; }
-                if (tb.Field("m_IsBeingHold").GetValue<bool>()) { held++; continue; }
-                if ((tb.Field("m_StoredCardDataList").GetValue<List<CardData>>()?.Count ?? 0) <= 0) { emptyList++; continue; }
+                if (Fast.Opening(b)) { opening++; continue; }
+                if (Fast.Hold(b)) { held++; continue; }
+                if (Fast.CardCount(b) <= 0) { emptyList++; continue; }
                 box = b; break;
             }
             if (box == null)
@@ -723,9 +747,9 @@ namespace ShopBot
 
         private static void SkipCardGradeRevealRest()
         {
-            var reveal = AccessTools.TypeByName("CardGradeOverhaul.Reveal");
+            var reveal = Fast.TypeByName("CardGradeOverhaul.Reveal");
             if (reveal == null) return;
-            try { AccessTools.TypeByName("CardGradeOverhaul.Summary")?.GetMethod("Hide", AccessTools.all)?.Invoke(null, null); } catch { }
+            try { Fast.TypeByName("CardGradeOverhaul.Summary")?.GetMethod("Hide", AccessTools.all)?.Invoke(null, null); } catch { }
             try { reveal.GetMethod("RestToAlbum", AccessTools.all)?.Invoke(null, null); } catch { }
             try { reveal.GetField("Multi", AccessTools.all)?.SetValue(null, false); } catch { }
         }
@@ -1007,10 +1031,24 @@ namespace ShopBot
         private void Note(string msg) => NoteRaw(msg, null);
         private void NoteF(FormattableString fs) => NoteRaw(fs.Format, fs.GetArguments());
 
+        // Routine messages: always in the history (dashboard), in the log file only with "Detailed log" on
+        private static readonly string[] RoutinePrefixes =
+        {
+            "Stocked by the bot", "Openers filled by the bot", "Display cases filled by the bot", "Prices adjusted",
+            "Sorted:", "Bot checkout:", "Opener collected", "Opener started", "Card storage:"
+        };
+        internal static bool IsRoutine(string tpl)
+        {
+            foreach (var p in RoutinePrefixes) if (tpl.StartsWith(p, StringComparison.Ordinal)) return true;
+            return false;
+        }
+        private bool VerboseLog => _verboseLog != null && _verboseLog.Value;
+        private ConfigEntry<bool> _verboseLog;
+
         private void NoteRaw(string tpl, object[] args)
         {
             _lastTpl = tpl; _lastArgs = args; _lastAction = null;
-            Logger.LogInfo(Lang.Source(tpl, args));
+            if (VerboseLog || !IsRoutine(tpl)) Logger.LogInfo(Lang.Source(tpl, args));
             RecordHistory(tpl, args);
             MaybeToast(tpl, args);
         }

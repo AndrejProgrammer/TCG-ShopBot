@@ -144,6 +144,14 @@ namespace ShopBot
                 // Packs zuerst: bei knappem Vorrat nur Lizenzen für Sets, die noch gar keine kaufbaren Packs haben
                 if (PacksFirstBlocks && Prio(c) != 0) { waiting++; continue; }
                 if (Budget < c.rd.licensePrice * LicFactor) continue;
+                // Licenses the collection does not need (the set already has buyable packs): only small ones, one per day.
+                // With budget pots: at most ~3 % of the profit per day (test 26.11.: six "optional" licenses for $240k at once).
+                if (Prio(c) != 0)
+                {
+                    if (_licOptionalDay == CPlayerData.m_CurrentDay) continue;
+                    if (PotsActive && c.rd.licensePrice > _advProfit * 0.03f) continue;
+                    _licOptionalDay = CPlayerData.m_CurrentDay;
+                }
                 BuyLicense(c.idx, c.rd);
                 bought++;
                 if (bought >= 25) break;                                    // pro Minute höchstens 25
@@ -154,6 +162,7 @@ namespace ShopBot
                 Logger.LogInfo($"[Licenses] {waiting} waiting: pack stock low ({_packHave}/{_packNeed}) – money goes to packs first");
             }
         }
+        private int _licOptionalDay = -1;
         private readonly HashSet<string> _licRebuyWarned = new HashSet<string>();
         internal List<(string name, float price, bool needed)> _licPending = new List<(string, float, bool)>();
 
@@ -252,11 +261,17 @@ namespace ShopBot
         // ---------------- Selbst einräumen ----------------
         private float _stockAcc, _cardAcc;
 
+        // Stage 2: shelves. Speed = _rateShelf (ShopScan.cs); what is not done in this frame stays for the next round (max. 2 s worth)
         private void HandleSelfStocking()
         {
-            if (_stockSelf.Value) { _stockAcc += _stockPerSecond.Value; SafeRun("Stocking", StockShelves); }
-            if (_cardsSelf.Value) { _cardAcc += _cardsPerSecond.Value; SafeRun("Displays", StockCards); }
-            if (_openerSelf.Value) { _openerAcc = Mathf.Min(_openerAcc + _openerPerSecond.Value, _openerPerSecond.Value * 2f); SafeRun("Fill openers", StockOpeners); }
+            if (_stockSelf.Value) { _stockAcc = Mathf.Min(_stockAcc + _rateShelf, _rateShelf * 2f); SafeRun("Stocking", StockShelves); }
+        }
+
+        // Stage 3: openers and display cases
+        private void HandleSelfStocking2()
+        {
+            if (_openerSelf.Value) { _openerAcc = Mathf.Min(_openerAcc + _rateOpener, _rateOpener * 2f); SafeRun("Fill openers", StockOpeners); }
+            if (_cardsSelf.Value) { _cardAcc = Mathf.Min(_cardAcc + _rateCards, _rateCards * 2f); SafeRun("Displays", StockCards); }
             SafeRun("Opener turbo", ApplyOpenerTurbo);
         }
 
@@ -295,8 +310,7 @@ namespace ShopBot
             foreach (var o in openers)
             {
                 if (o == null || !o.gameObject.activeInHierarchy || !o.IsValidObject()) continue;
-                var boxed = Traverse.Create(o).Field("m_IsBoxedUp");
-                if (boxed.FieldExists() && boxed.GetValue<bool>()) continue;
+                if (Fast.BoxedUp(o)) continue;
                 if (o.GetIsProcessing() || !o.HasEnoughSlot()) continue;
                 free.Add(o);
             }
@@ -313,11 +327,10 @@ namespace ShopBot
                 // shelves first: while labeled shelf slots of these packs still miss items, the box stays for the shelves
                 if (ShelfReserves(b.m_ItemCompartment.GetItemType())) continue;
                 onFloor++;
-                var tb = Traverse.Create(b);
                 if (BoxBusy(b)) continue;
                 if (RealItemCount(b) <= 0)
                 {
-                    if (!tb.Field("m_IsBoxOpened").GetValue<bool>()) { try { b.SetOpenCloseBox(true, false); } catch { } }
+                    if (!Fast.Opened(b)) { try { b.SetOpenCloseBox(true, false); } catch { } }
                     continue;                                              // Artikel entstehen erst beim Öffnen -> nächste Runde
                 }
                 boxes.Add(b);
@@ -345,11 +358,12 @@ namespace ShopBot
                     share = Mathf.Max(Mathf.Max(1, _openerMinBatch.Value), Mathf.CeilToInt(avail / (float)free.Count));
             }
 
+            ActionStart();                                                 // time limit counts from here (box survey above does not count)
             int moved = 0, bi = 0;
             var toStart = new List<InteractableAutoPackOpener>();
             foreach (var o in free)
             {
-                while (budget > 0 && bi < boxes.Count && o.GetStoredItemList().Count < share && !o.GetIsProcessing() && o.HasEnoughSlot())
+                while (budget > 0 && bi < boxes.Count && o.GetStoredItemList().Count < share && !o.GetIsProcessing() && o.HasEnoughSlot() && !OutOfTime)
                 {
                     var box = boxes[bi];
                     if (box == null || RealItemCount(box) <= 0) { bi++; continue; }
@@ -363,13 +377,14 @@ namespace ShopBot
                 if (share != int.MaxValue && !o.GetIsProcessing() && inside > 0 &&
                     (inside >= share || !o.HasEnoughSlot() || (bi >= boxes.Count && inside >= _openerMinBatch.Value)))
                     toStart.Add(o);
-                if (budget <= 0 || bi >= boxes.Count) break;
+                if (budget <= 0 || bi >= boxes.Count || OutOfTime) break;
             }
             foreach (var o in toStart)
             {
                 try { if (!o.GetIsProcessing()) { o.OnMouseButtonUp(); _openerIdle.Remove(o); _statStarted++; } } catch { }
             }
             _openerAcc -= moved;
+            _perfOpenerMoved += moved;
             if (moved > 0)
             {
                 _statSelfOpener += moved;
@@ -380,27 +395,20 @@ namespace ShopBot
         private void StockShelves()
         {
             int budget = Mathf.FloorToInt(_stockAcc);
-            _stockAcc -= budget;
             if (budget <= 0) return;
 
             var rm = S<RestockManager>();
             var shelves = ShelfManager.GetShelfList();
             if (rm == null || shelves == null) return;
+            int budgetStart = budget;
+            try { StockShelvesInner(rm, shelves, ref budget); }
+            finally { _stockAcc -= budgetStart - budget; }
+        }
 
-            // how many items the labeled slots of each goods type still miss – the openers leave these boxes for the shelves
-            _shelfNeed.Clear();
-            foreach (var shelf in shelves)
-            {
-                if (shelf == null || shelf.m_ItemNotForSale || !shelf.IsValidObject()) continue;
-                foreach (var comp in shelf.GetItemCompartmentList())
-                {
-                    if (comp == null || comp.m_ItemNotForSale || !comp.m_CanPutItem) continue;
-                    var t = comp.GetItemType();
-                    if (t == EItemType.None) continue;
-                    int miss = comp.GetMaxItemCount() - comp.GetItemCount();
-                    if (miss > 0) _shelfNeed[t] = (_shelfNeed.TryGetValue(t, out var n) ? n : 0) + miss;
-                }
-            }
+        // how many items the labeled slots of each goods type still miss (_shelfNeed, counted in ScanShop) –
+        // the openers leave these boxes for the shelves
+        private void TrackShelfNeed()
+        {
             float nowN = Time.unscaledTime;
             foreach (var kv in _shelfNeed)
             {
@@ -408,20 +416,22 @@ namespace ShopBot
                 else if (nowN - tr.since > 180f) _shelfNeedStuck.Add(kv.Key);
             }
             foreach (var k in _shelfNeedTrack.Keys.Where(k => !_shelfNeed.ContainsKey(k)).ToList()) { _shelfNeedTrack.Remove(k); _shelfNeedStuck.Remove(k); }
+        }
 
+        private void StockShelvesInner(RestockManager rm, List<Shelf> shelves, ref int budget)
+        {
             // verfügbare Kartons nach Ware (nicht getragen, nicht unterwegs)
             var boxes = new Dictionary<EItemType, List<InteractablePackagingBox_Item>>();
             foreach (var b in rm.m_ItemPackagingBoxList)
             {
                 if (b == null || !b.gameObject.activeInHierarchy || b.m_ItemCompartment == null) continue;
                 if (b.m_ItemCompartment.GetItemCount() <= 0) continue;
-                var tb = Traverse.Create(b);
                 if (BoxBusy(b)) continue;
                 if (b.m_IsStored) continue;                                   // Kartons im Lagerregal holen die Arbeiter
                 // Artikel existieren erst nach dem ersten Öffnen – wie ein Arbeiter den Karton öffnen und nächste Runde nutzen
                 if (RealItemCount(b) <= 0)
                 {
-                    if (!tb.Field("m_IsBoxOpened").GetValue<bool>()) { try { b.SetOpenCloseBox(true, false); } catch { } }
+                    if (!Fast.Opened(b)) { try { b.SetOpenCloseBox(true, false); } catch { } }
                     continue;
                 }
                 var type = b.m_ItemCompartment.GetItemType();
@@ -456,10 +466,11 @@ namespace ShopBot
                     }
                 }
             }
+            ActionStart();
             int moved = 0;
             foreach (var shelf in shelves)
             {
-                if (budget <= 0) break;
+                if (budget <= 0 || OutOfTime) break;
                 if (shelf == null || shelf.m_ItemNotForSale || !shelf.IsValidObject()) continue;
                 foreach (var comp in shelf.GetItemCompartmentList())
                 {
@@ -468,7 +479,7 @@ namespace ShopBot
                     var type = comp.GetItemType();
                     if (type == EItemType.None) continue;                  // nur Fächer, die schon für eine Ware vorgesehen sind
                     if (!boxes.TryGetValue(type, out var list) || list.Count == 0) continue;
-                    while (budget > 0 && comp.HasEnoughSlot() && list.Count > 0)
+                    while (budget > 0 && comp.HasEnoughSlot() && list.Count > 0 && !OutOfTime)
                     {
                         var box = list[0];
                         if (box.m_ItemCompartment.GetItemCount() <= 0 || RealItemCount(box) <= 0) { list.RemoveAt(0); continue; }
@@ -495,8 +506,8 @@ namespace ShopBot
                 }
             }
             int intoEmpty = 0;
-            if (_stockEmptySlots.Value && budget > 0) { intoEmpty = FillEmptySlots(shelves, boxes, ref budget); moved += intoEmpty; }
-            _shelfStatMoved += moved; _shelfStatEmpty += intoEmpty;
+            if (_stockEmptySlots.Value && budget > 0 && !OutOfTime) { intoEmpty = FillEmptySlots(shelves, boxes, ref budget); moved += intoEmpty; }
+            _shelfStatMoved += moved; _shelfStatEmpty += intoEmpty; _perfShelfMoved += moved;
             if (Time.unscaledTime >= _shelfStatAt) { _shelfStatAt = Time.unscaledTime + 60f; LogShelfStatus(shelves, boxes); }
             if (moved > 0) { _statSelfStocked += moved; if (_statSelfStocked % 50 < moved) NoteF($"Stocked by the bot: {_statSelfStocked} items in total"); }
         }
@@ -524,11 +535,10 @@ namespace ShopBot
                 {
                     if (b == null || !b.gameObject.activeInHierarchy || b.m_ItemCompartment == null || b.m_IsStored) continue;
                     if (b.m_ItemCompartment.GetItemCount() <= 0) continue;
-                    var tb = Traverse.Create(b);
                     var bt = b.m_ItemCompartment.GetItemType();
                     survey.TryGetValue(bt, out var v);
                     v.total++;
-                    bool closed = !tb.Field("m_IsBoxOpened").GetValue<bool>();
+                    bool closed = !Fast.Opened(b);
                     bool busy = BoxBusy(b);
                     bool noItems = RealItemCount(b) <= 0;
                     if (closed) v.closed++; if (noItems) v.noItems++; if (busy) v.busy++;
@@ -564,7 +574,7 @@ namespace ShopBot
                 }
             }
             string miss = missing.Count == 0 ? "-" : string.Join(", ", missing.OrderByDescending(k => k.Value).Take(6).Select(k => $"{k.Key} ({k.Value})"));
-            Logger.LogInfo($"[Shelves] {slots} slots, empty: {emptyLabeled} labeled + {emptyUnlabeled} without label | last minute: {_shelfStatMoved} items stocked, {_shelfStatEmpty} into slots without label | empty labeled: {onFloor} have boxes on the floor, {onlyStorage} only in storage | those floor boxes: {fTotal} (closed {fClosed}, no items {fNoItems}, busy {fBusy}, usable {fUsable}) | relabeled: {_relabelOk}/{_relabelTry} | first item into empty slot: {_dispOk}/{_dispTry}{(_dispWhy.Length > 0 ? " (" + _dispWhy + ")" : "")} | busy flags: held {_busyHold}, moving {_busyLerp}, opening {_busyToggle}, stuck->free {_busyStuck} | storage pulls: {_shelfPulled}/{_shelfPullTries} | no box for: {miss}");
+            if (VerboseLog) Logger.LogInfo($"[Shelves] {slots} slots, empty: {emptyLabeled} labeled + {emptyUnlabeled} without label | last minute: {_shelfStatMoved} items stocked, {_shelfStatEmpty} into slots without label | empty labeled: {onFloor} have boxes on the floor, {onlyStorage} only in storage | those floor boxes: {fTotal} (closed {fClosed}, no items {fNoItems}, busy {fBusy}, usable {fUsable}) | relabeled: {_relabelOk}/{_relabelTry} | first item into empty slot: {_dispOk}/{_dispTry}{(_dispWhy.Length > 0 ? " (" + _dispWhy + ")" : "")} | busy flags: held {_busyHold}, moving {_busyLerp}, opening {_busyToggle}, stuck->free {_busyStuck} | storage pulls: {_shelfPulled}/{_shelfPullTries} | no box for: {miss}");
             _dashShelfStatus = F($"{slots} slots · empty: {emptyLabeled} labeled, {emptyUnlabeled} without label");
             _advShelfSlots = slots; _advShelfEmpty = emptyLabeled + emptyUnlabeled;
             int cap = 0;
@@ -671,8 +681,14 @@ namespace ShopBot
         private void StockCards()
         {
             int budget = Mathf.FloorToInt(_cardAcc);
-            _cardAcc -= budget;
             if (budget <= 0) return;
+            int budgetStart = budget;
+            try { StockCardsInner(ref budget); }
+            finally { _cardAcc -= budgetStart - budget; }
+        }
+
+        private void StockCardsInner(ref int budget)
+        {
 
             var storages = ShelfManager.GetCardStorageShelfList();
             var cardShelves = ShelfManager.GetCardShelfList();
@@ -681,6 +697,7 @@ namespace ShopBot
             var queue = storages.Where(s => s != null && s.IsValidObject() && s.CanWorkerTake() && !s.IsEditingBulkBox() && s.GetTotalCardAmount() > 0)
                                 .OrderByDescending(s => s.GetCompactCardDataAmountList()?.Any(e => e.gradedCardIndex > 0) ?? false).ToList();
             if (queue.Count == 0) return;
+            ActionStart();
             int qi = 0;
             var storage = queue[0];
             bool outOfCards = false;
@@ -688,7 +705,7 @@ namespace ShopBot
             int placed = 0;
             foreach (var cs in cardShelves)
             {
-                if (budget <= 0 || outOfCards) break;
+                if (budget <= 0 || outOfCards || OutOfTime) break;
                 if (cs == null || !cs.IsValidObject()) continue;
                 foreach (var comp in cs.GetCardCompartmentList())
                 {
@@ -750,8 +767,7 @@ namespace ShopBot
         // Tatsächlich vorhandene Artikel-Objekte im Karton (GetItemCount zählt auch noch nicht erzeugte)
         private static int RealItemCount(InteractablePackagingBox_Item b)
         {
-            try { return Traverse.Create(b.m_ItemCompartment).Field("m_StoredItemList").GetValue<List<Item>>()?.Count ?? 0; }
-            catch { return 0; }
+            return Fast.RealItems(b);
         }
     }
 }

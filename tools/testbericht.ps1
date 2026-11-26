@@ -69,6 +69,9 @@ function Write-Report($final) {
   $sess = if ($idx -ge 0) { $all[$idx..($all.Count-1)] } else { @() }
   $bot  = $sess | Where-Object { $_ -match "\[ShopBot\]|ShopBot\]" }
 
+  # ab 0.7.4: Routine-Meldungen stehen nur mit "Ausführliches Log" in der Log-Datei
+  $quiet = [bool]($sess | Where-Object { $_ -match "detailed log: off" } | Select-Object -First 1)
+  $routine = "Stocked by the bot|Openers filled|Display cases filled|Prices adjusted|Sorted:|Bot checkout:|Opener collected|Opener started|Card storage:"
   $errs = $sess | Where-Object { $_ -match "Error.*ShopBot|ShopBot.*Exception|Error in bot tick|Dashboard:|Config migration|Language files:" }
   $unity = @()
   if (Test-Path $player) { $unity = Select-String -Path $player -Encoding UTF8 -Pattern "GUI Error|Mismatched LayoutGroup|Getting control|tooltip data is NULL|NullReferenceException.*ShopBot" -ErrorAction SilentlyContinue | ForEach-Object { $_.Line } }
@@ -85,7 +88,7 @@ function Write-Report($final) {
   $lines += "|---|---|---|---|---|"
   foreach ($c in $checks) {
     $hits = @($bot | Where-Object { $_ -match $c.p })
-    $status = if ($hits.Count -gt 0) { "✅ funktioniert" } else { "⏳ noch nicht gesehen" }
+    $status = if ($hits.Count -gt 0) { "✅ funktioniert" } elseif ($quiet -and ($c.p -match $routine)) { "ℹ️ nur im Verlauf (ausführliches Log aus)" } else { "⏳ noch nicht gesehen" }
     $last = if ($hits.Count -gt 0) { ($hits[-1] -replace '^\[Info\s*:\s*ShopBot\]\s*','' -replace '\|','/') } else { "" }
     if ($last.Length -gt 120) { $last = $last.Substring(0,120) + "…" }
     $typ = if ($c.test -eq "neu") { "**neu**" } else { "bekannt" }

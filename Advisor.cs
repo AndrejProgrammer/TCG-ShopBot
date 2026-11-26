@@ -26,11 +26,14 @@ namespace ShopBot
         internal int _advShelfSlots, _advShelfEmpty, _advShelfCapacity;
         private int _advOpenerSamples, _advOpenerIdleSum, _advOpenersTotal;
 
+        private int _advSampleTick;
         private void HandleAdvisor()
         {
-            // opener idle sampling every second (idle = not running and empty)
+            // opener idle sampling every 5 seconds (idle = not running and empty) – the average stays the same
+            if (++_advSampleTick >= 5)
             try
             {
+                _advSampleTick = 0;
                 var ops = ShelfManager.GetAutoPackOpenerList();
                 if (ops != null)
                 {

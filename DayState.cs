@@ -34,16 +34,32 @@ namespace ShopBot
         // Called when the shop is no longer loaded (main menu) – another save may be loaded next
         private void ResetDayStateRestore() { _dayRestored = false; _reportRestored = false; }
 
-        // Saved values belong to one save slot: "s<slot>:" in front. Values of another slot are ignored.
-        private static int SaveSlot { get { try { return CPlayerData.m_SaveIndex; } catch { return -1; } } }
-        private static string SlotTag => "s" + SaveSlot + ":";
-        // value of this save slot ("" if it belongs to another slot); old values without a tag are accepted once
+        // Saved values belong to one save slot: "slot<N>:" in front. Values of another slot are ignored.
+        // The slot is CGameManager.m_LoadGameIndex (0-3). Until 0.7.4 CPlayerData.m_SaveIndex was used – that is a counter
+        // that goes up with every save (s168, s173, s177 …), so the history was thrown away again and again.
+        private static int SaveSlot
+        {
+            get
+            {
+                try
+                {
+                    var gm = CSingleton<CGameManager>.IsSet ? CSingleton<CGameManager>.Instance : null;
+                    if (gm != null) return gm.m_LoadGameIndex >= 0 ? gm.m_LoadGameIndex : gm.m_CurrentSaveLoadSlotSelectedIndex;
+                }
+                catch { }
+                return -1;
+            }
+        }
+        private static string SlotTag => "slot" + SaveSlot + ":";
+        // value of this save slot ("" if it belongs to another slot).
+        // Old values (no tag before 0.7.3, "s<counter>:" from 0.7.3) cannot be matched to a slot – accepted once.
         private static string ForThisSlot(string v)
         {
             if (string.IsNullOrEmpty(v)) return "";
-            if (!v.StartsWith("s")) return v;                       // before 0.7.3: no slot tag
             int c = v.IndexOf(':');
-            return c > 0 && v.Substring(0, c + 1) == SlotTag ? v.Substring(c + 1) : "";
+            if (v.StartsWith("slot")) return c > 0 && v.Substring(0, c + 1) == SlotTag ? v.Substring(c + 1) : "";
+            if (v.StartsWith("s") && c > 0) return v.Substring(c + 1);   // 0.7.3 tag
+            return v;                                                         // before 0.7.3: no tag
         }
 
         // ---------- Daily limit ----------
@@ -107,6 +123,8 @@ namespace ShopBot
             }
             _dayHistory.Sort((a, b) => a.Day.CompareTo(b.Day));
             while (_dayHistory.Count > 7) _dayHistory.RemoveAt(0);
+            // phase + advisor ran before (without the history) -> recalculate right away instead of in up to a minute
+            if (_dayHistory.Count > 0) { _phaseTimer = 60f; _advTimer = 60f; }
             if (today == null) return false;
             _today = today;
             _todaySpentStart = _statSpent - today.Spent;

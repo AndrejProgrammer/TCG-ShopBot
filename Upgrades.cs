@@ -49,10 +49,10 @@ namespace ShopBot
 
         private void UpgradeTick()
         {
-            var store = AccessTools.TypeByName("Upgrades.UpStore");
-            var itemType = AccessTools.TypeByName("Upgrades.UpStore+Item") ?? store?.GetNestedType("Item", System.Reflection.BindingFlags.NonPublic);
-            var catType = AccessTools.TypeByName("Upgrades.UpStore+Category") ?? store?.GetNestedType("Category", System.Reflection.BindingFlags.NonPublic);
-            var workersType = AccessTools.TypeByName("Upgrades.UpWorkers");
+            var store = Fast.TypeByName("Upgrades.UpStore");
+            var itemType = Fast.TypeByName("Upgrades.UpStore+Item") ?? store?.GetNestedType("Item", System.Reflection.BindingFlags.NonPublic);
+            var catType = Fast.TypeByName("Upgrades.UpStore+Category") ?? store?.GetNestedType("Category", System.Reflection.BindingFlags.NonPublic);
+            var workersType = Fast.TypeByName("Upgrades.UpWorkers");
             if (store == null || itemType == null || catType == null)
             {
                 if (!_upWarned) { _upWarned = true; Logger.LogWarning("Upgrades mod not found – auto upgrades off."); ModMissing("Upgrades", "Collection point upgrades"); }  // i18n-last

@@ -36,7 +36,7 @@ Jede Ausgabe = Investition mit Kosten (einmalig + laufend, z. B. Miete/Lohn) und
 - [x] (0.7.0, noch nicht im Spiel getestet) **Schritt 2 – Auto-Werte:** Grenzen aus Einnahmen statt fester Zahlen (Tageslimit = % der Ø-Tageseinnahmen je Phase, Reserve = kommende Rechnungen + Puffer, Lizenzen/Erweiterungen nur bei Amortisation in X Tagen).
 - [x] (0.7.0) **Lernphase** bei Einstieg mitten im Spiel: erster Spieltag vorsichtig, nur messen; ab Tag 2 mit echten Zahlen.
 - [~] (0.7.0: ein Hauptschalter „Einstellungen an die Spielphase anpassen“ statt Auto/Manuell pro Einstellung) **Kontrolle:** jede Einstellung „Auto“ (Standard, zeigt aktuellen Wert + Grund) oder „Manuell“ (wird nie überschrieben); Phase im Dashboard festlegbar; Phasenwechsel als Meldung im Verlauf.
-- [ ] Beim ersten Start trotzdem kurz: Sprache + Liste fehlender Mods (was dadurch aus ist).
+- [x] (0.7.4: Mods-Prüfung beim Start; Sprache wird schon automatisch erkannt) Beim ersten Start trotzdem kurz: Sprache + Liste fehlender Mods (was dadurch aus ist).
 - [x] (0.7.0) **Sprache automatisch erkennen** – nur bei Neuinstallation: Windows auf Deutsch → Deutsch, sonst Englisch.
 
 ## Installation
@@ -62,17 +62,18 @@ Jede Ausgabe = Investition mit Kosten (einmalig + laufend, z. B. Miete/Lohn) und
 - [x] Preise nach Verkaufstempo (optional, Standard aus) – im Spiel testen, bevor es Standard wird
 
 ## Nächste Runde (geplant 25.11., Reihenfolge = Plan)
-- [ ] ⭐ **Effizienz – weniger Rechenleistung:**
+- [~] (0.7.4, 26.11.: Reflection in Schleifen → schnelle Zugriffe, Sekunden-Arbeit auf 6 Bilder verteilt, Berater alle 5 s, Leistungsanzeige – im Spiel testen: ruckelt es noch? Werte unter Einstellungen → Leistung. Offen: Karton-Schnappschuss) + Auto-Tempo/Laden-Messung (ShopScan.cs) – im Spiel prüfen: Karte „Dein Laden“ plausibel, Tempo-Werte, Opener schneller voll, kein Ruckeln ⭐ **Effizienz – weniger Rechenleistung:**
   - Reflection in heißen Schleifen ersetzen: `Traverse.Create(b).Field(...)` pro Karton/Sekunde (m_IsBeingHold, m_IsLerpingToPos, m_IsTogglingOpenClose, m_IsBoxOpened, m_StoredItemList in `RealItemCount`, m_IsBoxedUp) → einmal erzeugte `AccessTools.FieldRefAccess`-Zugriffe (schnell).
   - Ein gemeinsamer **Karton-Schnappschuss pro Sekunde** (Typ, Anzahl, offen, beschäftigt, echte Artikel) statt 8× dieselbe Liste `RestockManager.m_ItemPackagingBoxList` (900+ Kartons) zu durchlaufen – Stellen: Collection.cs (CountItemsInBoxes, WorkDemand, Nachbestellen), Sorting.cs (SortTick, PullFromStorage), Store.cs (StockOpeners, StockShelves, FillEmptySlots, LogShelfStatus), HandOpen.cs.
   - Regal-Fächer (204) nur einmal pro Sekunde einlesen und teilen (Regalbedarf, Preise, Verkaufstempo, Regal-Übersicht).
   - Berater: Opener-Leerlauf nur alle 5 s messen statt jede Sekunde.
   - **Leistungsanzeige** in den Einstellungen: Millisekunden pro Bild, die der Bot braucht (vorher/nachher vergleichen).
-- [ ] **Log schlanker:** Schalter „Ausführliches Log“ (Standard aus) – häufige Meldungen (Regal-Übersicht, Selbst eingeräumt, Opener befüllt, Vitrinen befüllt, Preise angepasst) nur dann in die Log-Datei, im Verlauf weiterhin. Achtung: `tools\testbericht.ps1` zählt diese Meldungen – für Tests einschalten oder Muster anpassen.
-- [ ] ⭐ **Packs nach echtem Wert kaufen:** pro Set messen, was ein geöffnetes Pack bringt (neue Karten + Verkaufswert der Doppelten, aus den eingesammelten Opener-Karten) → Sets mit dem besten Wert pro Dollar zuerst; Packs, die sich selbst finanzieren, bevorzugen. Anlass: viel Mega Shine für ~$32/Pack gekauft.
-- [ ] ⭐ **Automatische Spielstand-Sicherung:** beim Start einmal pro Tag den Ordner `%USERPROFILE%\AppData\LocalLow\OPNeonGames\Card Shop Simulator` kopieren (z. B. nach `BepInEx\ShopBot-Backups\`), die letzten 5 behalten, abschaltbar.
-- [ ] **Diagramm auf der Berater-Seite:** letzte 7 Tage – Einnahmen, Ausgaben, Gewinn, neue Karten pro Tag (Daten liegen im Tagesbericht).
-- [ ] **Knopf „Empfohlene Einstellungen“** (Einstellungen-Seite): alles auf sinnvolle Standardwerte zurücksetzen, mit Rückfrage.
+- [x] (0.7.4: max. 1 verzichtbare Lizenz pro Tag, mit Töpfen ≤ 3 % Gewinn/Tag) **Lizenzen nach Budget-Topf (Test 26.11.):** 6 „verzichtbare“ 1st-Edition-Lizenzen auf einmal gekauft (~$240k), weil LicenseTick nur Budget ≥ Faktor × Preis prüft – Berater nennt sie „verzichtbar“. Nicht nötige Lizenzen (Prio ≠ 0) nur aus dem Topf „Investitionen“ und mit Amortisation (Marge × erwarteter Absatz).
+- [x] (0.7.4) **Log schlanker:** Schalter „Ausführliches Log“ (Standard aus) – häufige Meldungen (Regal-Übersicht, Selbst eingeräumt, Opener befüllt, Vitrinen befüllt, Preise angepasst) nur dann in die Log-Datei, im Verlauf weiterhin. Achtung: `tools\testbericht.ps1` zählt diese Meldungen – für Tests einschalten oder Muster anpassen.
+- [~] (Sets nach „neue Karten pro Dollar“ gibt es schon, Standard an – offen: Verkaufswert der Doppelten pro Set messen) ⭐ **Packs nach echtem Wert kaufen:** pro Set messen, was ein geöffnetes Pack bringt (neue Karten + Verkaufswert der Doppelten, aus den eingesammelten Opener-Karten) → Sets mit dem besten Wert pro Dollar zuerst; Packs, die sich selbst finanzieren, bevorzugen. Anlass: viel Mega Shine für ~$32/Pack gekauft.
+- [x] (0.7.4) ⭐ **Automatische Spielstand-Sicherung:** beim Start einmal pro Tag den Ordner `%USERPROFILE%\AppData\LocalLow\OPNeonGames\Card Shop Simulator` kopieren (z. B. nach `BepInEx\ShopBot-Backups\`), die letzten 5 behalten, abschaltbar.
+- [x] (0.7.4, ohne Fixkosten-Linie) **Diagramm auf der Berater-Seite:** letzte 7 Tage – Einnahmen, Ausgaben, Gewinn, neue Karten pro Tag (Daten liegen im Tagesbericht).
+- [x] (0.7.4) **Knopf „Empfohlene Einstellungen“** (Einstellungen-Seite): alles auf sinnvolle Standardwerte zurücksetzen, mit Rückfrage.
 - [ ] Offen aus dem Test 0.7.3: Einblendung oben im Bild und PSA-10-Karte in der Sammlung – vom User noch nicht bestätigt (im Log nicht sichtbar).
 
 ## Sonstiges / Ideen
