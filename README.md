@@ -10,6 +10,14 @@ Goal: **own every Pokémon card in the Collection Tracker** (later all of them a
 > Version **0.7.4** · Game: Steam default branch (Unity 6) · BepInEx 5.4.x · Dashboard in **English** and **Deutsch**
 > 📖 **New here? → [Step-by-step guide](docs/INSTALL.md)** · 🇩🇪 [Deutsche Version](README.de.md)
 
+
+<p align="center">
+  <img src="docs/images/advisor-chart.png" width="49%" alt="ShopBot dashboard – advisor with 7-day chart">
+  <img src="docs/images/advisor-budget.png" width="49%" alt="ShopBot dashboard – budget plan and bottlenecks">
+</p>
+<p align="center"><img src="docs/images/settings-shop.png" width="60%" alt="ShopBot dashboard – shop and price settings"></p>
+<p align="center"><sub>In-game dashboard (F9) on a late-game save: $1.2M income per day, 48 pack openers. Screenshots show the German UI – the dashboard is also fully in English.</sub></p>
+
 ---
 
 ## What the bot does

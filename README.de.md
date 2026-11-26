@@ -10,6 +10,14 @@ Ziel: **alle Pokémon-Karten im Collection Tracker besitzen** (später alle als 
 > Version **0.7.4** · Spiel: Steam-Standard-Branch (Unity 6) · BepInEx 5.4.x · Dashboard auf **Englisch** und **Deutsch**
 > 📖 **Neu hier? → [Schritt-für-Schritt-Anleitung](docs/ANLEITUNG.md)** · 🇬🇧 [English version](README.md)
 
+
+<p align="center">
+  <img src="docs/images/advisor-chart.png" width="49%" alt="ShopBot-Dashboard – Berater mit 7-Tage-Diagramm">
+  <img src="docs/images/advisor-budget.png" width="49%" alt="ShopBot-Dashboard – Budget-Plan und Engpässe">
+</p>
+<p align="center"><img src="docs/images/settings-shop.png" width="60%" alt="ShopBot-Dashboard – Laden & Preise"></p>
+<p align="center"><sub>Dashboard im Spiel (F9) auf einem späten Spielstand: 1,2 Mio. $ Einnahmen pro Tag, 48 Pack-Opener.</sub></p>
+
 ---
 
 ## Was der Bot alles macht
