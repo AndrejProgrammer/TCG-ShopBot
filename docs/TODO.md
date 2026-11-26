@@ -41,9 +41,10 @@ Jede Ausgabe = Investition mit Kosten (einmalig + laufend, z. B. Miete/Lohn) und
 
 ## Installation
 - [x] (0.7.0) ⭐ **Installer `Install-ShopBot.bat`:** Spielordner über Steam-Bibliotheken finden (`libraryfolders.vdf`), BepInEx 5 prüfen (sonst Link), DLL kopieren, Windows-Sperre aufheben (`Unblock-File`), „fertig“ melden. In die Release-ZIP packen.
-- [ ] **Nexus-Mods-Seite** vorbereiten (Text EN/DE, Anforderungen, Installationsschritte) – Hochladen macht der User. ZIP-Aufbau passt schon für Vortex.
+- [x] (26.11.: Text in D:ModsShopBot-Promo
+exus-beschreibung.txt, dazu Reddit/Discord) **Nexus-Mods-Seite** vorbereiten (Text EN/DE, Anforderungen, Installationsschritte) – Hochladen macht der User. ZIP-Aufbau passt schon für Vortex.
 - [ ] **Thunderstore/r2modman** – erst prüfen, ob es eine Community für das Spiel gibt.
-- [ ] **Screenshots / GIF** vom Dashboard in die README (User macht Bilder im Spiel).
+- [x] (26.11.: 3 Screenshots, deutsch – offen: englische Bilder + GIF) **Screenshots / GIF** vom Dashboard in die README (User macht Bilder im Spiel).
 
 ## Stabilität & Support
 - [x] (0.7.0) ⭐ **Spiel-Update-Schutz:** Fehlt nach einem Spiel-/Mod-Update ein Feld/eine Methode (Reflection), Funktion sauber abschalten und im Dashboard „Funktion X nicht kompatibel“ zeigen. Startzeile im Log: „aktiv: Kasse ✓, Graden ✓, Upgrades ✗ …“.
